@@ -1,0 +1,816 @@
+#define GET_SIZES_AND_INDICES \
+		  const int img_w=get_global_size(0),img_h=get_global_size(1); \
+		  const int2 t_id=(const int2)(get_global_id(0)/*0..img_w-1*/,get_global_id(1)/*0..img_h-1*/); \
+		  const float3 point_step=data.sccc; \
+		  const float3 h_sizes=convert_float3(num)*point_step*0.5f;
+
+#define TRANSF_RAY_COORDS \
+		  /* "left-bottom-near" point is an origin of bounding box coordinate system */ \
+		  const float3 ray_pos_const=(const float3)(dot(data.s9ab,data.s012),dot(data.s9ab,data.s345),dot(data.s9ab,data.s678)); \
+		  const float3 trans=(const float3)((float)(t_id.x+t_id.x-img_w),(float)(t_id.y+t_id.y-img_h),(1.0f+M_SQRT2_F)*(float)img_w); \
+		  /* whole vector 'trans' must be divided by 2, but this is not neccessary because of normalize() below */ \
+		  float3 ray_dir=(float3)(dot(trans,data.s012),dot(trans,data.s345),dot(trans,data.s678)); \
+		  ray_dir*=rsqrt(dot(ray_dir,ray_dir));
+
+#define INTNS_THRSH 253.0f
+
+#define GET_G(clr) ((clr) & 0xff)
+#define GET_R(clr) ((clr)>>8u)
+#define _1_DIV_255  0.0039216f
+
+
+/** Wright value of 'ray_pos_const' is (ray_pos_const+h_sizes)!
+    Please, remember this while using it! **/
+
+/* To use images uncomment the code that contains such words as 'image2d_t' and 'write_imageui'
+   and don't forget to uncomment corresponding code in 'renderer_OpenCL.cpp'!
+   I haven't got any speedup yet by using images. */
+
+
+/* this function finds intersection between the ray and the bounding box and 
+   returns 't' parameter of the ray; if there is no intersection then FLT_MAX is returned */
+inline float IntersectBB (const float3 ray_dir, const float3 ray_pos_const, const float3 h_sizes)
+{
+	float ttime=FLT_MAX,t;
+
+	if ((ray_dir.z>FLT_EPSILON) && !(ray_pos_const.z>-h_sizes.z))
+	{
+		t=-(h_sizes.z+ray_pos_const.z)/ray_dir.z;
+		if ((t<ttime) && all(fabs(ray_pos_const.xy+ray_dir.xy*t)<=h_sizes.xy)) ttime=t;
+	}
+	else
+		if ((ray_dir.z<-FLT_EPSILON) && !(ray_pos_const.z<h_sizes.z))
+		{
+			t=(h_sizes.z-ray_pos_const.z)/ray_dir.z;
+			if ((t<ttime) && all(fabs(ray_pos_const.xy+ray_dir.xy*t)<=h_sizes.xy)) ttime=t;
+		}
+	if ((ray_dir.y>FLT_EPSILON) && !(ray_pos_const.y>-h_sizes.y))
+	{
+		t=-(h_sizes.y+ray_pos_const.y)/ray_dir.y;
+		if ((t<ttime) && all(fabs(ray_pos_const.xz+ray_dir.xz*t)<=h_sizes.xz)) ttime=t;
+	}
+	else
+		if ((ray_dir.y<-FLT_EPSILON) && !(ray_pos_const.y<h_sizes.y))
+		{
+			t=(h_sizes.y-ray_pos_const.y)/ray_dir.y;
+			if ((t<ttime) && all(fabs(ray_pos_const.xz+ray_dir.xz*t)<=h_sizes.xz)) ttime=t;
+		}
+	if ((ray_dir.x>FLT_EPSILON) && !(ray_pos_const.x>-h_sizes.x))
+	{
+		t=-(h_sizes.x+ray_pos_const.x)/ray_dir.x;
+		if ((t<ttime) && all(fabs(ray_pos_const.yz+ray_dir.yz*t)<=h_sizes.yz)) ttime=t;
+	}
+	else
+		if ((ray_dir.x<-FLT_EPSILON) && !(ray_pos_const.x<h_sizes.x))
+		{
+			t=(h_sizes.x-ray_pos_const.x)/ray_dir.x;
+			if ((t<ttime) && all(fabs(ray_pos_const.yz+ray_dir.yz*t)<=h_sizes.yz)) ttime=t;
+		}
+	return ttime;
+}
+
+
+/* main render function ("points" are represented as cubes) */
+__kernel void RenderBox_cubes (const float16 data, const int3 num, const uint depth_constraint, 
+							   __global const ushort *clr_matrix, 
+							   __global uint *pixels/*__write_only image2d_t pixels*/)
+{
+	GET_SIZES_AND_INDICES
+
+	/** all computations will be in bounding box coordinate system! **/
+
+	/* transform ray coordinates */
+	TRANSF_RAY_COORDS
+
+	float3 r_p_div_p_st;
+
+	/* find intersection of the ray and the main bounding box */
+	if (any(fabs(ray_pos_const)>h_sizes))
+	{
+		const float t=IntersectBB(ray_dir,ray_pos_const,h_sizes);
+
+		if (t>1.0e+29f)
+		{
+			// no hit - dark gray color
+			pixels[t_id.y*img_w+t_id.x]=0xff969696;
+			//write_imageui(pixels,t_id,(uint4)(0x96,0x96,0x96,0xff));
+			return;
+		}
+		
+		/* move ray origin on the bounding box and divide the result by 'point_step' */
+		r_p_div_p_st=(ray_dir*t+ray_pos_const+h_sizes)/point_step;
+	}
+	else r_p_div_p_st=(ray_pos_const+h_sizes)/point_step;
+	
+	/** traversing the ray in regular grid using a little modified
+	    3DDA algorithm (http://ray-tracing.com/articles182.html) **/
+
+	const float3 p_st_div_r_d=point_step/ray_dir;
+
+	const int3 num01=num-1;
+
+	/* find indexes of the nearest cube to the 'ray_pos' point */
+	int3 ind=clamp(convert_int3(trunc(r_p_div_p_st)),0,num01);
+
+	float2 main_color=(float2)(0.0f);
+
+	/* initialize misc */
+	const int3 ind_step=1-(signbit(ray_dir) & 0x2);
+	float3 t_max=p_st_div_r_d*(convert_float3(ind+((ind_step+1)>>1))-r_p_div_p_st);
+	const float3 t_delta=p_st_div_r_d*convert_float3(ind_step);
+
+	const int xy_num=num.x*num.y*ind_step.z;
+	const int yl_num=num.x*ind_step.y;
+
+	int mtr_indx=(ind.z*num.y+ind.y)*num.x+ind.x;
+
+	/* traverse */
+	const uint3 num1=convert_uint3(num01);
+	const int3 ind_init=ind;
+	for ( ; ; )
+	{
+		/* shading */
+		main_color=mix(main_color,255.0f,(float2)(_1_DIV_255*(float)GET_G(clr_matrix[mtr_indx]),
+												  _1_DIV_255*(float)GET_R(clr_matrix[mtr_indx])));
+		if (all(main_color>INTNS_THRSH)) break;
+
+		/* further movement */
+		if (t_max.x<=t_max.y)
+		{
+			if (t_max.x<=t_max.z)
+			{
+				ind.x+=ind_step.x;
+				if ((abs_diff(ind.x+ind.x,num01.x)>num1.x) || (abs_diff(ind_init.x,ind.x)>depth_constraint)) break;
+				t_max.x+=t_delta.x;
+				mtr_indx+=ind_step.x;
+			}
+			else
+			{
+				ind.z+=ind_step.z;
+				if ((abs_diff(ind.z+ind.z,num01.z)>num1.z) || (abs_diff(ind_init.z,ind.z)>depth_constraint)) break;
+				t_max.z+=t_delta.z;
+				mtr_indx+=xy_num;
+			}
+		}
+		else
+		{
+			if (t_max.y<=t_max.z)
+			{
+				ind.y+=ind_step.y;
+				if ((abs_diff(ind.y+ind.y,num01.y)>num1.y) || (abs_diff(ind_init.y,ind.y)>depth_constraint)) break;
+				t_max.y+=t_delta.y;
+				mtr_indx+=yl_num;
+			}
+			else
+			{
+				ind.z+=ind_step.z;
+				if ((abs_diff(ind.z+ind.z,num01.z)>num1.z) || (abs_diff(ind_init.z,ind.z)>depth_constraint)) break;
+				t_max.z+=t_delta.z;
+				mtr_indx+=xy_num;
+			}
+		}
+	}
+
+	pixels[t_id.y*img_w+t_id.x]=0xff000000 | (((uint)trunc(main_color.x+0.5f))<<8u) | 
+											 (((uint)trunc(main_color.y+0.5f))<<16u);
+	//write_imageui(pixels,t_id,(uint4)(0,(uint)trunc(main_color.x+0.5f),(uint)trunc(main_color.y+0.5f),0xff));
+}
+
+
+/* main render function ("points" are represented as spheres) */
+__kernel void RenderBox_spheres (const float16 data, const int3 num, const uint depth_constraint, 
+								 __global const ushort *clr_matrix, 
+								 __global uint *pixels/*__write_only image2d_t pixels*/)
+{
+	GET_SIZES_AND_INDICES
+
+	/** all computations will be in bounding box coordinate system! **/
+
+	/* transform ray coordinates */
+	TRANSF_RAY_COORDS
+
+	float3 ray_pos;
+	float t;
+
+	/* find intersection of the ray and the main bounding box */
+	if (any(fabs(ray_pos_const)>h_sizes))
+	{
+		t=IntersectBB(ray_dir,ray_pos_const,h_sizes);
+		
+		if (t>1.0e+29f)
+		{
+			// no hit - dark gray color
+			pixels[t_id.y*img_w+t_id.x]=0xff969696;
+			//write_imageui(pixels,t_id,(uint4)(0x96,0x96,0x96,0xff));
+			return;
+		}
+
+		/* move ray origin on the bounding box */
+		ray_pos=ray_dir*t+ray_pos_const+h_sizes;
+	}
+	else ray_pos=ray_pos_const+h_sizes;
+
+	/** traversing the ray in regular grid using a little modified
+	    3DDA algorithm (http://ray-tracing.com/articles182.html) **/
+
+	/* find indexes of the nearest cube to the 'ray_pos' point */
+	const int3 num01=num-1;
+	int3 ind=clamp(convert_int3(trunc(ray_pos/point_step)),0,num01);
+
+	const int3 ind_init=ind;
+
+	/* initialize misc */
+	const float point_radius_sqr=data.sd;
+
+	const int3 ind_step=1-(signbit(ray_dir) & 0x2);
+
+	float3 to_centre=point_step*(convert_float3(ind)+0.5f)-ray_pos;
+	const float3 ind_step_flt=point_step*convert_float3(ind_step);
+
+	float3 t_max=(to_centre+ind_step_flt*0.5f)/ray_dir;
+	const float3 t_delta=ind_step_flt/ray_dir;
+
+	const int xy_num=num.x*num.y*ind_step.z;
+	const int yl_num=num.x*ind_step.y;
+
+	int mtr_indx=(ind.z*num.y+ind.y)*num.x+ind.x;
+
+	float2 main_color=(float2)(0.0f,0.0f);
+
+	const uint3 num1=convert_uint3(num01);
+
+	/* traverse */
+	ushort clr;
+	for ( ; ; )
+	{
+		/* shading */
+		t=dot(to_centre,ray_dir);
+		if ((point_radius_sqr+t*t)>=dot(to_centre,to_centre))
+		{
+			clr=clr_matrix[mtr_indx];
+			main_color=mix(main_color,255.0f,(float2)((float)GET_G(clr),(float)GET_R(clr))*_1_DIV_255);
+			if (all(main_color>INTNS_THRSH)) break;
+		}
+
+		/* further movement */
+		if (t_max.x<=t_max.y)
+		{
+			if (t_max.x<=t_max.z)
+			{
+				ind.x+=ind_step.x;
+				if ((abs_diff(ind.x+ind.x,num01.x)>num1.x) || (abs_diff(ind_init.x,ind.x)>depth_constraint)) break;
+				t_max.x+=t_delta.x;
+				to_centre.x+=ind_step_flt.x;
+				mtr_indx+=ind_step.x;
+			}
+			else
+			{
+				ind.z+=ind_step.z;
+				if ((abs_diff(ind.z+ind.z,num01.z)>num1.z) || (abs_diff(ind_init.z,ind.z)>depth_constraint)) break;
+				t_max.z+=t_delta.z;
+				to_centre.z+=ind_step_flt.z;
+				mtr_indx+=xy_num;
+			}
+		}
+		else
+		{
+			if (t_max.y<=t_max.z)
+			{
+				ind.y+=ind_step.y;
+				if ((abs_diff(ind.y+ind.y,num01.y)>num1.y) || (abs_diff(ind_init.y,ind.y)>depth_constraint)) break;
+				t_max.y+=t_delta.y;
+				to_centre.y+=ind_step_flt.y;
+				mtr_indx+=yl_num;
+			}
+			else
+			{
+				ind.z+=ind_step.z;
+				if ((abs_diff(ind.z+ind.z,num01.z)>num1.z) || (abs_diff(ind_init.z,ind.z)>depth_constraint)) break;
+				t_max.z+=t_delta.z;
+				to_centre.z+=ind_step_flt.z;
+				mtr_indx+=xy_num;
+			}
+		}
+	}
+
+	pixels[t_id.y*img_w+t_id.x]=0xff000000 | (((uint)trunc(main_color.x+0.5f))<<8u) | 
+											 (((uint)trunc(main_color.y+0.5f))<<16u);
+	//write_imageui(pixels,t_id,(uint4)(0,(uint)trunc(main_color.x+0.5f),(uint)trunc(main_color.y+0.5f),0xff));
+}
+
+
+/* main render function ("points" are represented as so called "lights" 
+   ("lights" are spheres but their intensity descends from centre to border)) */
+__kernel void RenderBox_lights (const float16 data, const int3 num, const uint depth_constraint, 
+								__global const ushort *clr_matrix, 
+								__global uint *pixels/*__write_only image2d_t pixels*/)
+{
+	GET_SIZES_AND_INDICES
+
+	/** all computations will be in bounding box coordinate system! **/
+
+	/* transform ray coordinates */
+	TRANSF_RAY_COORDS
+
+	float3 ray_pos;
+	float ttime,t;
+
+	/* find intersection of the ray and the main bounding box */
+	if (any(fabs(ray_pos_const)>h_sizes))
+	{
+		t=IntersectBB(ray_dir,ray_pos_const,h_sizes);
+		
+		if (t>1.0e+29f)
+		{
+			// no hit - dark gray color
+			pixels[t_id.y*img_w+t_id.x]=0xff969696;
+			//write_imageui(pixels,t_id,(uint4)(0x96,0x96,0x96,0xff));
+			return;
+		}
+
+		/* move ray origin on the bounding box */
+		ray_pos=ray_dir*t+ray_pos_const+h_sizes;
+	}
+	else ray_pos=ray_pos_const+h_sizes;
+
+	/** traversing the ray in regular grid using a little modified
+	     3DDA algorithm (http://ray-tracing.com/articles182.html) **/
+
+	/* find indexes of the nearest cube to the 'ray_pos' point */
+	const int3 num01=num-1;
+	int3 ind=clamp(convert_int3(trunc(ray_pos/point_step)),0,num01);
+
+	const int3 ind_init=ind;
+
+	/* initialize misc */
+	const float point_radius_sqr=data.sd;
+
+	const int3 ind_step=1-(signbit(ray_dir) & 0x2);
+
+	float3 to_centre=point_step*(convert_float3(ind)+0.5f)-ray_pos;
+	const float3 ind_step_flt=point_step*convert_float3(ind_step);
+
+	float3 t_max=(to_centre+ind_step_flt*0.5f)/ray_dir;
+	const float3 t_delta=ind_step_flt/ray_dir;
+
+	const int xy_num=num.x*num.y*ind_step.z;
+	const int yl_num=num.x*ind_step.y;
+
+	int mtr_indx=(ind.z*num.y+ind.y)*num.x+ind.x;
+
+	float2 main_color=(float2)(0.0f,0.0f);
+
+	const uint3 num1=convert_uint3(num01);
+
+	/* traverse */
+	ushort clr;
+	for ( ; ; )
+	{
+		/* shading */
+		ttime=dot(to_centre,ray_dir);
+		t=dot(to_centre,to_centre)-ttime*ttime;
+		if (t<point_radius_sqr)
+		{
+			/* fading of intensity (~1/r^2) */
+			clr=clr_matrix[mtr_indx];
+			main_color=mix(main_color,255.0f,
+					(float2)((float)GET_G(clr),(float)GET_R(clr))*_1_DIV_255*(point_radius_sqr-t)/point_radius_sqr);
+			if (all(main_color>INTNS_THRSH)) break;
+		}
+
+		/* further movement */
+		if (t_max.x<=t_max.y)
+		{
+			if (t_max.x<=t_max.z)
+			{
+				ind.x+=ind_step.x;
+				if ((abs_diff(ind.x+ind.x,num01.x)>num1.x) || (abs_diff(ind_init.x,ind.x)>depth_constraint)) break;
+				t_max.x+=t_delta.x;
+				to_centre.x+=ind_step_flt.x;
+				mtr_indx+=ind_step.x;
+			}
+			else
+			{
+				ind.z+=ind_step.z;
+				if ((abs_diff(ind.z+ind.z,num01.z)>num1.z) || (abs_diff(ind_init.z,ind.z)>depth_constraint)) break;
+				t_max.z+=t_delta.z;
+				to_centre.z+=ind_step_flt.z;
+				mtr_indx+=xy_num;
+			}
+		}
+		else
+		{
+			if (t_max.y<=t_max.z)
+			{
+				ind.y+=ind_step.y;
+				if ((abs_diff(ind.y+ind.y,num01.y)>num1.y) || (abs_diff(ind_init.y,ind.y)>depth_constraint)) break;
+				t_max.y+=t_delta.y;
+				to_centre.y+=ind_step_flt.y;
+				mtr_indx+=yl_num;
+			}
+			else
+			{
+				ind.z+=ind_step.z;
+				if ((abs_diff(ind.z+ind.z,num01.z)>num1.z) || (abs_diff(ind_init.z,ind.z)>depth_constraint)) break;
+				t_max.z+=t_delta.z;
+				to_centre.z+=ind_step_flt.z;
+				mtr_indx+=xy_num;
+			}
+		}
+	}
+
+	pixels[t_id.y*img_w+t_id.x]=0xff000000 | (((uint)trunc(main_color.x+0.5f))<<8u) | 
+											 (((uint)trunc(main_color.y+0.5f))<<16u);
+	//write_imageui(pixels,t_id,(uint4)(0,(uint)trunc(main_color.x+0.5f),(uint)trunc(main_color.y+0.5f),0xff));
+}
+
+
+/* main render function (builds a volume; "points" are represented as cubes) */
+__kernel void RenderBox_cubes_vol (const float16 data, const int3 num, const uchar4 clr_minmax, 
+								   __global const ushort *clr_matrix, 
+								   __global uint *pixels/*__write_only image2d_t pixels*/)
+{
+	GET_SIZES_AND_INDICES
+
+	/** all computations will be in bounding box coordinate system! **/
+
+	/* transform ray coordinates */
+	TRANSF_RAY_COORDS
+
+	float3 ray_pos;
+
+	/* find intersection of the ray and the main bounding box */
+	if (any(fabs(ray_pos_const)>h_sizes))
+	{
+		const float t=IntersectBB(ray_dir,ray_pos_const,h_sizes);
+
+		if (t>1.0e+29f)
+		{
+			// no hit - dark gray color
+			pixels[t_id.y*img_w+t_id.x]=0xff969696;
+			//write_imageui(pixels,t_id,(uint4)(0x96,0x96,0x96,0xff));
+			return;
+		}
+
+		/* move ray origin on the bounding box */
+		ray_pos=ray_dir*t+ray_pos_const+h_sizes;
+	}
+	else ray_pos=ray_pos_const+h_sizes;
+
+	/** traversing the ray in regular grid using a little modified
+	    3DDA algorithm (http://ray-tracing.com/articles182.html) **/
+
+	const float3 r_p_div_p_st=ray_pos/point_step;
+	const float3 p_st_div_r_d=point_step/ray_dir;
+
+	const int3 num01=num-1;
+
+	/* find indexes of the nearest cube to the 'ray_pos' point */
+	int3 ind=clamp(convert_int3(trunc(r_p_div_p_st)),0,num01);
+
+	/* initialize misc */
+	const int3 ind_step=1-(signbit(ray_dir) & 0x2);
+	float3 t_max=p_st_div_r_d*(convert_float3(ind+((ind_step+1)>>1))-r_p_div_p_st);
+	const float3 t_delta=p_st_div_r_d*convert_float3(ind_step);
+
+	const int xy_num=num.x*num.y*ind_step.z;
+	const int yl_num=num.x*ind_step.y;
+
+	int mtr_indx=(ind.z*num.y+ind.y)*num.x+ind.x;
+
+	float2 main_color=(const float2)(0.0f,0.0f);
+	uchar2 color;
+
+	const uint3 num1=convert_uint3(num01);
+
+	/* traverse */
+	for ( ; ; )
+	{
+		/* shading */
+		color=(uchar2)((uchar)GET_G(clr_matrix[mtr_indx]),(uchar)GET_R(clr_matrix[mtr_indx]));
+		if (all(color>=clr_minmax.xz) && all(color<=clr_minmax.yw))
+		{
+			main_color=mix(main_color,255.0f,convert_float2(color)*_1_DIV_255);
+			if (all(main_color>INTNS_THRSH)) break;
+		}
+
+		/* further movement */
+		if (t_max.x<=t_max.y)
+		{
+			if (t_max.x<=t_max.z)
+			{
+				ind.x+=ind_step.x;
+				if (abs_diff(ind.x+ind.x,num01.x)>num1.x) break;
+				t_max.x+=t_delta.x;
+				mtr_indx+=ind_step.x;
+			}
+			else
+			{
+				ind.z+=ind_step.z;
+				if (abs_diff(ind.z+ind.z,num01.z)>num1.z) break;
+				t_max.z+=t_delta.z;
+				mtr_indx+=xy_num;
+			}
+		}
+		else
+		{
+			if (t_max.y<=t_max.z)
+			{
+				ind.y+=ind_step.y;
+				if (abs_diff(ind.y+ind.y,num01.y)>num1.y) break;
+				t_max.y+=t_delta.y;
+				mtr_indx+=yl_num;
+			}
+			else
+			{
+				ind.z+=ind_step.z;
+				if (abs_diff(ind.z+ind.z,num01.z)>num1.z) break;
+				t_max.z+=t_delta.z;
+				mtr_indx+=xy_num;
+			}
+		}
+	}
+
+	if (all(main_color==0.0f))
+	{
+		pixels[t_id.y*img_w+t_id.x]=0xff969696;
+		//write_imageui(pixels,t_id,(uint4)(0x96,0x96,0x96,0xff));
+	}
+	else
+	{
+		pixels[t_id.y*img_w+t_id.x]=0xff000000 | (((uint)trunc(main_color.x+0.5f))<<8u) | 
+												 (((uint)trunc(main_color.y+0.5f))<<16u);
+		//write_imageui(pixels,t_id,(uint4)(0,(uint)trunc(main_color.x+0.5f),(uint)trunc(main_color.y+0.5f),0xff));
+	}
+}
+
+
+/* main render function (builds a volume; "points" are represented as spheres) */
+__kernel void RenderBox_spheres_vol (const float16 data, const int3 num, const uchar4 clr_minmax, 
+									 __global const ushort *clr_matrix, 
+									 __global uint *pixels/*__write_only image2d_t pixels*/)
+{
+	GET_SIZES_AND_INDICES
+
+	/** all computations will be in bounding box coordinate system! **/
+
+	/* transform ray coordinates */
+	TRANSF_RAY_COORDS
+
+	float3 ray_pos;
+	float t;
+
+	/* find intersection of the ray and the main bounding box */
+	if (any(fabs(ray_pos_const)>h_sizes))
+	{
+		t=IntersectBB(ray_dir,ray_pos_const,h_sizes);
+
+		if (t>1.0e+29f)
+		{
+			// no hit - dark gray color
+			pixels[t_id.y*img_w+t_id.x]=0xff969696;
+			//write_imageui(pixels,t_id,(uint4)(0x96,0x96,0x96,0xff));
+			return;
+		}
+
+		/* move ray origin on the bounding box */
+		ray_pos=ray_dir*t+ray_pos_const+h_sizes;
+	}
+	else ray_pos=ray_pos_const+h_sizes;
+
+	/** traversing the ray in regular grid using a little modified
+	    3DDA algorithm (http://ray-tracing.com/articles182.html) **/
+
+	/* find indexes of the nearest cube to the 'ray_pos' point */
+	const int3 num01=num-1;
+	int3 ind=clamp(convert_int3(trunc(ray_pos/point_step)),0,num01);
+
+	/* initialize misc */
+	const float point_radius_sqr=data.sd;
+
+	const int3 ind_step=1-(signbit(ray_dir) & 0x2);
+
+	float3 to_centre=point_step*(convert_float3(ind)+0.5f)-ray_pos;
+	const float3 ind_step_flt=point_step*convert_float3(ind_step);
+
+	float3 t_max=(to_centre+ind_step_flt*0.5f)/ray_dir;
+	const float3 t_delta=ind_step_flt/ray_dir;
+
+	const int xy_num=num.x*num.y*ind_step.z;
+	const int yl_num=num.x*ind_step.y;
+
+	int mtr_indx=(ind.z*num.y+ind.y)*num.x+ind.x;
+
+	float2 main_color=(float2)(0.0f,0.0f);
+
+	const uint3 num1=convert_uint3(num01);
+
+	/* traverse */
+	ushort clr;
+	uchar2 color;
+	for ( ; ; )
+	{
+		/* shading */
+		t=dot(to_centre,ray_dir);
+		if ((point_radius_sqr+t*t)>=dot(to_centre,to_centre))
+		{
+			clr=clr_matrix[mtr_indx];
+			color=(uchar2)((uchar)GET_G(clr),(uchar)GET_R(clr));
+			if (all(color>=clr_minmax.xz) && all(color<=clr_minmax.yw))
+			{
+				main_color=mix(main_color,255.0f,convert_float2(color)*_1_DIV_255);
+				if (all(main_color>INTNS_THRSH)) break;
+			}
+		}
+
+		/* further movement */
+		if (t_max.x<=t_max.y)
+		{
+			if (t_max.x<=t_max.z)
+			{
+				ind.x+=ind_step.x;
+				if (abs_diff(ind.x+ind.x,num01.x)>num1.x) break;
+				t_max.x+=t_delta.x;
+				to_centre.x+=ind_step_flt.x;
+				mtr_indx+=ind_step.x;
+			}
+			else
+			{
+				ind.z+=ind_step.z;
+				if (abs_diff(ind.z+ind.z,num01.z)>num1.z) break;
+				t_max.z+=t_delta.z;
+				to_centre.z+=ind_step_flt.z;
+				mtr_indx+=xy_num;
+			}
+		}
+		else
+		{
+			if (t_max.y<=t_max.z)
+			{
+				ind.y+=ind_step.y;
+				if (abs_diff(ind.y+ind.y,num01.y)>num1.y) break;
+				t_max.y+=t_delta.y;
+				to_centre.y+=ind_step_flt.y;
+				mtr_indx+=yl_num;
+			}
+			else
+			{
+				ind.z+=ind_step.z;
+				if (abs_diff(ind.z+ind.z,num01.z)>num1.z) break;
+				t_max.z+=t_delta.z;
+				to_centre.z+=ind_step_flt.z;
+				mtr_indx+=xy_num;
+			}
+		}
+	}
+
+	if (all(main_color==0.0f))
+	{
+		pixels[t_id.y*img_w+t_id.x]=0xff969696;
+		//write_imageui(pixels,t_id,(uint4)(0x96,0x96,0x96,0xff));
+	}
+	else
+	{
+		pixels[t_id.y*img_w+t_id.x]=0xff000000 | (((uint)trunc(main_color.x+0.5f))<<8u) | 
+												 (((uint)trunc(main_color.y+0.5f))<<16u);
+		//write_imageui(pixels,t_id,(uint4)(0,(uint)trunc(main_color.x+0.5f),(uint)trunc(main_color.y+0.5f),0xff));
+	}
+}
+
+
+/* main render function (builds a volume; "points" are represented as so called "lights" 
+   ("lights" are spheres but their intensity descends from centre to border)) */
+__kernel void RenderBox_lights_vol (const float16 data, const int3 num, const uchar4 clr_minmax, 
+									__global const ushort *clr_matrix, 
+									__global uint *pixels/*__write_only image2d_t pixels*/)
+{
+	GET_SIZES_AND_INDICES
+
+	/** all computations will be in bounding box coordinate system! **/
+
+	/* transform ray coordinates */
+	TRANSF_RAY_COORDS
+
+	float ttime,t;
+	float3 ray_pos;
+
+	/* find intersection of the ray and the main bounding box */
+	if (any(fabs(ray_pos_const)>h_sizes))
+	{
+		t=IntersectBB(ray_dir,ray_pos_const,h_sizes);
+
+		if (t>1.0e+29f)
+		{
+			// no hit - dark gray color
+			pixels[t_id.y*img_w+t_id.x]=0xff969696;
+			//write_imageui(pixels,t_id,(uint4)(0x96,0x96,0x96,0xff));
+			return;
+		}
+
+		/* move ray origin on the bounding box */
+		ray_pos=ray_dir*t+ray_pos_const+h_sizes;
+	}
+	else ray_pos=ray_pos_const+h_sizes;
+
+	/** traversing the ray in regular grid using a little modified
+	    3DDA algorithm (http://ray-tracing.com/articles182.html) **/
+
+	/* find indexes of the nearest cube to the 'ray_pos' point */
+	const int3 num01=num-1;
+	int3 ind=clamp(convert_int3(trunc(ray_pos/point_step)),0,num01);
+
+	/* initialize misc */
+	const float point_radius_sqr=data.sd;
+
+	const int3 ind_step=1-(signbit(ray_dir) & 0x2);
+
+	float3 to_centre=point_step*(convert_float3(ind)+0.5f)-ray_pos;
+	const float3 ind_step_flt=point_step*convert_float3(ind_step);
+
+	float3 t_max=(to_centre+ind_step_flt*0.5f)/ray_dir;
+	const float3 t_delta=ind_step_flt/ray_dir;
+
+	const int xy_num=num.x*num.y*ind_step.z;
+	const int yl_num=num.x*ind_step.y;
+
+	int mtr_indx=(ind.z*num.y+ind.y)*num.x+ind.x;
+
+	float2 main_color=(float2)(0.0f,0.0f);
+
+	const uint3 num1=convert_uint3(num01);
+
+	/* traverse */
+	ushort clr;
+	uchar2 color;
+	for ( ; ; )
+	{
+		/* shading */
+		ttime=dot(to_centre,ray_dir);
+		t=dot(to_centre,to_centre)-ttime*ttime;
+		if (t<point_radius_sqr)
+		{
+			clr=clr_matrix[mtr_indx];
+			color=(uchar2)((uchar)GET_G(clr),(uchar)GET_R(clr));
+			if (all(color>=clr_minmax.xz) && all(color<=clr_minmax.yw))
+			{
+				/* fading of intensity (~1/r^2) */
+				main_color=mix(main_color,255.0f,
+							   convert_float2(color)*_1_DIV_255*(point_radius_sqr-t)/point_radius_sqr);
+				if (all(main_color>INTNS_THRSH)) break;
+			}
+		}
+
+		/* further movement */
+		if (t_max.x<=t_max.y)
+		{
+			if (t_max.x<=t_max.z)
+			{
+				ind.x+=ind_step.x;
+				if (abs_diff(ind.x+ind.x,num01.x)>num1.x) break;
+				t_max.x+=t_delta.x;
+				to_centre.x+=ind_step_flt.x;
+				mtr_indx+=ind_step.x;
+			}
+			else
+			{
+				ind.z+=ind_step.z;
+				if (abs_diff(ind.z+ind.z,num01.z)>num1.z) break;
+				t_max.z+=t_delta.z;
+				to_centre.z+=ind_step_flt.z;
+				mtr_indx+=xy_num;
+			}
+		}
+		else
+		{
+			if (t_max.y<=t_max.z)
+			{
+				ind.y+=ind_step.y;
+				if (abs_diff(ind.y+ind.y,num01.y)>num1.y) break;
+				t_max.y+=t_delta.y;
+				to_centre.y+=ind_step_flt.y;
+				mtr_indx+=yl_num;
+			}
+			else
+			{
+				ind.z+=ind_step.z;
+				if (abs_diff(ind.z+ind.z,num01.z)>num1.z) break;
+				t_max.z+=t_delta.z;
+				to_centre.z+=ind_step_flt.z;
+				mtr_indx+=xy_num;
+			}
+		}
+	}
+
+	if (all(main_color==0.0f))
+	{
+		pixels[t_id.y*img_w+t_id.x]=0xff969696;
+		//write_imageui(pixels,t_id,(uint4)(0x96,0x96,0x96,0xff));
+	}
+	else
+	{
+		pixels[t_id.y*img_w+t_id.x]=0xff000000 | (((uint)trunc(main_color.x+0.5f))<<8u) | 
+												 (((uint)trunc(main_color.y+0.5f))<<16u);
+		//write_imageui(pixels,t_id,(uint4)(0,(uint)trunc(main_color.x+0.5f),(uint)trunc(main_color.y+0.5f),0xff));
+	}
+}
+

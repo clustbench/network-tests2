@@ -1,0 +1,35 @@
+
+<project name="network_viewer" default="compile">
+
+    <property name="name" value="network_viewer"/>
+
+
+    <target name="clean">
+        <delete dir="dist"/>
+        <delete dir="classes"/>
+	<delete file="network_viewer.jar"/>
+    </target>
+
+    <target name="compile">
+        <mkdir dir="classes"/>
+        <javac
+			srcdir="."
+			destdir="classes"
+			debug="true"			
+		/>
+		<copy todir="classes/images">
+		 <fileset dir="images"/>
+		</copy> 
+	 </target>
+
+	 <target name="dist" depends="compile">
+	 	<jar destfile="network_viewer.jar">
+			<fileset dir="classes" />
+			<manifest>
+				<attribute name="Main-Class"  value="Network_viewer"/>
+			</manifest>
+		</jar>
+	 </target>
+
+</project>
+
