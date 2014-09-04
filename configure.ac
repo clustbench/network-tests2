@@ -92,6 +92,7 @@ fi
 # Checks for libraries.
 # FIXME: Replace `main' with a function in `-lnetcdf':
 AC_CHECK_LIB([netcdf], [nc_open])
+AC_CHECK_LIB([qwt-qt4],[QwtPlot::axisScaleEngine])
 # FIXME: Replace `main' with a function in `-lparus_network':
 #AC_CHECK_LIB([parus_network], [main])
 
