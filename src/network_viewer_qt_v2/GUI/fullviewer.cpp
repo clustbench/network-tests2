@@ -1,7 +1,7 @@
 #include "fullviewer.h"
 #include "../core/data_netcdf.h"
 #include "../core/data_text.h"
-#include "../core/opencl_defs.h"
+//#include "../core/opencl_defs.h"
 #ifdef _OPENCL // defined in "../core/opencl_defs.h"!
   #include "../core/renderer_OpenCL.h"
 #endif
