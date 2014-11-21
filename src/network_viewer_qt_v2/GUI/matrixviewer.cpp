@@ -309,14 +309,15 @@ void MatrixViewer::ShowZoom () {
 void MatrixViewer::SaveImage() {
     QString fileName;
 
-    fileName = QFileDialog::getSaveFileName(this, tr("Nome file da esportare"), QString(),"Graphic files (*.png )");
+    fileName = QFileDialog::getSaveFileName(this, tr("Имя файла для сохранения"), QString(),"Graphic files (*.png )");
 
     if ( !fileName.isEmpty() )
     {
     const int width = ui->pic_width->value();
     const int heigth = ui->pic_height->value();
 
-    QPixmap pixmap = QPixmap::grabWidget(ui->Plot);
+    QPixmap pixmap = QPixmap::grabWidget(ui->frame_1);
+
 
     if ( pixmap.scaled(width,heigth).save(fileName, "png" ))
     qDebug()<<"ok";

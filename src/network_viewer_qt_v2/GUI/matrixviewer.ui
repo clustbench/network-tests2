@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>454</width>
-    <height>538</height>
+    <height>536</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -16,33 +16,35 @@
     <height>377</height>
    </size>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_2" stretch="1,0,0,0">
+  <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,0,0,0">
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout">
-     <item>
-      <widget class="QwtSlider" name="S_Left">
-       <property name="orientation">
-        <enum>Qt::Vertical</enum>
-       </property>
-       <property name="scalePosition">
-        <enum>QwtSlider::LeftScale</enum>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QwtPlot" name="Plot"/>
-     </item>
-     <item>
-      <widget class="QwtSlider" name="S_Right">
-       <property name="orientation">
-        <enum>Qt::Vertical</enum>
-       </property>
-       <property name="scalePosition">
-        <enum>QwtSlider::RightScale</enum>
-       </property>
-      </widget>
-     </item>
-    </layout>
+    <widget class="QFrame" name="frame_1">
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <widget class="QwtSlider" name="S_Left">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="scalePosition">
+         <enum>QwtSlider::LeftScale</enum>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QwtPlot" name="Plot"/>
+      </item>
+      <item>
+       <widget class="QwtSlider" name="S_Right">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="scalePosition">
+         <enum>QwtSlider::RightScale</enum>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_2">

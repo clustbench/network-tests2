@@ -2762,6 +2762,7 @@ void TVWidget::mouseMoveEvent (QMouseEvent *mouse_event) {
 	}
 }
 
+
 void TVWidget::mouseReleaseEvent (QMouseEvent *mouse_event) {
 	if (mouse_event->button()==Qt::LeftButton)
 	{
