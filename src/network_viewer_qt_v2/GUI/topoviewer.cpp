@@ -53,7 +53,10 @@ TVWidget::TVWidget (void) {
 	i_e_color=NULL;
 	i_e_color_val=NULL;
 	mouse_pressed=click_disabled=false;
-	x_move=y_move=-1; // some values to calm down compilers
+    x_move=y_move=-1; // some values to calm down compilers
+    save_menu_btn= new QPushButton(NULL);
+    save_heigth= new QSpinBox(NULL);
+    save_width= new QSpinBox(NULL);
 }
 
 TopologyViewer::TopologyViewer (QWidget *parent, const IData::Type f_type, bool &was_error): QWidget(parent) {
@@ -71,7 +74,6 @@ TopologyViewer::TopologyViewer (QWidget *parent, const IData::Type f_type, bool 
 	m_d_impact=1.0;
 	m_d_imp_tries=0u;
 	hosts_undefined=true;
-	
 	switch (f_type)
     {
       case IData::NetCDF:
@@ -732,6 +734,7 @@ void TopologyViewer::Execute (void) {
     main_wdg.updateGL();
 }
 
+
 // garbage collectors;
 // make instances of these classes AFTER allocations of memory for managed pointers
 // TODO: replace these 2 classes with std::unique_ptr when C++11 will be fully supported
@@ -1382,6 +1385,24 @@ bool TopologyViewer::GetMatrixByValsForEdgsVar (double *matr) {
 		}
     }
     return true;
+}
+void TVWidget::SaveImageMenu (){
+    QWidget *window = new QWidget;
+
+    QHBoxLayout *layout = new QHBoxLayout;
+
+    save_width->setParent(this);
+    save_heigth->setParent(this);
+    save_width->setMaximum(10000);
+    save_heigth->setMaximum(10000);
+    save_menu_btn->setParent(this);
+    save_menu_btn->setText(tr("Save!"));
+    layout->addWidget(save_width);
+    layout->addWidget(save_heigth);
+    layout->addWidget(save_menu_btn);
+    window->setLayout(layout);
+    connect(save_menu_btn,SIGNAL(clicked()),this,SLOT(SaveImage()));
+    window->show();
 }
 
 bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact, 
@@ -2727,6 +2748,16 @@ void TVWidget::mousePressEvent (QMouseEvent *mouse_event) {
 		x_move=mouse_event->x();
 		y_move=mouse_event->y();
 	}
+    if (mouse_event->button()==Qt::RightButton)
+    {
+        QMenu* contextMenu = new QMenu ( this );
+        Q_CHECK_PTR ( contextMenu );
+          contextMenu->addAction ( "Save" , this , SLOT(SaveImageMenu()) );
+          contextMenu->popup( QCursor::pos() );
+          contextMenu->exec ();
+          delete contextMenu;
+          contextMenu = 0;
+    }
 }
 
 void TVWidget::mouseMoveEvent (QMouseEvent *mouse_event) {
@@ -2761,6 +2792,7 @@ void TVWidget::mouseMoveEvent (QMouseEvent *mouse_event) {
 		updateGL();
 	}
 }
+
 
 void TVWidget::mouseReleaseEvent (QMouseEvent *mouse_event) {
 	if (mouse_event->button()==Qt::LeftButton)
