@@ -35,9 +35,6 @@
 #include <cmath>
 #include "qexpandbox.h"
 #include "mainwindow.h"
-#include <QFileDialog>
-#include <QDebug>
-#include <QSpinBox>
 
 /* zooming options */
 #define INC true
@@ -70,17 +67,12 @@ class FullViewer: public QWidget {
 	  QPainter *painter; // "easel"
 	  QPushButton *draw_box_btn; // "Render!" button for calls to main render function
 	  QPushButton *controls_btn; // shows hot keys and mouse usage
-
-      QPushButton *save_btn; // open save menu window with QSpinBoxes for setting resolution
-      QPushButton *save_menu_btn; // button for save image as png
-      QSpinBox    *save_width ; // width in pixels for image
-      QSpinBox    *save_heigth ; // heigth in pixels for image
-
+	  
 	  QExpandBox *info_wdg; // container of info and options widgets
 	  
 	  QTextEdit *info; // file information
 	  
-      HostsBrowser *hosts; // enumerated (from 1) hosts' names
+	  HostsBrowser *hosts; // enumerated (from 1) hosts' names
 	  unsigned int hosts_ind; // index of 'hosts' in 'info_wdg' for enabling/disabling 'hosts'
 	  QPushButton *hosts_info; // informs that the text in 'hosts' is selectable and 
 	  						   // selecting it means selecting "points"
@@ -495,30 +487,6 @@ class FullViewer: public QWidget {
 						  "<div><span style=\"color:darkred\">Press left mouse key and move mouse</span> - rotation</div>"
 						  "<div><span style=\"color:darkred\">'Esc'</span> - close this tab</div>"));
 	  }
-
-      void SaveImageMenu ();
-
-      void SaveImage (void) {
-          QString fileName;
-
-          fileName = QFileDialog::getSaveFileName(this, tr("Name of file for saving"), QString(),"Graphic files (*.png )");
-
-          if ( !fileName.isEmpty() ){
-              QPixmap pixmap = QPixmap::grabWidget(this);
-
-              const int width =save_width->value();
-              const int heigth = save_heigth->value();
-
-              if ( pixmap.scaled(width,heigth).save(fileName, "png" )){
-                qDebug()<<"ok";
-              }
-              else
-              {
-                 qDebug()<<"Uhmm";
-              }
-          }
-     }
-
 	  
 	  // shows information that the text in 'hosts' is selectable and selecting it means selecting of "points"
 	  void ShowHostsInfo (void) {

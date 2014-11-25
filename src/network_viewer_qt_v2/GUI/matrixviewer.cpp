@@ -1,6 +1,4 @@
 #include "matrixviewer.h"
-#include <QFileDialog>
-#include <QDebug>
 #include <cfloat>
 
 void MatrixViewer::Init (const QString &title, MatrixRaster* data[2]) {
@@ -106,8 +104,6 @@ void MatrixViewer::Init (const QString &title, MatrixRaster* data[2]) {
 
 	connect(ui->SB_yFrom,SIGNAL(valueChanged(int)),this,SIGNAL(RowChng(int))); // 'y' means 'row'!
 	connect(ui->SB_xFrom,SIGNAL(valueChanged(int)),this,SIGNAL(ColChng(int))); // 'x' means 'column'!
-
-    connect(ui->pic_save,SIGNAL(clicked()),this,SLOT(SaveImage()));
 
 	ShowInfo();
 
@@ -304,29 +300,6 @@ void MatrixViewer::ShowZoom () {
 	if (tmp_m_r_list[1]!=NULL) delete tmp_m_r_list[1];
 
 	//ui->Plot->adjustSize();
-}
-
-void MatrixViewer::SaveImage() {
-    QString fileName;
-
-    fileName = QFileDialog::getSaveFileName(this, tr("Name of file for saving"), QString(),"Graphic files (*.png )");
-
-    if ( !fileName.isEmpty() )
-    {
-        const int width = ui->pic_width->value();
-        const int heigth = ui->pic_height->value();
-
-        QPixmap pixmap = QPixmap::grabWidget(ui->frame_1);
-
-
-        if ( pixmap.scaled(width,heigth).save(fileName, "png" )){
-           qDebug()<<"ok";
-        }
-        else
-        {
-            qDebug()<<"Uhmm";
-        }
-    }
 }
 
 MatrixViewer::~MatrixViewer () {

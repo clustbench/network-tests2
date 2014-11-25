@@ -118,6 +118,5 @@ class MatrixViewer: public QWidget {
 	  void SetAim ();
 	  void DrawSelectionRect ();
 	  void ShowZoom ();
-      void SaveImage ();
 };
 

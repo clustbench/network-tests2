@@ -1,7 +1,7 @@
 #include "fullviewer.h"
 #include "../core/data_netcdf.h"
 #include "../core/data_text.h"
-//#include "../core/opencl_defs.h"
+#include "../core/opencl_defs.h"
 #ifdef _OPENCL // defined in "../core/opencl_defs.h"!
   #include "../core/renderer_OpenCL.h"
 #endif
@@ -16,9 +16,7 @@
 #include <QTextCursor>
 #include <QStyle>
 #include <QLabel>
-#include <QSpinBox>
 #include "err_msgs.h"
-
 
 #define SEND_ERR_MSG(err) emit SendMessToLog(MainWindow::Error,my_sign,ErrMsgs::ToString(NV::err))
 #define SEND_ERR_MSG1(err,arg) emit SendMessToLog(MainWindow::Error,my_sign,ErrMsgs::ToString(NV::err,1,&arg))
@@ -45,11 +43,7 @@ FullViewer::FullViewer (QWidget *parent, const int mode, bool &was_error): QWidg
 	img_w=640u;
 	img_h=480u;
 	draw_box_btn=NULL;
-    controls_btn=NULL;
-    save_btn=NULL;
-    save_menu_btn=NULL;
-    save_width=NULL;
-    save_heigth=NULL;
+	controls_btn=NULL;
 	hosts=NULL;
 	info_wdg=NULL;
 	info=NULL;
@@ -115,11 +109,6 @@ FullViewer::FullViewer (QWidget *parent, const int mode, bool &was_error): QWidg
 		info=new QTextEdit(NULL);
 		dev_info=new QTextEdit(NULL);
 		controls_btn=new QPushButton(NULL);
-        save_btn= new QPushButton(NULL);
-        save_menu_btn= new QPushButton(NULL);
-        save_heigth= new QSpinBox(NULL);
-        save_width= new QSpinBox(NULL);
-
 		hosts_info=new QPushButton(NULL);
 		opts=new RenderOpts(IMAGE_OFFS-5,mode,was_error);
 	}
@@ -128,7 +117,6 @@ FullViewer::FullViewer (QWidget *parent, const int mode, bool &was_error): QWidg
 	draw_box_btn->setAutoFillBackground(true);
 	info_wdg->setAutoFillBackground(true);
 	controls_btn->setAutoFillBackground(true);
-    save_btn->setAutoFillBackground(true);
 	opts->setAutoFillBackground(true);
 
 	/* initialize "advanced QToolBox" */
@@ -137,7 +125,7 @@ FullViewer::FullViewer (QWidget *parent, const int mode, bool &was_error): QWidg
 	if (hosts_ind==QExpandBox::Error) { NOT_ENOUGH_MEMORY; }
 	if (info_wdg->addItem(tr("Device"),dev_info)==QExpandBox::Error) { NOT_ENOUGH_MEMORY; }
 	opts_ind=info_wdg->addItem(tr("Render options"),opts);
-    if (opts_ind==QExpandBox::Error) { NOT_ENOUGH_MEMORY; }
+	if (opts_ind==QExpandBox::Error) { NOT_ENOUGH_MEMORY; }
 }
 
 bool FullViewer::Init (const QString &data_filename, const QString &deviat_filename, 
@@ -157,14 +145,13 @@ bool FullViewer::Init (const QString &data_filename, const QString &deviat_filen
 	hosts->setFixedSize(IMAGE_OFFS-3,127);
 	hosts->setReadOnly(true);
 	hosts->setTextInteractionFlags(Qt::NoTextInteraction);
-    info_wdg->addButtonChild(hosts_ind,hosts_info);
-    hosts_info->setFixedSize(26,26);
+	info_wdg->addButtonChild(hosts_ind,hosts_info);
+	hosts_info->setFixedSize(26,26);
 	hosts_info->setIcon(style()->standardIcon(QStyle::SP_MessageBoxInformation));
 	hosts_info->setStyleSheet("border: node; background: none");
 	hosts_info->move(hosts->width()-35,2);
 	hosts_info->hide();
 	connect(hosts_info,SIGNAL(clicked()),this,SLOT(ShowHostsInfo()));
-
 	
 	NV::ErrCode err=NV::Success;
 	
@@ -337,14 +324,6 @@ bool FullViewer::Init (const QString &data_filename, const QString &deviat_filen
 	controls_btn->setFont(font1);
 	controls_btn->setText(tr("Controls..."));
 	connect(controls_btn,SIGNAL(clicked()),this,SLOT(ShowControls()));
-
-    save_btn->setParent(this);
-    save_btn->move(10,440);
-    save_btn->setFixedHeight(20);
-    save_btn->setFont(font1);
-    save_btn->setText(tr("Save Image"));
-    connect(save_btn,SIGNAL(clicked()),this,SLOT(SaveImageMenu()));
-
 
 	/* device info browser */
 	dev_info->setParent(this);
@@ -1143,25 +1122,6 @@ void FullViewer::PointInfo (const Coords &pos) {
 	}
 	pt_info->setText(txt);
 	pt_info->show();
-}
-
-void FullViewer::SaveImageMenu(){
-    QWidget *window = new QWidget;
-
-    QHBoxLayout *layout = new QHBoxLayout;
-
-    save_width->setParent(this);
-    save_heigth->setParent(this);
-    save_width->setMaximum(10000);
-    save_heigth->setMaximum(10000);
-    save_menu_btn->setParent(this);
-    save_menu_btn->setText(tr("Save!"));
-    layout->addWidget(save_width);
-    layout->addWidget(save_heigth);
-    layout->addWidget(save_menu_btn);
-    window->setLayout(layout);
-    connect(save_menu_btn,SIGNAL(clicked()),this,SLOT(SaveImage()));
-    window->show();
 }
 
 FullViewer::~FullViewer () {
