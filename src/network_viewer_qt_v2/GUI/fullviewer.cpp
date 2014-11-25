@@ -1161,9 +1161,7 @@ void FullViewer::SaveImageMenu(){
     layout->addWidget(save_menu_btn);
     window->setLayout(layout);
     connect(save_menu_btn,SIGNAL(clicked()),this,SLOT(SaveImage()));
-
     window->show();
-
 }
 
 FullViewer::~FullViewer () {

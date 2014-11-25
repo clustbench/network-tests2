@@ -28,6 +28,9 @@
 #include <QGLWidget>
 #include <QDialog>
 #include <QHBoxLayout>
+#include <QFileDialog>
+#include <QDebug>
+#include <QSpinBox>
 class QKeyEvent;
 class QMouseEvent;
 
@@ -36,6 +39,8 @@ class QMouseEvent;
    You should consider TVWidget class and
    TopologyViewer class as a single class  */
 class TVWidget: public QGLWidget {
+    Q_OBJECT
+
 	friend class TopologyViewer;
 	
   private:
@@ -75,6 +80,10 @@ class TVWidget: public QGLWidget {
       bool mouse_pressed; // 'true' while mouse button is pressed
       bool click_disabled; // 'true' if mouse was moved while its button is pressed
       int x_move,y_move; // mouse movement while its button is pressed
+      /* save picture parametrs and button*/
+      QPushButton *save_menu_btn; // button for save image as png
+      QSpinBox    *save_width ; // width in pixels for image
+      QSpinBox    *save_heigth ; // heigth in pixels for image
       
   private:
       Q_DISABLE_COPY(TVWidget)
@@ -130,6 +139,30 @@ class TVWidget: public QGLWidget {
       
       // processes left mouse button's releases
       virtual void mouseReleaseEvent (QMouseEvent*);
+  private Q_SLOTS:
+    void SaveImageMenu ();
+
+    void SaveImage (void) {
+        QString fileName;
+
+        fileName = QFileDialog::getSaveFileName(this, tr("Name of file for saving"), QString(),"Graphic files (*.png )");
+
+        if ( !fileName.isEmpty() )
+        {
+            QPixmap pixmap = QPixmap::grabWidget(this);
+
+            const int width =save_width->value();
+            const int heigth = save_heigth->value();
+
+            if ( pixmap.scaled(width,heigth).save(fileName, "png" )){
+                qDebug()<<"ok";
+            }
+            else
+            {
+                qDebug()<<"Uhmm";
+            }
+        }
+    }
 };
 
 /* A class for retrieving topology graphs from 
@@ -233,9 +266,10 @@ class TopologyViewer: public QWidget {
       
       // destructor
       ~TopologyViewer ();
-      
+
   private:
       Q_SLOT void Execute (void);
+
       
       //
       // returns 'false' if there was not enough memory
@@ -265,7 +299,7 @@ class TopologyViewer: public QWidget {
   	  
   	  // 'Esc' will close the tab with this viewer; 
   	  // is connected to MainWindow::CloseTab()
-  	  void CloseOnEscape (QWidget*);
+      void CloseOnEscape (QWidget*);
 };
 
 /* 'Options' dialog for TopologyViewer */
@@ -278,6 +312,6 @@ class TopoViewerOpts: public QDialog {
   public:
   	  TopoViewerOpts (QWidget *parent): QDialog(parent) {}
   	  
-  	  Q_SLOT void ShowMaxDistHelp (void);
+      Q_SLOT void ShowMaxDistHelp (void);
 };
 
