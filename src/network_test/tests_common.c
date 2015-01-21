@@ -5,6 +5,9 @@
 #include "my_time.h"
 #include "types.h"
 
+int comm_size;
+int comm_rank;
+
 
 int my_time_cmp(const void *a, const void *b)
 {

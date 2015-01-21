@@ -58,8 +58,8 @@
 #include "tests_common.h"
 #include "parse_arguments.h"
 
-int comm_size;
-int comm_rank;
+extern int comm_size;
+extern int comm_rank;
 
 
 
