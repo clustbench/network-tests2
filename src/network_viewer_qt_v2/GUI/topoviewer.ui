@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>464</width>
-    <height>421</height>
+    <width>454</width>
+    <height>411</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -27,7 +27,7 @@
    <item>
     <widget class="QTabWidget" name="mainWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>3</number>
      </property>
      <property name="usesScrollButtons">
       <bool>false</bool>
@@ -405,7 +405,7 @@ unconnected vertices</string>
         </rect>
        </property>
        <property name="frameShape">
-        <enum>QFrame::Box</enum>
+        <enum>QFrame::StyledPanel</enum>
        </property>
        <property name="frameShadow">
         <enum>QFrame::Sunken</enum>
@@ -643,6 +643,66 @@ redraw</string>
        </property>
       </widget>
      </widget>
+     <widget class="QWidget" name="tabPrt">
+      <attribute name="title">
+       <string>Partitioning</string>
+      </attribute>
+      <widget class="QSpinBox" name="prtNmbSB">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>170</x>
+         <y>40</y>
+         <width>55</width>
+         <height>22</height>
+        </rect>
+       </property>
+       <property name="maximum">
+        <number>999</number>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>40</y>
+         <width>151</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Select number of parts</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="OK4">
+       <property name="geometry">
+        <rect>
+         <x>340</x>
+         <y>340</y>
+         <width>89</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>OK</string>
+       </property>
+      </widget>
+      <widget class="QCheckBox" name="prtCB">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>10</y>
+         <width>221</width>
+         <height>18</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Turn on partitioning algorithm</string>
+       </property>
+      </widget>
+     </widget>
     </widget>
    </item>
   </layout>
@@ -742,6 +802,38 @@ redraw</string>
     <hint type="destinationlabel">
      <x>276</x>
      <y>92</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>OK4</sender>
+   <signal>clicked()</signal>
+   <receiver>TopoOptions</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>392</x>
+     <y>380</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>229</x>
+     <y>208</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>prtCB</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>prtNmbSB</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>138</x>
+     <y>47</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>205</x>
+     <y>79</y>
     </hint>
    </hints>
   </connection>
