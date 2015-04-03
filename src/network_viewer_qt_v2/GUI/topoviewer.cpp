@@ -1,7 +1,9 @@
 #include "topoviewer.h"
 #include "../core/data_text.h"
 #include <netcdf.h>
+#include <metis.h>
 #include <cmath>
+#include <math.h>
 #include <cfloat>
 #include <set>
 #include <QKeyEvent>
@@ -16,6 +18,10 @@
 #include "err_msgs.h"
 
 const QString TopologyViewer::my_sign("Topo");
+GLint viewport[4];
+QPoint mp;
+GLint hits=0;
+GLint clusterNumber;
 
 void TopoViewerOpts::keyPressEvent (QKeyEvent *e) {
 	if (e->key()==Qt::Key_Escape) return; // ignore pressing 'Esc'
@@ -42,6 +48,7 @@ void TopoViewerOpts::ShowMaxDistHelp (void) {
 TVWidget::TVWidget (void) {
 	x_num=z_num=0u;
 	edge_counts=NULL;
+    partitioning_vector=NULL;
 	points_x=points_y=points_z=NULL;
 	geom_c_z=0.0f;
 	shift_x=shift_y=shift_z=0.0f;
@@ -57,6 +64,11 @@ TVWidget::TVWidget (void) {
     save_menu_btn= new QPushButton(NULL);
     save_heigth= new QSpinBox(NULL);
     save_width= new QSpinBox(NULL);
+    matr= new double;
+    mp.setX(0);
+    mp.setY(0);
+    reduced_matr=new double;
+    connect(this,SIGNAL(ClickOnVertex(int)),SLOT(MapReducedGraph(int)));
 }
 
 TopologyViewer::TopologyViewer (QWidget *parent, const IData::Type f_type, bool &was_error): QWidget(parent) {
@@ -104,13 +116,14 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
     int num_repeats=-1;
     
     int ind_of_slash=data_filename.lastIndexOf('/');
+
     if (ind_of_slash<0)
     {
     	ind_of_slash=data_filename.lastIndexOf('\\');
     	if (ind_of_slash<0) ind_of_slash=-1;
     }
     fname_for_tvwidget=data_filename.right(data_filename.length()-(ind_of_slash+1));
-    
+
     if (txt_files==NULL)
     {
 		// reading NetCDF file(s)...
@@ -187,9 +200,9 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 			SEND_ERR_MSG1(No3DData,data_filename);
 		    return false;
 		}
-		main_wdg.x_num=len;
+        main_wdg.x_num=len;
 		nc_inq_dimlen(ncdf_files->v_file,dim_id[2],&len);
-		if (main_wdg.x_num!=len)
+        if (main_wdg.x_num!=len)
 		{
 			SEND_ERR_MSG1(DiffWdHght,data_filename);
 		    return false;
@@ -476,7 +489,7 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 		
 		txt_files->flt_pt=*(localeconv()->decimal_point);
     }
-    
+
     QString msg=tr(" file \"");
 	(msg+=data_filename)+=tr("\" is loaded");
 	emit SendMessToLog(MainWindow::Success,my_sign,msg);
@@ -556,13 +569,14 @@ void TopologyViewer::Execute (void) {
 							   static_cast<double>(main_wdg.z_num*opts_ui.probabSB->value())*0.01+0.5));
 	else main_wdg.min_edg_count=1u;
 	main_wdg.show_host_names=opts_ui.showVertLblsCB->isChecked();
-	delete options;
-	options=NULL;
+
+
 	
 	/* go! */
 	const unsigned int xy_num=main_wdg.x_num*main_wdg.x_num;
     double *matr=static_cast<double*>(malloc(xy_num*sizeof(double))); // matrix of size x_num*x_num
     if (matr==NULL) { NOT_ENOUGH_MEM_CLOSE; }
+
     
     printf("START\n\n");
     if (txt_files==NULL)
@@ -582,7 +596,7 @@ void TopologyViewer::Execute (void) {
 				free(matr);
 				NOT_ENOUGH_MEM_CLOSE;
 			}
-		}
+        }
     }
     else
     {
@@ -684,15 +698,14 @@ void TopologyViewer::Execute (void) {
     fclose(ff);
     ff=NULL;
     
-    printf("WRITTEN\n\n");//return;
-    */
-	
+    printf("WRITTEN\n\n");//return;*/
+
 	
 	printf("BUILD GRAPH\n\n");
-	
-	if (!GetMatrixByValsForEdgsVar(matr))
+
+    if (!GetMatrixByValsForEdgsVar(matr))
 	{
-		free(matr);
+        free(matr);
 		NOT_ENOUGH_MEM_CLOSE;
 	}
     
@@ -704,13 +717,65 @@ void TopologyViewer::Execute (void) {
     unsigned int edg_num=0u; // number of all edges
 	unsigned int edg50_num=0u; // number of edges with length error not less than 50%
 	unsigned int edg99_num=0u; // number of edges with length error not less than 99%
-	
-    if (!main_wdg.MapGraphInto3D(matr,m_d_impact,edg_num,edg50_num,edg99_num))
+    //allocate memory for reduced matr
+    unsigned int xy_reduced_matr=0;
+    if (opts_ui.prtCB->isChecked() && opts_ui.prtNmbSB->value()>0)
     {
-    	free(matr);
-		NOT_ENOUGH_MEM_CLOSE;
+        xy_reduced_matr=opts_ui.prtNmbSB->value()*opts_ui.prtNmbSB->value();
     }
-    free(matr);
+    double *reduced_matr=static_cast<double*>(malloc(xy_reduced_matr*sizeof(double)));
+    if (reduced_matr==NULL) { NOT_ENOUGH_MEM_CLOSE; }
+    int *size_of_partition=(int*)malloc(main_wdg.nmb_prt*sizeof(int));
+    if (size_of_partition==NULL) { NOT_ENOUGH_MEM_CLOSE; }
+    QVector<int> flag_cluster;
+    QVector<QVector<double> > open_vertex;
+    if (opts_ui.prtCB->isChecked() && opts_ui.prtNmbSB->value()>0)
+    {
+        GraphPartitioning(matr,reduced_matr,opts_ui.prtNmbSB->value(),size_of_partition);
+        QVector<double> row;
+        for(int i=0;i<main_wdg.nmb_prt;i++)
+        {
+            for(int j=0;j<main_wdg.nmb_prt;j++)
+            {
+                row<<reduced_matr[i*main_wdg.nmb_prt+j];
+            }
+            open_vertex<<row;
+            row.clear();
+            flag_cluster<<1;
+        }
+    }
+    main_wdg.matr=matr;
+    main_wdg.size_of_partitioning=size_of_partition;
+    main_wdg.open_vertex=open_vertex;
+    main_wdg.flag_cluster=flag_cluster;
+    main_wdg.m_d_impact=m_d_impact;
+    main_wdg.edg50_num=edg50_num;
+    main_wdg.edg99_num=edg99_num;
+    main_wdg.edg_num=edg_num;
+
+    if (opts_ui.prtCB->isChecked() && opts_ui.prtNmbSB->value()>0)
+    {
+        main_wdg.real_vertex_num=main_wdg.x_num;
+        main_wdg.x_num=main_wdg.nmb_prt;
+        if (!main_wdg.MapGraphInto3D(reduced_matr,m_d_impact,edg_num,edg50_num,edg99_num))
+        {
+            //free(matr);
+            NOT_ENOUGH_MEM_CLOSE;
+        }
+        //free(matr);
+    }
+    else
+    {
+        if (!main_wdg.MapGraphInto3D(matr,m_d_impact,edg_num,edg50_num,edg99_num))
+        {
+            //free(matr);
+            NOT_ENOUGH_MEM_CLOSE;
+        }
+        //free(matr);
+    }
+    delete options;
+    options=NULL;
+
     if (edg50_num!=0u)
 	{
 		const double r_edg_num=100.0/static_cast<double>(edg_num);
@@ -729,7 +794,7 @@ void TopologyViewer::Execute (void) {
 		(mes+="<br><br>")+=tr("(the graph has <b>%1</b> edges in all)<br>").arg(edg_num);
 		emit SendMessToLog(MainWindow::Info,my_sign,mes);
 		QMessageBox::information(this,tr("Graph building"),mes);
-	}
+    }
 	
     main_wdg.updateGL();
 }
@@ -1384,6 +1449,7 @@ bool TopologyViewer::GetMatrixByValsForEdgsVar (double *matr) {
 				break;
 		}
     }
+
     return true;
 }
 void TVWidget::SaveImageMenu (){
@@ -1404,6 +1470,13 @@ void TVWidget::SaveImageMenu (){
     connect(save_menu_btn,SIGNAL(clicked()),this,SLOT(SaveImage()));
     window->show();
 }
+void TVWidget::MapReducedGraph(int which_cluster)
+{
+    OpenVertex(matr,reduced_matr,open_vertex,partitioning_vector,flag_cluster,which_cluster,size_of_partitioning);
+    MapGraphInto3D(reduced_matr,m_d_impact,edg_num,edg50_num,edg99_num);
+
+}
+
 
 bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact, 
 							   unsigned int &edg_n, unsigned int &edg50_n, unsigned int &edg99_n) {
@@ -1461,7 +1534,7 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 	static const double small_var=1.0e-6; // lower threshold of difference between
 										  // previous and current value of minimizing function
 	static const double dec_step=1.0/16.0,inc_step=1.5; // adjusting of the step
-	static const unsigned int max_iter=300000u; // maximum number of iterations
+    static const unsigned int max_iter=300000u; // maximum number of iterations
 	double *gradx=static_cast<double*>(malloc(x_num*sizeof(double)));
 	if (gradx==NULL) { free(zz); free(yy); free(xx); return false; }
 	double *grady=static_cast<double*>(malloc(x_num*sizeof(double)));
@@ -1538,21 +1611,21 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 	f*=0.5;
 	f_prev=f;
 
-	QLabel l(this);
-	l.setFixedSize(200,50);
-	l.move((width()-l.width())/2,(height()-l.height())/2);
-	l.setAutoFillBackground(true);
-	l.show();
+//	QLabel l(this);
+//	l.setFixedSize(200,50);
+//	l.move((width()-l.width())/2,(height()-l.height())/2);
+//	l.setAutoFillBackground(true);
+//	l.show();
 	
 	clock_t st1;
 	for (k=0u; k!=max_iter; ++k)
 	{
 		if ((k & 0x1f)==0u)
 		{
-			l.setText(QString("<div align=\"center\">iter %1 / %2</div><br><div align=\"left\">func: %3</div>").
-					  arg(k).arg(max_iter).arg(f,0,'g',12));
+            //l.setText(QString("<div align=\"center\">iter %1 / %2</div><br><div align=\"left\">func: %3</div>").
+            //		  arg(k).arg(max_iter).arg(f,0,'g',12));
 			// immediate processing of all paint events and such
-			QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents,1);
+            //QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents,1);
 		}
 		st1=clock();
 		memset(gradx,0,x_num*sizeof(double));
@@ -1653,7 +1726,7 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 	free(grady);
 	free(gradx);
 	
-	l.hide();
+    //l.hide();
 	
 	st=clock()-st;
     
@@ -2688,6 +2761,206 @@ void TopologyViewer::CompareTopologies (void) {
 	ideal_topo_view->updateGL();
 }
 
+void TopologyViewer::GraphPartitioning(double *matr,double *reduced_matr,int prt_nmb, int *size_of_partition) {
+     int result;
+     int col=0;
+     idx_t nvtxs=main_wdg.x_num;
+     idx_t ncon=1;
+     idx_t *xadj=NULL, *vsize=NULL, *adjncy=NULL;
+     idx_t *vwgt=NULL, *adjwgt=NULL;
+
+     idx_t nparts=prt_nmb;
+     real_t *tpwgts=NULL, *ubvec=NULL;
+     idx_t *options=NULL;
+     idx_t objval;
+     idx_t part[nvtxs];
+
+
+     /*QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),
+                                                      "",
+                                                      tr("Files (*.*)"));
+
+     QFile file(fileName);
+     if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+         return;
+     QTextStream in(&file);
+     int row=0;
+     while (!in.atEnd()) {
+
+        QString line = in.readLine();
+        QStringList list;
+        list= line.split(" ");
+        for(int i=0;i<list.size();i++)
+        {
+            QString a = list.at(i);
+            matr[row*list.size()+i]=a.toDouble();
+        }
+        row++;
+     }*/
+
+     for(unsigned i=0;i<main_wdg.x_num;i++)
+     {
+        for(unsigned j=0;j<main_wdg.x_num;j++)
+        {
+            if ((matr[main_wdg.x_num*i+j]*1000000)!=0)
+            {
+                col+=1;
+            }
+        }
+     }
+     xadj = new idx_t[nvtxs+1];
+     adjncy = new idx_t[col];
+     adjwgt = new idx_t[col];
+     col=0;
+     for(unsigned i=0;i<main_wdg.x_num;i++)
+     {
+        for(unsigned j=0;j<main_wdg.x_num;j++)
+        {
+            if (matr[main_wdg.x_num*i+j]!=0)
+            {
+
+                adjncy[col]=j;
+                adjwgt[col]= (idx_t)(matr[i*main_wdg.x_num + j]*1000000);
+                col+=1;
+            }
+        }
+        xadj[0]=0;
+        xadj[i+1]=col;
+     }
+
+     result=METIS_PartGraphKway(&nvtxs,&ncon,xadj,adjncy,vwgt,vsize,adjwgt,&nparts,tpwgts,ubvec,options,&objval,part);
+
+
+     QVector<int> partlist;
+
+     for(int i=0;i<nvtxs;i++)
+     {
+         partlist<<part[i];
+     }
+     for(int i=0;i<prt_nmb;i++)
+     {
+         int ind=partlist.indexOf(i);
+         if(ind==-1)
+         {
+             for(int j=i;j<prt_nmb;j++)
+             {
+                 if(partlist.indexOf(j)==-1)
+                 {
+
+                 }
+                 else
+                 {
+                     for(int k=0;k<nvtxs;k++)
+                     {
+                         if(partlist.at(k)==j)
+                         {
+                             partlist.replace(k,i);
+                         }
+                     }
+                 break;
+                 }
+              }
+         }
+     }
+     for(int i=0;i<nvtxs;i++)
+     {
+         part[i]=partlist.at(i);
+     }
+     qSort(partlist.begin(),partlist.end());
+     main_wdg.partitioning_vector=(int*)malloc(main_wdg.x_num*sizeof(int));
+     memcpy(main_wdg.partitioning_vector,part, sizeof(int)*main_wdg.x_num );
+     main_wdg.nmb_prt=partlist.at(partlist.size()-1)+1;
+     ReduceMatrix(matr,reduced_matr,main_wdg.partitioning_vector,size_of_partition);
+}
+
+void TopologyViewer::ReduceMatrix(double *matr,double *reduced_matr, int *partitioning_vector, int *size_of_partition)
+{
+    int x_num=main_wdg.x_num;
+    int  prev_col=0;
+    double *part_matr=(double*)malloc(main_wdg.x_num*main_wdg.x_num*sizeof(double));
+    double *temp_matr=(double*)malloc(main_wdg.x_num*main_wdg.x_num*sizeof(double));
+
+    int row=0;
+    for(int k=0;k<main_wdg.nmb_prt;k++)
+    {
+        for(int p=0;p<x_num;p++)
+        {
+            if(partitioning_vector[p]==k)
+            {
+                memcpy(&part_matr[row*x_num],&matr[p*x_num],sizeof(double)*x_num);
+                row++;
+            }
+        }
+    }
+    for(int i=0;i<x_num;i++)
+    {
+        for(int j=0;j<x_num;j++)
+        {
+            temp_matr[i*x_num+j]=part_matr[i*x_num+j];
+        }
+    }
+    int col=0;
+    for(int k=0;k<main_wdg.nmb_prt;k++)
+    {
+        prev_col=col;
+        for(int p=0;p<x_num;p++)
+        {
+            if(partitioning_vector[p]==k)
+            {
+                for(int i=0;i<x_num;i++)
+                {
+                    part_matr[i*x_num+col]=temp_matr[i*x_num+p];
+                }
+                col++;
+            }
+        }
+        size_of_partition[k]=col-prev_col;
+    }
+
+    int sum_col_prt=0;
+    int sum_row_prt=0;
+    for(int i=0;i<main_wdg.nmb_prt;i++)
+    {
+        for(int j=0;j<main_wdg.nmb_prt;j++)
+        {
+            if(i==j)
+            {
+                reduced_matr[i*main_wdg.nmb_prt+j]=0;
+            }
+            else
+            {
+                sum_row_prt=0;
+                sum_col_prt=0;
+                for(int k=0;k<i;k++)
+                {
+                    sum_row_prt+=size_of_partition[k];
+                }
+                for(int s=0;s<j;s++)
+                {
+                    sum_col_prt+=size_of_partition[s];
+                }
+                double sum=0;
+                for(int rw=sum_row_prt;rw<sum_row_prt+size_of_partition[i];rw++)
+                {
+                    for(int cl=sum_col_prt;cl<sum_col_prt+size_of_partition[j];cl++)
+                    {
+                        sum+=part_matr[rw*x_num+cl];
+                    }
+                }
+                if (size_of_partition[i]*size_of_partition[j]!=0)
+                {
+                    reduced_matr[i*main_wdg.nmb_prt+j]=(sum/(size_of_partition[i]*size_of_partition[j]));
+                }
+                else
+                {
+                    reduced_matr[i*main_wdg.nmb_prt+j]=0.000001;
+                }
+            }
+
+        }
+    }
+}
+
 void TopologyViewer::keyPressEvent (QKeyEvent *key_event) {
 	if (key_event->key()==Qt::Key_Escape) // 'Esc' was pressed -> close this tab
 	{
@@ -2741,6 +3014,8 @@ void TVWidget::keyPressEvent (QKeyEvent *key_event) {
 }
 
 void TVWidget::mousePressEvent (QMouseEvent *mouse_event) {
+    mp = mouse_event->pos();
+    this->selectFigures();
 	if (mouse_event->button()==Qt::LeftButton)
 	{
 		mouse_pressed=true;
@@ -2879,274 +3154,402 @@ void TVWidget::initializeGL () {
 }
 
 void TVWidget::paintGL () {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	
-	if (points_x==NULL) return;
-	
-	static const float vert_rad=0.025f,edg_rad=0.01f,rad_to_deg=180.0f/M_PI;
-	GLfloat mat_clr_diff[]={32.0f/51.0f,0.0f,0.0f};
-	static const GLfloat mat_clr_spec[]={0.0f,0.0f,0.0f};
-	unsigned int i,j;
-	unsigned int *edgs=edge_counts;
-	float coef;
-	
-	GLUquadric *quadr_obj=gluNewQuadric();
-	
-	glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,mat_clr_spec);
-	
-	if (i_v_color==NULL)
-	{
-		// "real" topology
-		
-		unsigned int from,to;
-		unsigned int *edgs2;
-		float rb,len;
-		static const unsigned int simplex_times=2u;
-		static const float exist_eps=0.5f;
-		bool arrow;
-	
-		// vertices
-		glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,mat_clr_diff);//glColor3ub(160u,0u,0u);
-		for (i=0u; i!=x_num; ++i)
-		{
-			glPushMatrix();
-			glTranslatef(points_x[i],points_y[i],points_z[i]);
-			gluSphere(quadr_obj,vert_rad,4,2);
-			glPopMatrix();
-		}
-	
-		// edges
-		for (i=0u; i!=x_num; ++i)
-		{
-			j=i+1u;
-			edgs+=j;
-			edgs2=edge_counts+(j*x_num+i);
-			for ( ; j!=x_num; ++j,++edgs,edgs2+=x_num)
-			{
-				from=i;
-				to=j;
-				if (*edgs<min_edg_count)
-				{
-					if (*edgs2<min_edg_count)
-						continue; // assume no edge
-					// a simplex channel j->i
-					from=j;
-					to=i;
-					arrow=true;
-				}
-				else
-				{
-					if (*edgs2<min_edg_count)
-						// a simplex channel i->j
-						arrow=true;
-					else
-					{
-						if (*edgs>*edgs2*simplex_times)
-							// a simplex channel i->j
-							arrow=true;
-						else
-						{
-							if (*edgs2>*edgs*simplex_times)
-							{
-								// a simplex channel j->i
-								from=j;
-								to=i;
-								arrow=true;
-							}
-							else
-								// assume a duplex channel
-								arrow=false;
-						}
-					}
-				}
-				glPushMatrix();
-				glTranslatef(points_x[from],points_y[from],points_z[from]);
-				len=sqrtf((points_x[from]-points_x[to])*(points_x[from]-points_x[to])+
-						  (points_y[from]-points_y[to])*(points_y[from]-points_y[to])+
-						  (points_z[from]-points_z[to])*(points_z[from]-points_z[to]));
-				glRotatef(acosf((points_z[to]-points_z[from])/len)*rad_to_deg,
-						  points_y[from]-points_y[to],points_x[to]-points_x[from],0.0f);
-				// magic formula!
-				coef=static_cast<float>(static_cast<double>(*edgs**edgs+*edgs2**edgs2)/
-										static_cast<double>(z_num*(*edgs+*edgs2)));
-				//coef=static_cast<float>(*edgs2)/static_cast<float>(z_num);
-				//printf("%f\n",coef);
-				rb=backgr_clr*(1.0f-coef);
-				if (coef+rb+exist_eps<1.0f)
-				{
-					glDisable(GL_LIGHTING);
-					glColor3f(rb,coef+rb,rb);
-				}
-				else
-				{
-					mat_clr_diff[0]=mat_clr_diff[2]=rb;
-					mat_clr_diff[1]=coef+rb;
-					glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,mat_clr_diff);
-				}
-				gluCylinder(quadr_obj,edg_rad,edg_rad,len,9,1);
-				/*glBegin(GL_LINES);
-				  glVertex3f(0.0f,0.0f,0.0f);
-				  glVertex3f(0.0f,0.0f,len);
-				glEnd();*/
-				if (arrow)
-				{
-					coef=len*0.15f;
-					coef=(coef>1.0f)? 1.0f : coef;
-					glTranslatef(0.0f,0.0f,len-coef+vert_rad);
-					tvCone(edg_rad+edg_rad,coef,9u);
-				}
-				if (!glIsEnabled(GL_LIGHTING)) glEnable(GL_LIGHTING);
-				glPopMatrix();
-			}
-		}
-	
-		// vertices' labels
-		if (show_host_names)
-		{
-			//glDisable(GL_DEPTH_TEST);
-			glDisable(GL_LIGHTING);
-			glColor3fv(mat_clr_spec); // 'mat_clr_spec' consists of zeroes
-			coef=vert_rad*1.3f;
-			for (i=0u; i!=x_num; ++i)
-				renderText(points_x[i]+coef,points_y[i]+coef,points_z[i]+coef,host_names[i]);
-			glEnable(GL_LIGHTING);
-			//glEnable(GL_DEPTH_TEST);
-		}
-	}
-	else
-	{
-		// "ideal" topology
-		
-		quint8 *bit_arr; // iterator for bit arrays
-		quint8 one_byte; // stores '*bit_arr'
-		unsigned int n1; // bit counter
-		bool gray=true; // flag to minimize calls to glMaterialfv() due to color switching
-		unsigned char *clr_arr; // iterator for 'i_e_color_val'
-		static const GLfloat _1_div_255=1.0f/255.0f;
-		
-		// vertices
-		mat_clr_diff[0]=mat_clr_diff[1]=mat_clr_diff[2]=ignore_clr;
-		glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,mat_clr_diff);
-		bit_arr=i_v_color;
-		one_byte=*bit_arr;
-		++bit_arr;
-		n1=0u;
-		for (i=0u; i!=x_num; ++i)
-		{
-			if ((one_byte & 0x1)==0u)
-			{
-				// "ignore" color
-				if (!gray)
-				{
-					gray=true;
-					mat_clr_diff[0]=mat_clr_diff[1]=mat_clr_diff[2]=ignore_clr;
-					glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,mat_clr_diff);
-				}
-			}
-			else
-			{
-				// magenta color
-				if (gray)
-				{
-					gray=false;
-					mat_clr_diff[0]=mat_clr_diff[2]=1.0f;
-					mat_clr_diff[1]=0.0f;
-					glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,mat_clr_diff);
-				}
-			}
-			++n1;
-			if (n1==8u)
-			{
-				n1=0u;
-				one_byte=*bit_arr;
-				++bit_arr;
-			}
-			else
-				one_byte>>=1u;
-			glPushMatrix();
-			glTranslatef(points_x[i],points_y[i],points_z[i]);
-			gluSphere(quadr_obj,vert_rad,4,2);
-			glPopMatrix();
-		}
-				
-		// edges
-		bit_arr=i_e_color;
-		one_byte=*bit_arr;
-		++bit_arr;
-		clr_arr=i_e_color_val;
-		n1=0u;
-		for (i=0u; i!=x_num; ++i)
-		{
-			j=i+1u;
-			for (edgs+=j; j!=x_num; ++j,++edgs)
-			{
-				if (*edgs==0u) continue;
-				switch (one_byte & 0x3)
-				{
-					case 0u: // "ignore" color
-						mat_clr_diff[0]=mat_clr_diff[1]=mat_clr_diff[2]=ignore_clr;
-						break;
-					case 1u: // red color
-						mat_clr_diff[0]=static_cast<GLfloat>(*clr_arr)*_1_div_255;
-						++clr_arr;
-						mat_clr_diff[1]=mat_clr_diff[2]=0.0f;
-						break;
-					case 2u: // blue color
-						mat_clr_diff[2]=static_cast<GLfloat>(*clr_arr)*_1_div_255;
-						++clr_arr;
-						mat_clr_diff[0]=mat_clr_diff[1]=0.0f;
-						break;
-				}
-				n1+=2u;
-				if (n1==8u)
-				{
-					n1=0u;
-					one_byte=*bit_arr;
-					++bit_arr;
-				}
-				else
-					one_byte>>=2u;
-				glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,mat_clr_diff);
-				glPushMatrix();
-				glTranslatef(points_x[i],points_y[i],points_z[i]);
-				coef=sqrtf((points_x[i]-points_x[j])*(points_x[i]-points_x[j])+
-						  (points_y[i]-points_y[j])*(points_y[i]-points_y[j])+
-						  (points_z[i]-points_z[j])*(points_z[i]-points_z[j]));
-				glRotatef(acosf((points_z[j]-points_z[i])/coef)*rad_to_deg,
-						  points_y[i]-points_y[j],points_x[j]-points_x[i],0.0f);
-				gluCylinder(quadr_obj,edg_rad,edg_rad,coef,9,1);
-				glPopMatrix();
-			}
-		}
-		
-		// vertices' labels
-		//glDisable(GL_DEPTH_TEST);
-		glDisable(GL_LIGHTING);
-		glColor3fv(mat_clr_spec); // 'mat_clr_spec' consists of zeroes
-		coef=vert_rad*1.3f;
-		for (i=0u; i!=x_num; ++i)
-			renderText(points_x[i]+coef,points_y[i]+coef,points_z[i]+coef,host_names[i]);
-		glEnable(GL_LIGHTING);
-		//glEnable(GL_DEPTH_TEST);
-	}
-	
-	gluDeleteQuadric(quadr_obj);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    if (points_x==NULL) return;
+    static const float vert_rad=0.025f,edg_rad=0.01f,rad_to_deg=180.0f/M_PI;
+    GLfloat mat_clr_diff[]={32.0f/51.0f,0.0f,0.0f};
+    static const GLfloat mat_clr_spec[]={0.0f,0.0f,0.0f};
+    unsigned int i,j;
+    unsigned int *edgs=edge_counts;
+    float coef;
+    GLUquadric *quadr_obj=gluNewQuadric();
+    glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,mat_clr_spec);
+    if (i_v_color==NULL)
+    {
+        // "real" topology
+        unsigned int from,to;
+        unsigned int *edgs2;
+        float rb,len;
+        static const unsigned int simplex_times=2u;
+        static const float exist_eps=0.5f;
+        bool arrow;
+        // vertices
+        glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,mat_clr_diff);//glColor3ub(160u,0u,0u);
+        for (i=0u; i!=x_num; ++i)
+        {
+            glPushMatrix();
+            glTranslatef(points_x[i],points_y[i],points_z[i]);
+            gluSphere(quadr_obj,vert_rad,4,2);
+            glPopMatrix();
+        }
+        // edges
+        for (i=0u; i!=x_num; ++i)
+        {
+            j=i+1u;
+            edgs+=j;
+            edgs2=edge_counts+(j*x_num+i);
+            for ( ; j!=x_num; ++j,++edgs,edgs2+=x_num)
+            {
+                from=i;
+                to=j;
+                if (*edgs<min_edg_count)
+                {
+                    if (*edgs2<min_edg_count)
+                    continue; // assume no edge
+                    // a simplex channel j->i
+                    from=j;
+                    to=i;
+                    arrow=true;
+                }
+                else
+                {
+                    if (*edgs2<min_edg_count)
+                    // a simplex channel i->j
+                    arrow=true;
+                    else
+                    {
+                        if (*edgs>*edgs2*simplex_times)
+                        // a simplex channel i->j
+                        arrow=true;
+                        else
+                        {
+                            if (*edgs2>*edgs*simplex_times)
+                            {
+                                // a simplex channel j->i
+                                from=j;
+                                to=i;
+                                arrow=true;
+                            }
+                            else
+                            // assume a duplex channel
+                            arrow=false;
+                        }
+                    }
+                }
+                glPushMatrix();
+                glTranslatef(points_x[from],points_y[from],points_z[from]);
+                len=sqrtf((points_x[from]-points_x[to])*(points_x[from]-points_x[to])+
+                (points_y[from]-points_y[to])*(points_y[from]-points_y[to])+
+                (points_z[from]-points_z[to])*(points_z[from]-points_z[to]));
+                glRotatef(acosf((points_z[to]-points_z[from])/len)*rad_to_deg,
+                points_y[from]-points_y[to],points_x[to]-points_x[from],0.0f);
+                // magic formula!
+                coef=static_cast<float>(static_cast<double>(*edgs**edgs+*edgs2**edgs2)/
+                static_cast<double>(z_num*(*edgs+*edgs2)));
+                //coef=static_cast<float>(*edgs2)/static_cast<float>(z_num);
+                //printf("%f\n",coef);
+                rb=backgr_clr*(1.0f-coef);
+                if (coef+rb+exist_eps<1.0f)
+                {
+                    glDisable(GL_LIGHTING);
+                    glColor3f(rb,coef+rb,rb);
+                }
+                else
+                {
+                    mat_clr_diff[0]=mat_clr_diff[2]=rb;
+                    mat_clr_diff[1]=coef+rb;
+                    glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,mat_clr_diff);
+                }
+                gluCylinder(quadr_obj,edg_rad,edg_rad,len,9,1);
+                /*glBegin(GL_LINES);
+                glVertex3f(0.0f,0.0f,0.0f);
+                glVertex3f(0.0f,0.0f,len);
+                glEnd();*/
+                if (arrow)
+                {
+                    coef=len*0.15f;
+                    coef=(coef>1.0f)? 1.0f : coef;
+                    glTranslatef(0.0f,0.0f,len-coef+vert_rad);
+                    tvCone(edg_rad+edg_rad,coef,9u);
+                }
+                if (!glIsEnabled(GL_LIGHTING)) glEnable(GL_LIGHTING);
+                glPopMatrix();
+            }
+        }
+        // vertices' labels
+        if (show_host_names)
+        {
+            //glDisable(GL_DEPTH_TEST);
+            glDisable(GL_LIGHTING);
+            glColor3fv(mat_clr_spec); // 'mat_clr_spec' consists of zeroes
+            coef=vert_rad*1.3f;
+            for (i=0u; i!=x_num; ++i)
+            renderText(points_x[i]+coef,points_y[i]+coef,points_z[i]+coef,host_names[i]);
+            glEnable(GL_LIGHTING);
+            //glEnable(GL_DEPTH_TEST);
+        }
+    }
+    else
+    {
+    // "ideal" topology
+    quint8 *bit_arr; // iterator for bit arrays
+    quint8 one_byte; // stores '*bit_arr'
+    unsigned int n1; // bit counter
+    bool gray=true; // flag to minimize calls to glMaterialfv() due to color switching
+    unsigned char *clr_arr; // iterator for 'i_e_color_val'
+    static const GLfloat _1_div_255=1.0f/255.0f;
+    // vertices
+    mat_clr_diff[0]=mat_clr_diff[1]=mat_clr_diff[2]=ignore_clr;
+    glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,mat_clr_diff);
+    bit_arr=i_v_color;
+    one_byte=*bit_arr;
+    ++bit_arr;
+    n1=0u;
+    for (i=0u; i!=x_num; ++i)
+    {
+        if ((one_byte & 0x1)==0u)
+        {
+            // "ignore" color
+            if (!gray)
+            {
+            gray=true;
+            mat_clr_diff[0]=mat_clr_diff[1]=mat_clr_diff[2]=ignore_clr;
+            glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,mat_clr_diff);
+            }
+        }
+        else
+        {
+            // magenta color
+            if (gray)
+            {
+                gray=false;
+                mat_clr_diff[0]=mat_clr_diff[2]=1.0f;
+                mat_clr_diff[1]=0.0f;
+                glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,mat_clr_diff);
+            }
+        }
+        ++n1;
+        if (n1==8u)
+        {
+            n1=0u;
+            one_byte=*bit_arr;
+            ++bit_arr;
+        }
+        else
+        one_byte>>=1u;
+        glPushMatrix();
+        glTranslatef(points_x[i],points_y[i],points_z[i]);
+        gluSphere(quadr_obj,vert_rad,4,2);
+        glPopMatrix();
+    }
+    // edges
+    bit_arr=i_e_color;
+    one_byte=*bit_arr;
+    ++bit_arr;
+    clr_arr=i_e_color_val;
+    n1=0u;
+    for (i=0u; i!=x_num; ++i)
+    {
+        j=i+1u;
+        for (edgs+=j; j!=x_num; ++j,++edgs)
+        {
+        if (*edgs==0u) continue;
+        switch (one_byte & 0x3)
+        {
+            case 0u: // "ignore" color
+            mat_clr_diff[0]=mat_clr_diff[1]=mat_clr_diff[2]=ignore_clr;
+            break;
+            case 1u: // red color
+            mat_clr_diff[0]=static_cast<GLfloat>(*clr_arr)*_1_div_255;
+            ++clr_arr;
+            mat_clr_diff[1]=mat_clr_diff[2]=0.0f;
+            break;
+            case 2u: // blue color
+            mat_clr_diff[2]=static_cast<GLfloat>(*clr_arr)*_1_div_255;
+            ++clr_arr;
+            mat_clr_diff[0]=mat_clr_diff[1]=0.0f;
+            break;
+        }
+        n1+=2u;
+        if (n1==8u)
+        {
+            n1=0u;
+            one_byte=*bit_arr;
+            ++bit_arr;
+        }
+        else
+        one_byte>>=2u;
+        glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,mat_clr_diff);
+        glPushMatrix();
+        glTranslatef(points_x[i],points_y[i],points_z[i]);
+        coef=sqrtf((points_x[i]-points_x[j])*(points_x[i]-points_x[j])+
+        (points_y[i]-points_y[j])*(points_y[i]-points_y[j])+
+        (points_z[i]-points_z[j])*(points_z[i]-points_z[j]));
+        glRotatef(acosf((points_z[j]-points_z[i])/coef)*rad_to_deg,
+        points_y[i]-points_y[j],points_x[j]-points_x[i],0.0f);
+        gluCylinder(quadr_obj,edg_rad,edg_rad,coef,9,1);
+        glPopMatrix();
+        }
+    }
+    // vertices' labels
+    //glDisable(GL_DEPTH_TEST);
+    glDisable(GL_LIGHTING);
+    glColor3fv(mat_clr_spec); // 'mat_clr_spec' consists of zeroes
+    coef=vert_rad*1.3f;
+    for (i=0u; i!=x_num; ++i)
+    renderText(points_x[i]+coef,points_y[i]+coef,points_z[i]+coef,host_names[i]);
+    glEnable(GL_LIGHTING);
+    //glEnable(GL_DEPTH_TEST);
+    }
+    gluDeleteQuadric(quadr_obj);
+}
+
+void TVWidget::OpenVertex(double *matr,double *reduced_matr,QVector<QVector<double> > open_vertex, int *partitioning_vector,QVector<int> flag_cluster, int which_cluster, int *size_of_partition)
+{
+
+    int ind=0;
+    int start_index=0;
+    QVector<int> part_vector;
+    for(int i=0;i<real_vertex_num;i++)
+    {
+        part_vector<<partitioning_vector[i];
+    }
+    while(ind!=which_cluster)
+    {
+        if(flag_cluster[start_index]==1)
+        {
+            ind+=1;
+        }
+        start_index++;
+    }
+    flag_cluster.replace(start_index,2);
+    for(int i=start_index+1;i<start_index+size_of_partition[which_cluster];i++)
+    {
+        open_vertex.insert(i,open_vertex[start_index]);
+        flag_cluster.insert(i,2);
+    }
+    int col=part_vector.indexOf(which_cluster);
+    int raw=col;
+    for(int i=start_index+1;i<start_index+size_of_partition[which_cluster];i++)
+    {
+        raw=part_vector.indexOf(which_cluster,raw+1);
+        open_vertex[i].replace(start_index,matr[raw*real_vertex_num+col]);
+    }
+    col=0;
+    raw=0;
+    raw=part_vector.indexOf(which_cluster);
+    for(int i=start_index;i<start_index+size_of_partition[which_cluster];i++)
+    {
+        col=part_vector.indexOf(which_cluster);
+        col=part_vector.indexOf(which_cluster,col+1);
+        for(int j=start_index+1;j<start_index+size_of_partition[which_cluster];j++)
+        {
+            open_vertex[i].insert(j,matr[raw*x_num+col]);
+            col=part_vector.indexOf(which_cluster,col+1);
+        }
+        col=0;
+        raw=part_vector.indexOf(which_cluster,raw+1);
+    }
+    for(int i=0;i<start_index;i++)
+    {
+        for(int j=start_index+1;j<start_index+size_of_partition[which_cluster];j++)
+        {
+            open_vertex[i].insert(j,open_vertex.at(i).at(start_index));
+        }
+    }
+    for(int i=start_index+size_of_partition[which_cluster];i<open_vertex.size();i++)
+    {
+        for(int j=start_index+1;j<start_index+size_of_partition[which_cluster];j++)
+        {
+            open_vertex[i].insert(j,open_vertex.at(i).at(start_index));
+        }
+    }
+    for(int i=0;i<open_vertex.size();i++)
+    {
+        for(int j=0;j<open_vertex.size();j++)
+        {
+            reduced_matr[i*open_vertex.size()+j]=open_vertex.at(i).at(j);
+        }
+    }
+    x_num=open_vertex.size();
+}
+
+void TVWidget::selectFigures()
+{
+   GLuint selectBuffer[4];
+
+
+   glSelectBuffer(4, selectBuffer);
+
+   glMatrixMode(GL_PROJECTION);
+   glPushMatrix();
+   glRenderMode(GL_SELECT);
+   glLoadIdentity();
+   gluPickMatrix((GLdouble)mp.x(), (GLdouble)(viewport[3]-mp.y()), 1.0, 1.0, viewport);
+   gluPerspective(45.0,static_cast<double>(viewport[2])/static_cast<double>(viewport[3]),1.0,1000.0);
+   gluLookAt(0.0,0.0,0.0,0.0,0.0,1.0,0.0,1.0,0.0);
+   glTranslatef(shift_x,shift_y,shift_z+geom_c_z);
+
+   glRotatef(alpha,0.0f,1.0f,0.0f);
+   glRotatef(beta,1.0f,0.0f,0.0f);
+
+   glTranslatef(0.0f,0.0f,-geom_c_z);
+
+
+
+   glMatrixMode(GL_MODELVIEW);
+
+   glLoadIdentity();
+
+
+   glInitNames();
+   glPushName(0);
+
+   if (points_x==NULL) return;
+   static const float vert_rad=0.025f,edg_rad=0.01f,rad_to_deg=180.0f/M_PI;
+   GLfloat mat_clr_diff[]={32.0f/51.0f,0.0f,0.0f};
+   static const GLfloat mat_clr_spec[]={0.0f,0.0f,0.0f};
+   unsigned int i,j;
+   GLUquadric *quadr_obj=gluNewQuadric();
+   glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,mat_clr_spec);
+   if (i_v_color==NULL)
+   {
+       // "real" topology
+       // vertices
+       glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,mat_clr_diff);//glColor3ub(160u,0u,0u);
+
+       for (i=0u; i!=x_num; ++i)
+       {
+           glPushMatrix();
+            glTranslatef(points_x[i],points_y[i],points_z[i]);
+            glLoadName(i);
+            gluSphere(quadr_obj,vert_rad,4,2);
+           glPopMatrix();
+       }
+   }
+   ApplyTransform();
+   updateGL();
+   hits=glRenderMode(GL_RENDER);
+
+   if (hits>0)
+   {
+      clusterNumber=selectBuffer[3];
+
+      printf("%d Vertex pick number",clusterNumber);
+      emit ClickOnVertex(clusterNumber);
+   }
+
+   glMatrixMode(GL_PROJECTION);
+   glPopMatrix();
 }
 
 void TVWidget::resizeGL (int width, int height) {
-	glViewport(0,0,width,height);
+
 	
 	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluPerspective(45.0,static_cast<double>(width)/static_cast<double>(height),1.0,1000.0);
+    glLoadIdentity();
+    glViewport(0,0,(GLint)width,(GLint)height);
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    gluPerspective(45.0,static_cast<double>(width)/static_cast<double>(height),1.0,1000.0);
 	
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	gluLookAt(0.0,0.0,0.0,0.0,0.0,1.0,0.0,1.0,0.0);
-	
+    gluLookAt(0.0,0.0,0.0,0.0,0.0,1.0,0.0,1.0,0.0);
+
+
 	const GLfloat light_pos[]={0.0f,0.0f,0.0f,1.0f};
-	glLightfv(GL_LIGHT0,GL_POSITION,light_pos);
-	
+    glLightfv(GL_LIGHT0,GL_POSITION,light_pos);
+
 	ApplyTransform();
 }
 

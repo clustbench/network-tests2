@@ -19,7 +19,8 @@ HEADERS += core/err_codes.h \
 		   GUI/render_opts.h \
 		   GUI/fullviewer.h \
 		   GUI/topoviewer.h \
-		   GUI/mainwindow.h
+                   GUI/mainwindow.h \
+                   /usr/local/include/metis.h
 SOURCES += main.cpp \
 		   core/data_netcdf.cpp \
 		   core/data_text.cpp \
@@ -44,7 +45,9 @@ DEPENDPATH += /usr/include/qwt-qt4
 LIBS += -L/usr/lib \
 		-lqwt-qt4 \
 		-lnetcdf \
-		-lGLU
+                -lGLU \
+                /usr/local/lib/libmetis.so
+
 RESOURCES += resources.qrc
 TRANSLATIONS = translations/nv_tr_ru.ts
 
