@@ -28,11 +28,11 @@ include ../../config
 
 EXECS= network_viewer_qt_v2
 
-#QMAKE_OPTIONS:= 'CONFIG+=debug'
-QMAKE_OPTIONS:=
+QMAKE_OPTIONS:= 'CONFIG+=debug' QMAKE_CFLAGS_DEBUG+= -g
+#QMAKE_OPTIONS:=
 
 # making with OpenMP support
-QMAKE_OPTIONS += QMAKE_LFLAGS+=-fopenmp QMAKE_CXXFLAGS+=-fopenmp
+QMAKE_OPTIONS += QMAKE_LFLAGS+=-fopenmp QMAKE_CXXFLAGS+=-fopenmp  QMAKE_CFLAGS_DEBUG+= -g
 
 # making with OpenCL support
 ifneq ($(OPENCL_INCL)$(OPENCL_LIB_FLD),$(OPENCL_LIB_FLD)$(OPENCL_INCL))

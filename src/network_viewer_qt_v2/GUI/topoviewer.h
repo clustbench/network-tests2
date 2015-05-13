@@ -60,9 +60,13 @@ class TVWidget: public QGLWidget {
       int nmb_prt;//number of graph partition
       double *matr;
       int *size_of_partitioning;
+      int prt_nmb;
       double *reduced_matr;
       QVector<int> flag_cluster;
+      QVector<int> part_vector;
+      QVector<QString> names;
       QVector<QVector<double> > open_vertex;
+      int clust_nmb;
       double m_d_impact;
       unsigned int edg_num=0u;
       unsigned int edg50_num=0u;
@@ -122,7 +126,11 @@ class TVWidget: public QGLWidget {
   	  
   	  void ApplyTransform (void);
       //open vertex
-      void OpenVertex (double *matr,double *reduced_matr,QVector<QVector<double> > open_vertex, int *partitioning_vector,QVector<int>flag_cluster, int which_cluster, int *size_of_partition);
+      void OpenVertex (double *matr,double *reduced_matr,QVector<QVector<double> > &open_vertex, int *partitioning_vector,QVector<int> &flag_cluster, int which_cluster, int *size_of_partition);
+      void ReduceMatrix(double *matr,double *reduced_matr, int *partitioning_vector, int *size_of_partition);
+      void dfs_visit(int i,char *color,struct node *V);
+      //hierarchical clusterization
+      void HierClust (double *matr,int *partitioning_vector,QVector<int> &flag_cluster,QVector<int> &vertices,int size,float percent);
 
       void selectFigures();
       
@@ -180,9 +188,11 @@ class TVWidget: public QGLWidget {
         }
     }
     void MapReducedGraph(int which_cluster);
+    void MapHierarchicalGraph(int which_cluster);
 Q_SIGNALS:
     //is connected to Execute, when we click on vertex
     void ClickOnVertex (int which_cluster);
+    void ClickOnHierarchicalVertex(int which_cluster);
 };
 
 /* A class for retrieving topology graphs from 
@@ -302,6 +312,8 @@ class TopologyViewer: public QWidget {
       //
       // returns 'false' if there was not enough memory
       bool GetMatrixByValsForEdgsVar (double *matr);
+
+      void dfs_visit(int i,char *color,struct node *V);
       
       // compares retrieved topology with "ideal" topology loaded from file in DOT format
       void CompareTopologies (void);

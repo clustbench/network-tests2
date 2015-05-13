@@ -21,7 +21,14 @@ const QString TopologyViewer::my_sign("Topo");
 GLint viewport[4];
 QPoint mp;
 GLint hits=0;
+bool clusteringMode=false;
+bool hierarchicalMode=false;
 GLint clusterNumber;
+struct node
+{
+   int vertex_no;
+   int adj[500];
+};
 
 void TopoViewerOpts::keyPressEvent (QKeyEvent *e) {
 	if (e->key()==Qt::Key_Escape) return; // ignore pressing 'Esc'
@@ -64,11 +71,10 @@ TVWidget::TVWidget (void) {
     save_menu_btn= new QPushButton(NULL);
     save_heigth= new QSpinBox(NULL);
     save_width= new QSpinBox(NULL);
-    matr= new double;
     mp.setX(0);
     mp.setY(0);
-    reduced_matr=new double;
     connect(this,SIGNAL(ClickOnVertex(int)),SLOT(MapReducedGraph(int)));
+    connect(this,SIGNAL(ClickOnHierarchicalVertex(int)),SLOT(MapHierarchicalGraph(int)));
 }
 
 TopologyViewer::TopologyViewer (QWidget *parent, const IData::Type f_type, bool &was_error): QWidget(parent) {
@@ -530,6 +536,7 @@ void TopologyViewer::Execute (void) {
 		NOT_ENOUGH_MEM_CLOSE;
 	}
 	connect(opts_ui.maxDistHelpPB,SIGNAL(clicked()),options,SLOT(ShowMaxDistHelp()));
+
 	opts_ui.immRedrCB->setEnabled(false);
 	opts_ui.mesLenSB->setRange(begin_message_length,
 							   begin_message_length+static_cast<int>(main_wdg.z_num-1u)*step_length);
@@ -725,7 +732,7 @@ void TopologyViewer::Execute (void) {
     }
     double *reduced_matr=static_cast<double*>(malloc(xy_reduced_matr*sizeof(double)));
     if (reduced_matr==NULL) { NOT_ENOUGH_MEM_CLOSE; }
-    int *size_of_partition=(int*)malloc(main_wdg.nmb_prt*sizeof(int));
+    int *size_of_partition=static_cast<int*>(malloc(main_wdg.nmb_prt*sizeof(int)));
     if (size_of_partition==NULL) { NOT_ENOUGH_MEM_CLOSE; }
     QVector<int> flag_cluster;
     QVector<QVector<double> > open_vertex;
@@ -742,17 +749,21 @@ void TopologyViewer::Execute (void) {
             open_vertex<<row;
             row.clear();
             flag_cluster<<1;
+            QString cluster_name="cluster-";
+            cluster_name.append(QString::number(i));
+            main_wdg.names<<cluster_name;
+        }
+        clusteringMode=true;
+
+        main_wdg.matr=matr;
+        main_wdg.size_of_partitioning=size_of_partition;
+        main_wdg.open_vertex=open_vertex;
+        main_wdg.flag_cluster=flag_cluster;
+        for(int i=0;i<main_wdg.x_num;i++)
+        {
+            main_wdg.part_vector<<main_wdg.partitioning_vector[i];
         }
     }
-    main_wdg.matr=matr;
-    main_wdg.size_of_partitioning=size_of_partition;
-    main_wdg.open_vertex=open_vertex;
-    main_wdg.flag_cluster=flag_cluster;
-    main_wdg.m_d_impact=m_d_impact;
-    main_wdg.edg50_num=edg50_num;
-    main_wdg.edg99_num=edg99_num;
-    main_wdg.edg_num=edg_num;
-
     if (opts_ui.prtCB->isChecked() && opts_ui.prtNmbSB->value()>0)
     {
         main_wdg.real_vertex_num=main_wdg.x_num;
@@ -762,16 +773,55 @@ void TopologyViewer::Execute (void) {
             //free(matr);
             NOT_ENOUGH_MEM_CLOSE;
         }
+        //free(reduced_matr);
         //free(matr);
+    }
+    else if (opts_ui.prtH->isChecked()) //hierarchical clustering(first lawyer)
+    {
+        main_wdg.partitioning_vector=(int*)malloc(main_wdg.x_num*sizeof(int));
+        for(int i=0;i<main_wdg.x_num;i++)
+        {
+            main_wdg.partitioning_vector[i]=0;
+        }
+        QVector<int> vertices;
+        main_wdg.real_vertex_num=main_wdg.x_num;
+        main_wdg.matr=matr;
+        main_wdg.HierClust(matr,main_wdg.partitioning_vector,main_wdg.flag_cluster,vertices,main_wdg.x_num,opts_ui.percentSliderH->value());
+        for(int i=0;i<main_wdg.prt_nmb;i++)
+        {
+            main_wdg.names<<" ";
+        }
+        for(int i=0;i<main_wdg.prt_nmb;i++)
+        {
+            if(main_wdg.flag_cluster[i]==1)
+            {
+                QString cluster_name="cluster-";
+                cluster_name.append(QString::number(i));
+                main_wdg.names[i]=cluster_name;
+            }
+
+        }
+        main_wdg.nmb_prt=main_wdg.prt_nmb;
+        int *size_of_partition=static_cast<int*>(malloc(main_wdg.prt_nmb*sizeof(int)));
+        double *reduced_matr=static_cast<double*>(malloc(main_wdg.prt_nmb*main_wdg.prt_nmb*sizeof(double)));
+        ReduceMatrix(matr,reduced_matr,main_wdg.partitioning_vector,size_of_partition);
+
+        main_wdg.x_num=main_wdg.prt_nmb;
+
+        if (!main_wdg.MapGraphInto3D(reduced_matr,m_d_impact,edg_num,edg50_num,edg99_num))
+        {
+            //free(matr);
+            //NOT_ENOUGH_MEM_CLOSE;
+        }
     }
     else
     {
         if (!main_wdg.MapGraphInto3D(matr,m_d_impact,edg_num,edg50_num,edg99_num))
         {
-            //free(matr);
+            free(matr);
             NOT_ENOUGH_MEM_CLOSE;
         }
-        //free(matr);
+        free(matr);
     }
     delete options;
     options=NULL;
@@ -792,10 +842,10 @@ void TopologyViewer::Execute (void) {
 			mes+=tr("of edges have %1% length error or greater").arg(99);
 		}
 		(mes+="<br><br>")+=tr("(the graph has <b>%1</b> edges in all)<br>").arg(edg_num);
-		emit SendMessToLog(MainWindow::Info,my_sign,mes);
+        emit SendMessToLog(MainWindow::Info,my_sign,mes);
 		QMessageBox::information(this,tr("Graph building"),mes);
     }
-	
+
     main_wdg.updateGL();
 }
 
@@ -1470,10 +1520,119 @@ void TVWidget::SaveImageMenu (){
     connect(save_menu_btn,SIGNAL(clicked()),this,SLOT(SaveImage()));
     window->show();
 }
+void TopologyViewer::dfs_visit(int i,char *color,struct node *V)
+{
+   color[i]='g';
+//   cout << "Setting " << i << " to gray" << endl;
+   for (int j=0; V[i].adj[j]!=0;j++)
+   {
+      //cout << "Checking " << V[i].adj[j] << " color" << endl;
+      if(color[V[i].adj[j]]=='w')
+          dfs_visit(V[i].adj[j],color,V);
+   }
+   color[i]='b';
+   //cout << "Setting " << i << " to BLACK" << endl;
+}
+void TVWidget::dfs_visit(int i,char *color,struct node *V)
+{
+   color[i]='g';
+//   cout << "Setting " << i << " to gray" << endl;
+   for (int j=0; V[i].adj[j]!=0;j++)
+   {
+      //cout << "Checking " << V[i].adj[j] << " color" << endl;
+      if(color[V[i].adj[j]]=='w')
+          dfs_visit(V[i].adj[j],color,V);
+   }
+   color[i]='b';
+   //cout << "Setting " << i << " to BLACK" << endl;
+}
 void TVWidget::MapReducedGraph(int which_cluster)
 {
+    reduced_matr=static_cast<double*>(malloc(500000*sizeof(double)));
     OpenVertex(matr,reduced_matr,open_vertex,partitioning_vector,flag_cluster,which_cluster,size_of_partitioning);
-    MapGraphInto3D(reduced_matr,m_d_impact,edg_num,edg50_num,edg99_num);
+    unsigned int i=0;
+    MapGraphInto3D(reduced_matr,(double)0.0,i,i,i);
+}
+
+void TVWidget::MapHierarchicalGraph(int which_cluster)
+{
+    QVector<int> vertices;
+    QVector<int> part_vector;
+    for(int i=0;i<real_vertex_num;i++)
+    {
+        part_vector<<partitioning_vector[i];
+    }
+    int k=0;
+    for(int i=0;i<real_vertex_num;i++)
+    {
+        k=part_vector.indexOf(which_cluster,k+1);
+        if(k!=-1)
+        {
+        vertices<<k;
+        }
+        else break;
+    }
+    double *small_matr=static_cast<double*>(malloc(vertices.size()*vertices.size()*sizeof(double)));
+    if(vertices.size()==1)
+    {
+        small_matr[0]=matr[real_vertex_num*vertices[0]+vertices[0]];
+    }
+    else
+    {
+        for(int i=0;i<vertices.size();i++)
+        {
+            for(int j=0;j<vertices.size();j++)
+            {
+                small_matr[i*vertices.size()+j]=matr[real_vertex_num*vertices[i]+vertices[j]];
+            }
+        }
+    }
+    if(vertices.size()!=1)
+    {
+        HierClust(small_matr,partitioning_vector,flag_cluster,vertices,vertices.size(),95);
+        part_vector.clear();
+        for(int i=0;i<real_vertex_num;i++)
+        {
+            part_vector<<partitioning_vector[i];
+        }
+        int *size_of_partition=static_cast<int*>(malloc(prt_nmb*sizeof(int)));
+        double *reduced_matr=static_cast<double*>(malloc(prt_nmb*prt_nmb*sizeof(double)));
+        unsigned int i=0;
+        nmb_prt=prt_nmb;
+        x_num=real_vertex_num;
+        ReduceMatrix(matr,reduced_matr,partitioning_vector,size_of_partition);
+        x_num=prt_nmb;
+        MapGraphInto3D(reduced_matr,(double)0.0,i,i,i);
+    }
+    else
+    {
+        flag_cluster[which_cluster]=2;
+    }
+    for(int i=0;i<prt_nmb;i++)
+    {
+        names<<" ";
+    }
+    for(int i=0;i<prt_nmb;i++)
+    {
+        if(flag_cluster[i]==1)
+        {
+            QString cluster_name="cluster-";
+            cluster_name.append(QString::number(i));
+            names[i]=cluster_name;
+        }
+        else if(flag_cluster[i]==2)
+        {
+            names[i]=host_names[part_vector.indexOf(i)];
+        }
+        else if(flag_cluster[i]==3)
+        {
+            QString cluster_name="cluster-";
+            cluster_name.append(QString::number(which_cluster));
+            cluster_name.append(" - ");
+            cluster_name.append(QString::number(i));
+            names[i]=cluster_name;
+        }
+    }
 
 }
 
@@ -2762,7 +2921,6 @@ void TopologyViewer::CompareTopologies (void) {
 }
 
 void TopologyViewer::GraphPartitioning(double *matr,double *reduced_matr,int prt_nmb, int *size_of_partition) {
-     int result;
      int col=0;
      idx_t nvtxs=main_wdg.x_num;
      idx_t ncon=1;
@@ -2828,7 +2986,7 @@ void TopologyViewer::GraphPartitioning(double *matr,double *reduced_matr,int prt
         xadj[i+1]=col;
      }
 
-     result=METIS_PartGraphKway(&nvtxs,&ncon,xadj,adjncy,vwgt,vsize,adjwgt,&nparts,tpwgts,ubvec,options,&objval,part);
+     METIS_PartGraphKway(&nvtxs,&ncon,xadj,adjncy,vwgt,vsize,adjwgt,&nparts,tpwgts,ubvec,options,&objval,part);
 
 
      QVector<int> partlist;
@@ -2870,6 +3028,10 @@ void TopologyViewer::GraphPartitioning(double *matr,double *reduced_matr,int prt
      main_wdg.partitioning_vector=(int*)malloc(main_wdg.x_num*sizeof(int));
      memcpy(main_wdg.partitioning_vector,part, sizeof(int)*main_wdg.x_num );
      main_wdg.nmb_prt=partlist.at(partlist.size()-1)+1;
+     free(adjncy);
+     free(adjwgt);
+     free(xadj);
+     partlist.clear();
      ReduceMatrix(matr,reduced_matr,main_wdg.partitioning_vector,size_of_partition);
 }
 
@@ -2877,8 +3039,9 @@ void TopologyViewer::ReduceMatrix(double *matr,double *reduced_matr, int *partit
 {
     int x_num=main_wdg.x_num;
     int  prev_col=0;
-    double *part_matr=(double*)malloc(main_wdg.x_num*main_wdg.x_num*sizeof(double));
-    double *temp_matr=(double*)malloc(main_wdg.x_num*main_wdg.x_num*sizeof(double));
+    double *temp_matr=static_cast<double*>(malloc(main_wdg.x_num*main_wdg.x_num*sizeof(double)));
+    double *part_matr=static_cast<double*>(malloc(main_wdg.x_num*main_wdg.x_num*sizeof(double)));
+
 
     int row=0;
     for(int k=0;k<main_wdg.nmb_prt;k++)
@@ -2959,6 +3122,99 @@ void TopologyViewer::ReduceMatrix(double *matr,double *reduced_matr, int *partit
 
         }
     }
+    //free(temp_matr);
+    //free(part_matr);
+}
+
+void TVWidget::ReduceMatrix(double *matr,double *reduced_matr, int *partitioning_vector, int *size_of_partition)
+{
+
+    int  prev_col=0;
+    double *temp_matr=static_cast<double*>(malloc(x_num*x_num*sizeof(double)));
+    double *part_matr=static_cast<double*>(malloc(x_num*x_num*sizeof(double)));
+
+
+    int row=0;
+    for(int k=0;k<nmb_prt;k++)
+    {
+        for(int p=0;p<x_num;p++)
+        {
+            if(partitioning_vector[p]==k)
+            {
+                memcpy(&part_matr[row*x_num],&matr[p*x_num],sizeof(double)*x_num);
+                row++;
+            }
+        }
+    }
+    for(int i=0;i<x_num;i++)
+    {
+        for(int j=0;j<x_num;j++)
+        {
+            temp_matr[i*x_num+j]=part_matr[i*x_num+j];
+        }
+    }
+    int col=0;
+    for(int k=0;k<nmb_prt;k++)
+    {
+        prev_col=col;
+        for(int p=0;p<x_num;p++)
+        {
+            if(partitioning_vector[p]==k)
+            {
+                for(int i=0;i<x_num;i++)
+                {
+                    part_matr[i*x_num+col]=temp_matr[i*x_num+p];
+                }
+                col++;
+            }
+        }
+        size_of_partition[k]=col-prev_col;
+    }
+
+    int sum_col_prt=0;
+    int sum_row_prt=0;
+    for(int i=0;i<nmb_prt;i++)
+    {
+        for(int j=0;j<nmb_prt;j++)
+        {
+            if(i==j)
+            {
+                reduced_matr[i*nmb_prt+j]=0;
+            }
+            else
+            {
+                sum_row_prt=0;
+                sum_col_prt=0;
+                for(int k=0;k<i;k++)
+                {
+                    sum_row_prt+=size_of_partition[k];
+                }
+                for(int s=0;s<j;s++)
+                {
+                    sum_col_prt+=size_of_partition[s];
+                }
+                double sum=0;
+                for(int rw=sum_row_prt;rw<sum_row_prt+size_of_partition[i];rw++)
+                {
+                    for(int cl=sum_col_prt;cl<sum_col_prt+size_of_partition[j];cl++)
+                    {
+                        sum+=part_matr[rw*x_num+cl];
+                    }
+                }
+                if (size_of_partition[i]*size_of_partition[j]!=0)
+                {
+                    reduced_matr[i*nmb_prt+j]=(sum/(size_of_partition[i]*size_of_partition[j]));
+                }
+                else
+                {
+                    reduced_matr[i*nmb_prt+j]=0.000001;
+                }
+            }
+
+        }
+    }
+    //free(temp_matr);
+    //free(part_matr);
 }
 
 void TopologyViewer::keyPressEvent (QKeyEvent *key_event) {
@@ -3179,7 +3435,18 @@ void TVWidget::paintGL () {
         {
             glPushMatrix();
             glTranslatef(points_x[i],points_y[i],points_z[i]);
-            gluSphere(quadr_obj,vert_rad,4,2);
+            if(flag_cluster[i]==1)
+            {
+               gluSphere(quadr_obj,0.50f,4,2);
+            }
+            else if (flag_cluster[i]==3)
+            {
+               gluSphere(quadr_obj,0.25f,4,2);
+            }
+            else
+            {
+               gluSphere(quadr_obj,vert_rad,4,2);
+            }
             glPopMatrix();
         }
         // edges
@@ -3272,9 +3539,67 @@ void TVWidget::paintGL () {
             //glDisable(GL_DEPTH_TEST);
             glDisable(GL_LIGHTING);
             glColor3fv(mat_clr_spec); // 'mat_clr_spec' consists of zeroes
-            coef=vert_rad*1.3f;
-            for (i=0u; i!=x_num; ++i)
-            renderText(points_x[i]+coef,points_y[i]+coef,points_z[i]+coef,host_names[i]);
+            if(clusteringMode)
+            {
+                if (hits!=0)
+                {
+                    int j=0;
+                    QString cluster_name="cluster-";
+                    QString name=names[clust_nmb];
+                    name.replace(QString("cluster-"),QString(""));
+                    int real_cluster_number=name.toInt();
+                    cluster_name.append(QString::number(real_cluster_number));
+
+                    int ind=names.indexOf(cluster_name);
+
+                    if(ind!=-1)
+                    {
+                        j=part_vector.indexOf(real_cluster_number,j);
+                        names.replace(ind,host_names[j]);
+                        for (int i=ind+1; i!=ind+size_of_partitioning[real_cluster_number]; ++i)
+                        {
+                            j=part_vector.indexOf(real_cluster_number,j+1);
+                            names.insert(i,host_names[j]);
+                        }
+                    }
+                }
+                for (i=0u; i!=x_num; ++i)
+                {
+                    if(flag_cluster[i]==1)
+                    {
+                        coef=0.25*1.3f;
+                    }
+                    else
+                    {
+                        coef=vert_rad*1.3f;
+
+                    }
+                    renderText(points_x[i]+coef,points_y[i]+coef,points_z[i]+coef,names[i]);
+                }
+            }
+            else if(hierarchicalMode)
+            {
+                if(flag_cluster[i]==1)
+                {
+                   coef=0.5f*1.3f;
+                }
+                else if (flag_cluster[i]==3)
+                {
+                   coef=0.25f*1.3f;
+                }
+                else
+                {
+                   coef=vert_rad*1.3f;
+                }
+                for (i=0u; i!=x_num; ++i)
+                renderText(points_x[i]+coef,points_y[i]+coef,points_z[i]+coef,names[i]);
+            }
+            else
+            {
+                coef=vert_rad*1.3f;
+                for (i=0u; i!=x_num; ++i)
+                renderText(points_x[i]+coef,points_y[i]+coef,points_z[i]+coef,host_names[i]);
+            }
             glEnable(GL_LIGHTING);
             //glEnable(GL_DEPTH_TEST);
         }
@@ -3392,26 +3717,230 @@ void TVWidget::paintGL () {
     //glEnable(GL_DEPTH_TEST);
     }
     gluDeleteQuadric(quadr_obj);
+    hits=0;
+}
+void TVWidget::HierClust(double *matr,  int *partitioning_vector, QVector<int> &flag_cluster,QVector<int> &vertices,int size,float percent)
+{
+    hierarchicalMode=true;
+    clusteringMode=false;
+    int save_prt_nmb=prt_nmb;
+    //find maximum in matr
+    QList<double> matrlist;
+    for(int i=0;i<size*size;i++)
+    {
+        matrlist<<matr[i];
+    }
+    qSort(matrlist.begin(),matrlist.end());
+    int i=0;
+    while(matrlist[i]==0)
+    {
+        i++;
+    }
+    //finding hops in matr
+    QVector<double> qmatr;
+    for(int i=0;i<size*size;i++)
+    {
+        qmatr<<matr[i];
+    }
+    qSort(qmatr.begin(),qmatr.end());
+    /*QVector<double> qmatrdev;
+    for(int i=0;i<main_wdg.x_num*main_wdg.x_num;i++)
+    {
+        qmatrdev<<fabs(qmatr[main_wdg.x_num*main_wdg.x_num-i-1]-qmatr[i]);
+    }
+    QVector<double> sortqmatr;
+    for(int i=0;i<main_wdg.x_num*main_wdg.x_num;i++)
+    {
+        sortqmatr<<qmatrdev[i];
+    }
+    qSort(sortqmatr.begin(),sortqmatr.end());
+    while(sortqmatr.at(w)==0)
+    {
+        w++;
+    }
+    double min=qmatrdev.indexOf(sortqmatr.at(w));
+    double max=qmatrdev.at(main_wdg.x_num*main_wdg.x_num-1);*/
+
+    double min_delay=matrlist[i];
+    double max_delay=matrlist[matrlist.size()-1];
+    matrlist.clear();
+    double difference;
+    difference=max_delay - min_delay;
+    double cut_edge_weight=qmatr.at(int(((size*size)*((100-percent)/100)))) ;
+    //delete all edge that great that cut_edge_weight
+    double *newmatr=static_cast<double*>(malloc(size*size*sizeof(double)));
+    memcpy(newmatr,matr,size*size*sizeof(double));
+    for(int i=0;i<size*size;i++)
+    {
+        if(newmatr[i]>cut_edge_weight)
+        {
+            newmatr[i]=0;
+        }
+    }
+    //matr to csr format
+    int col=0;
+    for(unsigned i=0;i<size;i++)
+    {
+       for(unsigned j=0;j<size;j++)
+       {
+           if ((newmatr[size*i+j]*1000000)!=0)
+           {
+               col+=1;
+           }
+       }
+    }
+    int *xadj=NULL, *adjncy=NULL;
+    xadj = new int[size+1];
+    adjncy = new int[col];
+    col=0;
+    for(unsigned i=0;i<size;i++)
+    {
+       for(unsigned j=0;j<size;j++)
+       {
+           if (newmatr[size*i+j]!=0)
+           {
+
+               adjncy[col]=j;
+               col+=1;
+           }
+       }
+       xadj[0]=0;
+       xadj[i+1]=col;
+    }
+    //find connected components in graph
+
+    node V[size];
+    int v=size;
+    char color[500];
+
+    for(int i=0;i<v;i++)
+      for(int j=0;j<v;j++)
+         V[i].adj[j]=0;
+      for(int i=0;i<v;i++)
+      {
+          int k=0;
+          for(int j=xadj[i];j<xadj[i+1];j++)
+          {
+              V[i].adj[k]=adjncy[j];
+              k++;
+          }
+
+      }
+      //Using DFS to find out the connected components of the graph
+
+      for(int i=0;i<v;i++)
+      {
+          color[i]='w';
+      }
+     if(vertices.size()!=0)
+     {
+         for(int i=0;i<v;i++)
+         {
+            if(i>0)
+            {
+                printf("Connected component %d :",i);
+                for(int j=0;j<v;j++)
+                {
+                   if(color[j]=='b'){
+                      printf("%d ",j);
+                      partitioning_vector[vertices[j]]=prt_nmb+i;
+                      color[j]='z';
+                   }
+                }
+                printf("\n");
+            }
+            if(color[i]=='w')
+               dfs_visit(i,color,V);
+        }
+     }
+     else
+     {
+         for(int i=0;i<v;i++)
+         {
+            if(i>0)
+            {
+                printf("Connected component %d :",i);
+                for(int j=0;j<v;j++)
+                {
+                   if(color[j]=='b'){
+                      printf("%d ",j);
+                      partitioning_vector[j]=i;
+                      color[j]='z';
+                   }
+                }
+                printf("\n");
+            }
+            if(color[i]=='w')
+               dfs_visit(i,color,V);
+        }
+     }
+    //normalize partitioning vector
+
+     prt_nmb=0;
+     int o=0;
+     for(int i=0;i<real_vertex_num;i++)
+     {
+         for(int j=0;j<real_vertex_num;j++)
+         {
+             if(partitioning_vector[j]==i)
+             {
+                 o++;
+             }
+         }
+         if(o!=0){prt_nmb++;}
+         o=0;
+     }
+     QVector<int> vector;
+     for(int i=0;i<real_vertex_num;i++)
+     {
+         vector<<partitioning_vector[i];
+     }
+     for(int i=0;i<prt_nmb;i++)
+     {
+         if(vector.indexOf(i)==-1)
+         {
+             for(int j=i+1;j<real_vertex_num;j++)
+             {
+                 int k=vector.indexOf(j);
+                 if(k!=-1)
+                 {
+                     while(k!=-1)
+                     {
+                         vector.replace(k,i);
+                         k=vector.indexOf(j,k+1);
+                     }
+                     break;
+                 }
+             }
+          }
+     }
+     for(int i=0;i<real_vertex_num;i++)
+     {
+         partitioning_vector[i]=vector[i];
+     }
+
+     if(vertices.size()==0)
+     {
+         for(int i=0;i<size;i++)
+         {
+             flag_cluster<<1;
+         }
+     }
+     else
+         for(int i=save_prt_nmb;i<prt_nmb;i++)
+         {
+             flag_cluster.replace(i,3);
+         }
 }
 
-void TVWidget::OpenVertex(double *matr,double *reduced_matr,QVector<QVector<double> > open_vertex, int *partitioning_vector,QVector<int> flag_cluster, int which_cluster, int *size_of_partition)
+void TVWidget::OpenVertex(double *matr,double *reduced_matr,QVector<QVector<double> > &open_vertex, int *partitioning_vector,QVector<int> &flag_cluster, int which_cluster, int *size_of_partition)
 {
+    clust_nmb=which_cluster;
+    QString cluster_name=names[clust_nmb];
 
-    int ind=0;
-    int start_index=0;
-    QVector<int> part_vector;
-    for(int i=0;i<real_vertex_num;i++)
-    {
-        part_vector<<partitioning_vector[i];
-    }
-    while(ind!=which_cluster)
-    {
-        if(flag_cluster[start_index]==1)
-        {
-            ind+=1;
-        }
-        start_index++;
-    }
+    int start_index=names.indexOf(cluster_name);
+    cluster_name.replace(QString("cluster-"),QString(""));
+    which_cluster=cluster_name.toInt();
     flag_cluster.replace(start_index,2);
     for(int i=start_index+1;i<start_index+size_of_partition[which_cluster];i++)
     {
@@ -3458,7 +3987,7 @@ void TVWidget::OpenVertex(double *matr,double *reduced_matr,QVector<QVector<doub
     {
         for(int j=0;j<open_vertex.size();j++)
         {
-            reduced_matr[i*open_vertex.size()+j]=open_vertex.at(i).at(j);
+            reduced_matr[i*open_vertex.size()+j]=open_vertex[i][j];
         }
     }
     x_num=open_vertex.size();
@@ -3467,7 +3996,6 @@ void TVWidget::OpenVertex(double *matr,double *reduced_matr,QVector<QVector<doub
 void TVWidget::selectFigures()
 {
    GLuint selectBuffer[4];
-
 
    glSelectBuffer(4, selectBuffer);
 
@@ -3496,7 +4024,7 @@ void TVWidget::selectFigures()
    glPushName(0);
 
    if (points_x==NULL) return;
-   static const float vert_rad=0.025f,edg_rad=0.01f,rad_to_deg=180.0f/M_PI;
+   static const float vert_rad=0.025f;
    GLfloat mat_clr_diff[]={32.0f/51.0f,0.0f,0.0f};
    static const GLfloat mat_clr_spec[]={0.0f,0.0f,0.0f};
    unsigned int i,j;
@@ -3511,9 +4039,16 @@ void TVWidget::selectFigures()
        for (i=0u; i!=x_num; ++i)
        {
            glPushMatrix();
-            glTranslatef(points_x[i],points_y[i],points_z[i]);
-            glLoadName(i);
-            gluSphere(quadr_obj,vert_rad,4,2);
+           glTranslatef(points_x[i],points_y[i],points_z[i]);
+           glLoadName(i);
+           if(flag_cluster[i]==1)
+           {
+              gluSphere(quadr_obj,0.25f,4,2);
+           }
+           else
+           {
+              gluSphere(quadr_obj,vert_rad,4,2);
+           }
            glPopMatrix();
        }
    }
@@ -3523,10 +4058,20 @@ void TVWidget::selectFigures()
 
    if (hits>0)
    {
-      clusterNumber=selectBuffer[3];
-
-      printf("%d Vertex pick number",clusterNumber);
-      emit ClickOnVertex(clusterNumber);
+      if(hierarchicalMode==false && clusteringMode==true)
+      {
+          clusterNumber=selectBuffer[3];
+          printf("number vertex %d", clusterNumber);
+          if (flag_cluster[clusterNumber]==1 )
+          emit ClickOnVertex(clusterNumber);
+      }
+      else if(hierarchicalMode==true && clusteringMode==false)
+      {
+          clusterNumber=selectBuffer[3];
+          printf("number vertex %d", clusterNumber);
+          if (flag_cluster[clusterNumber]==1 )
+          emit ClickOnHierarchicalVertex(clusterNumber);
+      }
    }
 
    glMatrixMode(GL_PROJECTION);

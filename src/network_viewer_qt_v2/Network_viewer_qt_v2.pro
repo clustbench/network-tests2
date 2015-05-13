@@ -50,7 +50,7 @@ LIBS += -L/usr/lib \
 
 RESOURCES += resources.qrc
 TRANSLATIONS = translations/nv_tr_ru.ts
-
+QMAKE_CFLAGS_DEBUG = -g
 # ------------------------------------------
 # If these two variables are not empty in 
 # '../../config', add new files and folders
