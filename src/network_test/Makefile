@@ -52,7 +52,7 @@ EXECS= print_from_to convert_to_netcdf network_test2
 all: $(EXECS)
 
 network_test2: $(FILES_TEST2) $(FILES_COMMON)
-	$(MPI_CLINKER) $(MPI_CLINKER_FLAGS) $(MPI_LIB_PATH) $(NETCDF_INCLUDE) -L ../core -o network_test2 $(FILES_COMMON) $(FILES_TEST2) $(MPI_LIBS) -lparus_network  -lnetcdf
+	$(MPI_CLINKER) $(MPI_CLINKER_FLAGS) $(MPI_LIB_PATH) $(NETCDF_INCLUDE) -L ../core -o network_test2 $(FILES_COMMON) $(FILES_TEST2) $(MPI_LIBS) -lparus_network  -lnetcdf -lm
 
 
 print_from_to: $(FILES_PRINT_FROM_TO)
