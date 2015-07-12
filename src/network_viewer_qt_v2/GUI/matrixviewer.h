@@ -35,7 +35,12 @@ class MatrixViewer: public QWidget {
 	Q_OBJECT
 
   private:
-	  Ui::ui_MatrixViewer *ui;
+#if QT_VERSION > 0x040500
+	  Ui_MatrixViewer *ui;
+#else
+      Ui::ui_MatrixViewer *ui;
+#endif
+
 	  QwtPlotSpectrogram* _data[2];
 	  ICntrlr *const _cntrl;
 	  QwtPlotCurve *cursor;

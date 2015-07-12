@@ -5,7 +5,11 @@
 
 void MatrixViewer::Init (const QString &title, MatrixRaster* data[2]) {
 	try {
+#if QT_VERSION > 0x040500
+        ui=new Ui_MatrixViewer;
+#else        
 		ui=new Ui::ui_MatrixViewer;
+#endif
 	}
 	catch (...)
 	{
