@@ -23,7 +23,7 @@
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>
-#include <netcdfcpp.h>
+//#include <netcdfcpp.h>
 
 
 #include "my_malloc.h"
