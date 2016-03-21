@@ -1,14 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>ui_TabViewer</class>
+ <class>TabViewer</class>
  <widget class="QMainWindow" name="TabViewer">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
     <width>800</width>
-    <height>600</height>
+    <height>620</height>
    </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
@@ -24,7 +30,16 @@
        <enum>QFrame::Raised</enum>
       </property>
       <layout class="QGridLayout" name="gridLayout_2">
-       <property name="margin">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
         <number>0</number>
        </property>
        <item row="0" column="0" colspan="2">
@@ -46,20 +61,26 @@
            <property name="basicstep" stdset="0">
             <double>1.000000000000000</double>
            </property>
-           <property name="minValue">
+           <property name="minValue" stdset="0">
             <double>0.000000000000000</double>
            </property>
-           <property name="maxValue">
+           <property name="maxValue" stdset="0">
             <double>100.000000000000000</double>
            </property>
           </widget>
          </item>
          <item>
           <widget class="QwtSlider" name="S_WindowNumber">
-           <property name="scalePosition">
-            <enum>QwtSlider::TopScale</enum>
+           <property name="layoutDirection">
+            <enum>Qt::LeftToRight</enum>
            </property>
-           <property name="thumbLength">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="scalePosition">
+            <enum>QwtSlider::NoScale</enum>
+           </property>
+           <property name="thumbLength" stdset="0">
             <number>16</number>
            </property>
           </widget>
@@ -190,8 +211,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>292</width>
-     <height>498</height>
+     <width>355</width>
+     <height>555</height>
     </size>
    </property>
    <property name="floating">
@@ -344,10 +365,10 @@
                   <property name="basicstep" stdset="0">
                    <double>1.000000000000000</double>
                   </property>
-                  <property name="minValue">
+                  <property name="minValue" stdset="0">
                    <double>0.000000000000000</double>
                   </property>
-                  <property name="maxValue">
+                  <property name="maxValue" stdset="0">
                    <double>100.000000000000000</double>
                   </property>
                  </widget>
@@ -369,10 +390,10 @@
                   <property name="basicstep" stdset="0">
                    <double>1.000000000000000</double>
                   </property>
-                  <property name="minValue">
+                  <property name="minValue" stdset="0">
                    <double>0.000000000000000</double>
                   </property>
-                  <property name="maxValue">
+                  <property name="maxValue" stdset="0">
                    <double>100.000000000000000</double>
                   </property>
                  </widget>
@@ -506,7 +527,16 @@
          <string>Data</string>
         </attribute>
         <layout class="QGridLayout" name="gridLayout_4">
-         <property name="margin">
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
           <number>0</number>
          </property>
          <item row="0" column="0">
@@ -519,7 +549,16 @@
          <string>Hosts</string>
         </attribute>
         <layout class="QGridLayout" name="gridLayout_5">
-         <property name="margin">
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
           <number>0</number>
          </property>
          <item row="0" column="0">
@@ -556,8 +595,8 @@
    <slot>setVisible(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>607</x>
-     <y>39</y>
+     <x>788</x>
+     <y>40</y>
     </hint>
     <hint type="destinationlabel">
      <x>99</x>

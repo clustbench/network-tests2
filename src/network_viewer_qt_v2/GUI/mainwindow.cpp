@@ -19,13 +19,13 @@ QString ErrMsgs::err_msgs[NV::LastCode]; // see declaration in 'err_msgs.h'
 void MainWindow::Init (void) {
 	setAttribute(Qt::WA_QuitOnClose,true);
 
-	QTextCodec::setCodecForTr(QTextCodec::codecForName(
+/*	QTextCodec::setCodecForTr(QTextCodec::codecForName(
 #ifdef Q_WS_WIN
 	"Windows-1251"
 #else
 	"UTF-8"
 #endif
-	));
+    )); */
 	
 	try {
 		ui=new Ui::MainWindow;

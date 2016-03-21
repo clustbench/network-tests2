@@ -63,11 +63,11 @@ class MainWindow: public QMainWindow {
 		  QMainWindow::changeEvent(e);
 	  }
 
-  public Q_SLOTS:
+  public slots:
 	  void ChangeTabTitle (QWidget*, const QString&);
 	  void CloseTab (QWidget*);
 
-  private Q_SLOTS:
+  private slots:
 	  void ShowAbout (void);
 	  
 	  void CloseTab (const int);

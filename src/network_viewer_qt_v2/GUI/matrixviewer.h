@@ -119,7 +119,7 @@ class MatrixViewer: public QWidget {
 	  void SetRightSldrMinVal (const double val);
 	  void SetLeftSldrMaxVal (const double val);
 	  void ShowInfo ();
-	  void RectSelected (const QwtDoubleRect &rect);
+      void RectSelected (const QRectF &rect);
 	  void SetAim ();
 	  void DrawSelectionRect ();
 	  void ShowZoom ();

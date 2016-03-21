@@ -26,7 +26,7 @@ class ICntrlr: public QObject {
 	  virtual ~ICntrlr () {
 		  DropWindow();
 		  delete source;
-	  };
+      }
 	  
   	  // collects test parameters in 'source' and writes them to string 'info'
 	  virtual void GetInfo (QString &info) const = 0;

@@ -34,7 +34,7 @@ class TabViewer: public QMainWindow {
   private:
   	  static const QString my_sign; // sign for log messages
   	  ICntrlr *const controller;
-	  Ui::ui_TabViewer *ui;
+      Ui::TabViewer *ui;
 
   private:
 	  // constructor
@@ -45,7 +45,7 @@ class TabViewer: public QMainWindow {
 	  // must be called once after constructor
 	  bool Init (void);
 	  
-	  Q_DISABLE_COPY(TabViewer);
+      Q_DISABLE_COPY(TabViewer)
 
   public:
 	  // replaces calls to both the constructor and Init() (it was designed to ensure a call to Init()); 
@@ -90,7 +90,7 @@ class TabViewer: public QMainWindow {
   Q_SIGNALS:
 	  void SendMessToLog (const MainWindow::MsgType, const QString &msg, const QString &stat);
 
-  private Q_SLOTS:
+  private slots:
 	  void Initialize ();
 	  
 	  void ShowMesLen ();
@@ -120,7 +120,7 @@ class TabViewer: public QMainWindow {
 		  }
 	  }
 
-  public Q_SLOTS:
+  public slots:
 	  void SetProgressBarValue (const int val) {
 		  if (val==-1) ui->progressBar->hide();
 		  else

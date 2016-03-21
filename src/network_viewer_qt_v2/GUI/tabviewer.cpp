@@ -9,7 +9,7 @@ bool TabViewer::Init (void) {
 			SLOT(AddMsgToLog(const MainWindow::MsgType,const QString&,const QString&)));
 	
 	try {
-		ui=new Ui::ui_TabViewer;
+        ui=new Ui::TabViewer;
 	}
 	catch (...) {
 		ui=NULL;
@@ -70,10 +70,14 @@ void TabViewer::Initialize () {
 			  tmp_to=controller->GetRealEndMessageLength(),
 			  tmp_step=controller->GetStepLength();
 
-	ui->S_WindowNumber->setRange(tmp_from,tmp_to,tmp_step);
-	ui->SB_MatrixNumber->setRange(tmp_from,tmp_to,tmp_step);
-	ui->SB_LoadWinFrom->setRange(tmp_from,tmp_to-tmp_step,tmp_step);
-	ui->SB_LoadWinTo->setRange(tmp_from+tmp_step,tmp_to,tmp_step);
+    ui->S_WindowNumber->setScale(tmp_from,tmp_to);
+    ui->S_WindowNumber->setSingleSteps(tmp_step);
+    ui->SB_MatrixNumber->setRange(tmp_from,tmp_to);
+    ui->SB_MatrixNumber->setSingleStep(tmp_step);
+    ui->SB_LoadWinFrom->setRange(tmp_from,tmp_to-tmp_step);
+    ui->SB_LoadWinFrom->setSingleStep(tmp_step);
+    ui->SB_LoadWinTo->setRange(tmp_from+tmp_step,tmp_to);
+    ui->SB_LoadWinTo->setSingleStep(tmp_step);
 }
 
 void TabViewer::LoadWindow () {
@@ -147,8 +151,8 @@ void TabViewer::ShowMesLen () {
 
 	NewMatrix_mes(new_m_v);
 
-	delete matr_raster[0];
-	if (matr_raster[1]!=NULL) delete matr_raster[1];
+    delete matr_raster[0];
+    if (matr_raster[1]!=NULL) delete matr_raster[1];
 }
 
 void TabViewer::NewMatrix_mes (MatrixViewer *m_v) {

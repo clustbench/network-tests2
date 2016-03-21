@@ -2,6 +2,7 @@
 #include <QFileDialog>
 #include <QDebug>
 #include <cfloat>
+#include <qwt_picker_machine.h>
 
 void MatrixViewer::Init (const QString &title, MatrixRaster* data[2]) {
 	try {
@@ -40,28 +41,28 @@ void MatrixViewer::Init (const QString &title, MatrixRaster* data[2]) {
 	QwtColorMap *c_map=_cntrl->AllocMainCMap(0.0,1.0);
 
 	QwtPlotSpectrogram *dt=new QwtPlotSpectrogram;
-	dt->setData(*(data[0]));
+    dt->setData(data[0]);
 	dt->attach(ui->Plot);
-	dt->setColorMap(*c_map);
+    dt->setColorMap(c_map);
 	_cntrl->FreeMainCMap(c_map);
-	_data[0]=dt;
+    _data[0]=dt;
 	dt->show();
 
-	const QwtDoubleInterval tmp_range=_data[0]->data().range();
-	ui->S_Left->setRange(tmp_range.minValue(),tmp_range.maxValue());
-	ui->S_Left->setValue(ui->S_Left->minValue());
-	ui->S_Right->setRange(ui->S_Left->minValue(),ui->S_Left->maxValue());
-	ui->S_Right->setValue(ui->S_Right->maxValue());
+    const QwtInterval tmp_range=_data[0]->data()->interval(Qt::XAxis);
+    ui->S_Left->setScale(tmp_range.minValue(),tmp_range.maxValue());
+    ui->S_Left->setValue(ui->S_Left->lowerBound());
+    ui->S_Right->setScale(ui->S_Left->lowerBound(),ui->S_Left->upperBound());
+    ui->S_Right->setValue(ui->S_Right->upperBound());
 
 	if (data[1]!=NULL)
 	{
 		// then _cntrl->AllocAuxCMap()!=NULL too
 
 		dt=new QwtPlotSpectrogram;
-		dt->setData(*(data[1]));
+        dt->setData(data[1]);
 		dt->attach(ui->Plot);
 		c_map=_cntrl->AllocAuxCMap();
-		dt->setColorMap(*c_map);
+        dt->setColorMap(c_map);
 		_cntrl->FreeAuxCMap(c_map);
 		_data[1]=dt;
 		dt->show();
@@ -78,7 +79,7 @@ void MatrixViewer::Init (const QString &title, MatrixRaster* data[2]) {
 	const double data_y[]={0.0,1.0,0.5,0.5,0.5};
 	cursor=new QwtPlotCurve;
 	cursor->setPen(pen);
-	cursor->setData(data_x,data_y,5);
+    cursor->setSamples(data_x,data_y,5);
 	cursor->attach(ui->Plot);
 	cursor->show();
 
@@ -88,7 +89,8 @@ void MatrixViewer::Init (const QString &title, MatrixRaster* data[2]) {
 	selection_rect->attach(ui->Plot);
 
 	zoomer=new QwtPlotPicker(ui->Plot->canvas());
-	zoomer->setSelectionFlags(QwtPicker::RectSelection | QwtPicker::CornerToCorner | QwtPicker::DragSelection);
+    QwtPickerDragRectMachine *machine = new QwtPickerDragRectMachine();
+    zoomer->setStateMachine(machine);
 	zoomer->setRubberBand(QwtPicker::RectRubberBand);
 	zoomer->setRubberBandPen(QPen(pen.color(),1,Qt::DashLine));
 	zoomer->setEnabled(true);
@@ -99,7 +101,7 @@ void MatrixViewer::Init (const QString &title, MatrixRaster* data[2]) {
 	connect(ui->SB_xFrom,SIGNAL(valueChanged(int)),this,SLOT(SetAim()));
 	connect(ui->SB_yFrom,SIGNAL(valueChanged(int)),this,SLOT(SetAim()));
 
-	connect(zoomer,SIGNAL(selected(const QwtDoubleRect&)),this,SLOT(RectSelected(const QwtDoubleRect&)));
+    connect(zoomer,SIGNAL(selected(const QRectF&)),this,SLOT(RectSelected(const QRectF&)));
 
 	connect(ui->SB_xFrom,SIGNAL(valueChanged(int)),this,SLOT(DrawSelectionRect()));
 	connect(ui->SB_yFrom,SIGNAL(valueChanged(int)),this,SLOT(DrawSelectionRect()));
@@ -179,11 +181,11 @@ void MatrixViewer::SetAim () {
 	const double data_y[]={y-0.5,y+0.5,y,y,y};
 
 	cursor->show();
-	cursor->setData(data_x,data_y,5);
+    cursor->setSamples(data_x,data_y,5);
 	ui->Plot->replot();
 }
 
-void MatrixViewer::RectSelected (const QwtDoubleRect &rect) {
+void MatrixViewer::RectSelected (const QRectF &rect) {
 	ui->SB_xFrom->setValue((int)rect.left()+_p_from.x());
 	ui->SB_yFrom->setValue((int)rect.top()+_p_from.y());
 	ui->SB_xTo->setValue((int)rect.right()+_p_from.x());
@@ -200,9 +202,9 @@ void MatrixViewer::DrawSelectionRect () {
 
 	ui->B_zoom->setDisabled(same_val_x && same_val_y);
 
-	const MatrixRaster &da=static_cast<const MatrixRaster&>(_data[0]->data());
-	ui->LE_valFrom->setText(QString::number(da.value(val1_x-0.5,val1_y-0.5)));
-	ui->LE_valTo->setText(QString::number(da.value(val2_x-0.5,val2_y-0.5)));
+    const MatrixRaster *da=static_cast<const MatrixRaster*>(_data[0]->data());
+    ui->LE_valFrom->setText(QString::number(da->value(val1_x-0.5,val1_y-0.5)));
+    ui->LE_valTo->setText(QString::number(da->value(val2_x-0.5,val2_y-0.5)));
 
 	if (same_val_x || same_val_y)
 		// selection rectangle collapsed to single line or point
@@ -211,22 +213,22 @@ void MatrixViewer::DrawSelectionRect () {
 
 	const double x_rect[]={val1_x,val2_x,val2_x,val1_x,val1_x};
 	const double y_rect[]={val1_y,val1_y,val2_y,val2_y,val1_y};
-	selection_rect->setData(x_rect,y_rect,5);
+    selection_rect->setSamples(x_rect,y_rect,5);
 		
 	ui->Plot->replot();
 }
 
 void MatrixViewer::SetRightSldrMinVal (const double val) {
-	ui->S_Right->setRange(val,ui->S_Right->maxValue());
+    ui->S_Right->setScale(val,ui->S_Right->upperBound());
 
-	const double left_min=ui->S_Left->minValue();
-	const double tmp_range=ui->S_Right->maxValue()-left_min;
+    const double left_min=ui->S_Left->lowerBound();
+    const double tmp_range=ui->S_Right->upperBound()-left_min;
 
 	if (tmp_range<DBL_EPSILON) return;
 
 	QwtColorMap *c_map=_cntrl->AllocMainCMap((ui->S_Left->value()-left_min)/tmp_range,
 											 (ui->S_Right->value()-left_min)/tmp_range);
-	_data[0]->setColorMap(*c_map);
+    _data[0]->setColorMap(c_map);
 	_cntrl->FreeMainCMap(c_map);
 
 	//connect(this, SIGNAL(SetNormalizeToWinActive(bool)), ui->RB_normalizeCurrWindow, SLOT(setEnabled(bool)));
@@ -237,17 +239,17 @@ void MatrixViewer::SetRightSldrMinVal (const double val) {
 }
 
 void MatrixViewer::SetLeftSldrMaxVal (const double val) {
-	const double left_min=ui->S_Left->minValue();
+    const double left_min=ui->S_Left->lowerBound();
 
-	ui->S_Left->setRange(left_min,val);
+    ui->S_Left->setScale(left_min,val);
 
-	const double tmp_range=ui->S_Right->maxValue()-left_min;
+    const double tmp_range=ui->S_Right->upperBound()-left_min;
 
 	if (tmp_range<DBL_EPSILON) return;
 
 	QwtColorMap *c_map=_cntrl->AllocMainCMap((ui->S_Left->value()-left_min)/tmp_range,
 											 (ui->S_Right->value()-left_min)/tmp_range);
-	_data[0]->setColorMap(*c_map);
+    _data[0]->setColorMap(c_map);
 	_cntrl->FreeMainCMap(c_map);
 
 	ui->Plot->replot();
@@ -264,7 +266,7 @@ void MatrixViewer::ShowZoom () {
 	const int c_low=from_x-_p_from.x(),c_high=to_x-from_x;
 	int cols,r;
 
-	tmp_m_r=static_cast<const MatrixRaster*>(&(_data[0]->data()));
+    tmp_m_r=static_cast<const MatrixRaster*>(_data[0]->data());
 	cols=tmp_m_r->GetCols();
 	tmp_mtr=static_cast<double*>(malloc(r_high*c_high*sizeof(double)));
 	if (tmp_mtr==NULL) return;
@@ -275,7 +277,7 @@ void MatrixViewer::ShowZoom () {
 	tmp_m_r_list[0]=new MatrixRaster(tmp_mtr,r_high,c_high);
 	if (_data[1]!=NULL)
 	{
-		tmp_m_r=static_cast<const MatrixRaster*>(&(_data[1]->data()));
+        tmp_m_r=static_cast<const MatrixRaster*>(_data[1]->data());
 		cols=tmp_m_r->GetCols();
 		tmp_mtr=static_cast<double*>(malloc(r_high*c_high*sizeof(double)));
 		if (tmp_mtr==NULL)
