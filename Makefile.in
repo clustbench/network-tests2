@@ -19,32 +19,25 @@
 
 include ./config
 SHELL=/bin/bash
-GOALS = network_test network_viewer_qt clustering java
+GOALS = network_test network_viewer_qt_v2 clustering java
 #INSTALL_DIR = .
 
 all: core $(GOALS) 
 
-install: core $(GOALS) prepare_install $(INSTALL_DIR)/config install_doc parus_config.h
-	$(MAKE) install -C ./src/network_test
-	$(MAKE) install -C ./src/core
-	$(MAKE) install -C ./src/network_viewer_qt_v2
-	$(MAKE) install -C ./src/java
-	$(MAKE) install -C ./src/clustering
+install: prepare_install install_core $(GOALS) $(INSTALL_DIR)/config install_doc
+	$(foreach rule, $(GOALS), $(MAKE) install -C ./src/$(rule);)
 	echo $(PARUS_VERSION) > $(INSTALL_DIR)/version
 	cp ./parus_config.h $(INSTALL_DIR)/include/parus_config.h
 
-
-
 uninstall:
-	if [ -f $(INSTALL_DIR)/version ]; then	\
-	 rm -rf $(INSTALL_DIR);			\
-	else					\
-	echo "Parus system are not installed";	\
+	if [ -f $(INSTALL_DIR)/version ]; then      \
+	    rm -rf $(INSTALL_DIR);                  \
+	else                                        \
+	    echo "Parus system are not installed";  \
 	fi
 
 force_uninstall:
 	rm -rf $(INSTALL_DIR)
-
 
 install_doc:
 	cp -rf ./doc/* $(INSTALL_DIR)/doc
@@ -52,13 +45,13 @@ install_doc:
 core: parus_config.h
 	$(MAKE) -C ./src/core
 
-install_core: 
+install_core: core
 	$(MAKE) install -C ./src/core
 
 network_test:
 	$(MAKE) -C ./src/network_test
 
-network_viewer_qt:
+network_viewer_qt_v2:
 	$(MAKE) -C ./src/network_viewer_qt_v2
 
 clustering:
@@ -67,7 +60,6 @@ clustering:
 java:
 	$(MAKE) -C ./src/java
 
-
 clean:
 	rm -f ./parus_config.h
 	$(MAKE) clean -C ./src/network_test
@@ -75,7 +67,6 @@ clean:
 	$(MAKE) clean -C ./src/network_viewer_qt_v2
 	$(MAKE) clean -C ./src/java
 	$(MAKE) clean -C ./src/clustering
-
 
 prepare_install:
 	./prepare_install.sh $(INSTALL_DIR)
