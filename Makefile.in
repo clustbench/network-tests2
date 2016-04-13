@@ -19,10 +19,8 @@
 
 include ./config
 SHELL=/bin/bash
-GOALS = network_test network_viewer_qt_v2 clustering java
-#INSTALL_DIR = .
 
-all: core $(GOALS) 
+all: core $(GOALS)
 
 install: prepare_install install_core $(GOALS) $(INSTALL_DIR)/config install_doc
 	$(foreach rule, $(GOALS), $(MAKE) install -C ./src/$(rule);)

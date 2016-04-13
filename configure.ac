@@ -16,6 +16,7 @@ AC_ARG_VAR([MPI_CFLAGS], [Flags for MPI C compiler by default same with CFLAGS])
 AC_ARG_VAR([MPI_CXXFLAGS], [Flags for MPI C++ compiler by default same with CXXFLAGS])
 AC_ARG_VAR([MPI_LIBS], [Additional libs for parallel program])
 AC_ARG_VAR([MPI_LDFLAGS], [Path to additional libs for parallel program])
+AC_ARG_VAR([GOALS], [List of goals to be built])
 
 AC_ARG_ENABLE([java-gui],
               [AS_HELP_STRING([--enable-java-gui],
@@ -23,13 +24,55 @@ AC_ARG_ENABLE([java-gui],
                              )
               ],
               [AS_CASE(["${enableval}"],
-                       [yes], [AC_SUBST([JAVA_GUI], [enabled])],
-                       [no],  [AC_SUBST([JAVA_GUI], [disabled])],
+                       [yes], [AS_VAR_APPEND([GOALS], [" java "])],
+                       [no],  [],
                        [AC_MSG_ERROR([Bad value ${enableval} for --enable-java-gui])]
                       )
-              ],
-              [AC_SUBST([JAVA_GUI],[disabled])]
+              ]
+              # nothing to do because feature is disabled by default
              ) # java-gui
+
+AC_ARG_ENABLE([qt-gui],
+              [AS_HELP_STRING([--enable-qt-gui],
+                              [Enable Qt version of network-viewer program (disabled by default)]
+                             )
+              ],
+              [AS_CASE(["${enableval}"],
+                      [yes], [AS_VAR_APPEND([GOALS], [" network_viewer_qt_v2 "])],
+                      [no],  [],
+                      [AC_MSG_ERROR([Bad value ${enableval} for --enable-qt-gui])]
+                     )
+              ]
+              # nothing to do because feature is disabled by default
+             ) # qt-gui
+
+AC_ARG_ENABLE([network-test],
+              [AS_HELP_STRING([--enable-network-test],
+                              [Enable testing (enabled by default)]
+                             )
+              ],
+              [AS_CASE(["${enableval}"],
+                       [yes], [AS_VAR_APPEND([GOALS], [" network_test "])],
+                       [no],  [],
+                       [AC_MSG_ERROR([Bad value ${enableval} for --enable-network-test])]
+                      )
+              ],
+              [AS_VAR_APPEND([GOALS], [" network_test "])]
+             ) # network-test
+
+AC_ARG_ENABLE([clustering],
+              [AS_HELP_STRING([--enable-clustering],
+                              [Enable clustering (disabled by default)]
+                             )
+              ],
+              [AS_CASE(["${enableval}"],
+                      [yes], [AS_VAR_APPEND([GOALS], [" clustering "])],
+                      [no],  [],
+                      [AC_MSG_ERROR([Bad value ${enableval} for --enable-qt-gui])]
+                     )
+              ]
+              # nothing to do because feature is disabled by default
+             ) # clustering
 
 AS_IF([test "x$JAVAC" = "x"], [AC_SUBST([JAVAC], [javac])])
 AS_IF([test "x$JAR" = "x"], [AC_SUBST([JAR], [jar])])
