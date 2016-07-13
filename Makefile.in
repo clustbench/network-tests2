@@ -46,6 +46,10 @@ core: parus_config.h
 install_core: core
 	$(MAKE) install -C ./src/core
 
+clean_core:
+	rm -f ./parus_config.h
+	$(MAKE) clean -C ./src/core
+
 network_test:
 	$(MAKE) -C ./src/network_test
 
@@ -58,13 +62,8 @@ clustering:
 java:
 	$(MAKE) -C ./src/java
 
-clean:
-	rm -f ./parus_config.h
-	$(MAKE) clean -C ./src/network_test
-	$(MAKE) clean -C ./src/core
-	$(MAKE) clean -C ./src/network_viewer_qt_v2
-	$(MAKE) clean -C ./src/java
-	$(MAKE) clean -C ./src/clustering
+clean: clean_core
+	$(foreach rule, $(GOALS), $(MAKE) clean -C ./src/$(rule);)
 
 prepare_install:
 	./prepare_install.sh $(INSTALL_DIR)
