@@ -127,5 +127,5 @@ AC_FUNC_REALLOC
 AC_FUNC_STRTOD
 AC_CHECK_FUNCS([clock_gettime floor gethostname gettimeofday localeconv memset sqrt strchr strstr])
 
-AC_CONFIG_FILES([config Makefile])
+AC_CONFIG_FILES([config Makefile parus_config.h])
 AC_OUTPUT
