@@ -1,7 +1,6 @@
 #include "fullviewer.h"
 #include "../core/data_netcdf.h"
 #include "../core/data_text.h"
-//#include "../core/opencl_defs.h"
 #ifdef _OPENCL // defined in "../core/opencl_defs.h"!
   #include "../core/renderer_OpenCL.h"
 #endif
@@ -60,14 +59,14 @@ FullViewer::FullViewer (QWidget *parent, const int mode, bool &was_error): QWidg
 	pt_info=NULL;
 	hosts_info=NULL;
 	first_render=true;
-	
+
 	if (mode>2)
 	{
 		SEND_ERR_MSG(UnknownMode);
 		was_error=true;
 		return;
 	}
-	
+
 	/* creation of the renderer from most exacting one to least exacting (due to errors) */
 #ifdef _OPENCL // defined in "../core/opencl_defs.h"!
 	renderer=new(std::nothrow) RendererOCL(sel_cube_x,sel_cube_y,sel_cube_vis);
@@ -140,7 +139,7 @@ FullViewer::FullViewer (QWidget *parent, const int mode, bool &was_error): QWidg
     if (opts_ind==QExpandBox::Error) { NOT_ENOUGH_MEMORY; }
 }
 
-bool FullViewer::Init (const QString &data_filename, const QString &deviat_filename, 
+bool FullViewer::Init (const QString &data_filename, const QString &deviat_filename,
 					   const QString &hosts_filename, const IData::Type f_type, const QString &tab_nm) {
 	QLabel progress(NULL);
 	progress.setFixedSize(300,90);
@@ -165,9 +164,9 @@ bool FullViewer::Init (const QString &data_filename, const QString &deviat_filen
 	hosts_info->hide();
 	connect(hosts_info,SIGNAL(clicked()),this,SLOT(ShowHostsInfo()));
 
-	
+
 	NV::ErrCode err=NV::Success;
-	
+
 	if (f_type==IData::NetCDF)
 		v_file=new(std::nothrow) Data_NetCDF(data_filename,hosts_filename,err);
 	else
@@ -198,11 +197,11 @@ bool FullViewer::Init (const QString &data_filename, const QString &deviat_filen
 			return false;
 		}
 	}
-	
+
 	/* get initial 'clr_matrix' sizes */
 	x_num=y_num=v_file->GetNumProcessors();
 	z_num=v_file->GetZNum();
-	
+
 	/* check real end message length */
 	const int real_end_mes_len=v_file->GetRealEndMessageLength()+v_file->GetStepLength();
 	if (real_end_mes_len!=v_file->GetEndMessageLength())
@@ -213,7 +212,7 @@ bool FullViewer::Init (const QString &data_filename, const QString &deviat_filen
 							 arg(real_end_mes_len).arg(v_file->GetEndMessageLength()),QMessageBox::Ok);
 		progress.show();
 	}
-	
+
 	QString msg=tr(" file \"");
 	(msg+=data_filename)+=tr("\" is loaded");
 	emit SendMessToLog(MainWindow::Success,my_sign,msg);
@@ -223,7 +222,7 @@ bool FullViewer::Init (const QString &data_filename, const QString &deviat_filen
 		(msg+=deviat_filename)+=tr("\" is loaded");
 		emit SendMessToLog(MainWindow::Success,my_sign,msg);
 	}
-	
+
 	if (working_mode==2)
 	{
 		progress.hide();
@@ -273,12 +272,12 @@ bool FullViewer::Init (const QString &data_filename, const QString &deviat_filen
 
 	progress.setText(tr("<p align=\"center\">Filling information widgets...</p>"));
 	progress.repaint(); // immediate repaint
-	
+
 	font1.setPointSize(11);
-	
+
 	info_wdg->setParent(this);
 	info_wdg->setFont(font1);
-	
+
 	/* hosts' names */
 	const QVector<QString> &hosts_names=v_file->GetHostNamesAsVector();
 	if (hosts_names.isEmpty()) info_wdg->setItemEnabled(hosts_ind,false);
@@ -287,7 +286,7 @@ bool FullViewer::Init (const QString &data_filename, const QString &deviat_filen
 		// need to paint hosts' numbers in green
 		int ind_of_pr; // index of parenthesis in 'hosts_names[i]'
 		QString name; // resulting host's name
-		
+
 		for (QVector<QString>::const_iterator it=hosts_names.constBegin(),it_end=hosts_names.constEnd();
 			 it!=it_end; ++it)
 		{
@@ -304,9 +303,9 @@ bool FullViewer::Init (const QString &data_filename, const QString &deviat_filen
 				return false;
 			}
 		}
-				
+
 		hosts->moveCursor(QTextCursor::Start);
-		
+
 		hosts_info->show();
 		hosts_info->raise();
 	}
@@ -526,12 +525,12 @@ void FullViewer::FillMatrix () {
 	progr.show();
 	// immediate processing of all paint events
 	QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents,5);
-	
-	/* color matrix is filled such way: 
+
+	/* color matrix is filled such way:
 	   for z-coordinate 0:
-	   x-coordinates in row 0 | x-coordinates in row 1 | ... 
+	   x-coordinates in row 0 | x-coordinates in row 1 | ...
 	   for z-coordinate 1: ...*/
-	
+
 	double *line=static_cast<double*>(malloc(x_num*sizeof(double))); // line of size 1xX_NUM
 
 	if (line==NULL)
@@ -540,7 +539,7 @@ void FullViewer::FillMatrix () {
 		emit CloseOnEscape(this);
 		return;
 	}
-	
+
 	double *l; // iterator for 'line'
 	const double *const l_end=line+x_num;
 	unsigned short *mtr; // iterator for 'clr_matrix'
@@ -548,12 +547,12 @@ void FullViewer::FillMatrix () {
 	double r_diff_max_min_v; // reciprocal of the difference between maximum and minimum values
 	const int yz_num=y_num*z_num;
 	int i=0;
-	
+
 	min_val1=min_val2=DBL_MAX;
 	max_val1=max_val2=0.0;
-	
+
 	#define DRAW_PROGR (i & 0xff)==0
-	
+
 	switch (working_mode)
 	{
 		case 0: /* single file */
@@ -589,11 +588,11 @@ void FullViewer::FillMatrix () {
 			break;
 		case 1: /* values + deviations */
 		{
-			double *line2=static_cast<double*>(malloc(x_num*sizeof(double))); // line of size 1xX_NUM in 
+			double *line2=static_cast<double*>(malloc(x_num*sizeof(double))); // line of size 1xX_NUM in
 																			  // the file with deviations
 			double r_diff_max_min_d;
 			double *l2,val2,coef;
-			
+
 			if (line2==NULL)
 			{
 				free(line);
@@ -601,7 +600,7 @@ void FullViewer::FillMatrix () {
 				emit CloseOnEscape(this);
 				return;
 			}
-			
+
 			// find min/max of all values at first
 			v_file->Begin(IData::Row,v_file->GetBeginMessageLength());
 			while (v_file->GetDataAndMove(line)==NV::Success) // you shouldn't merge this cycle and the cycle below
@@ -643,7 +642,7 @@ void FullViewer::FillMatrix () {
 					val=*l;
 					val2=*l2;
 					coef=((val<1.0e-100) || (fabs(val2)>=fabs(val)))? 1.0 : val2/val;
-					*mtr=(PUT_G(floor((val-min_val1)*r_diff_max_min_v*(1.0-coef)+0.5)) | 
+					*mtr=(PUT_G(floor((val-min_val1)*r_diff_max_min_v*(1.0-coef)+0.5)) |
 						  PUT_R(floor((val2-min_val2)*r_diff_max_min_d*coef+0.5)));
 					++mtr;
 				}
@@ -655,11 +654,11 @@ void FullViewer::FillMatrix () {
 		}
 		case 2: /* compare 2 files */
 		{
-			double *line2=static_cast<double*>(malloc(x_num*sizeof(double))); // line of size 1xX_NUM in 
+			double *line2=static_cast<double*>(malloc(x_num*sizeof(double))); // line of size 1xX_NUM in
 																			  // the second file
 			double r_diff_max_min2;
 			double *l2;
-			
+
 			if (line2==NULL)
 			{
 				free(line);
@@ -667,7 +666,7 @@ void FullViewer::FillMatrix () {
 				emit CloseOnEscape(this);
 				return;
 			}
-			
+
 			// find min/max of all values at first
 			v_file->Begin(IData::Row,v_file->GetBeginMessageLength());
 			d_file->Begin(IData::Row,d_file->GetBeginMessageLength());
@@ -705,7 +704,7 @@ void FullViewer::FillMatrix () {
 				for (l=line,l2=line2; l!=l_end; ++l,++l2)
 				{
 					val=*l-*l2;
-					*mtr=(val<0.0)? PUT_R(floor(0.5-(val+min_val2)*r_diff_max_min2)) : 
+					*mtr=(val<0.0)? PUT_R(floor(0.5-(val+min_val2)*r_diff_max_min2)) :
 									PUT_G(floor((val-min_val1)*r_diff_max_min_v+0.5));
 					++mtr;
 				}
@@ -741,20 +740,20 @@ void FullViewer::ReFillMatrix (const double new_min, const double new_max, const
 	memset(clr_matrix,0,x_num*y_num*z_num*sizeof(short)); // zero all 'clr_matrix'
 
 	double *line=static_cast<double*>(malloc(x_num*sizeof(double))); // line of size 1xX_NUM
-		
+
 	if (line==NULL)
 	{
 		SEND_ERR_MSG(NoMem);
 		emit CloseOnEscape(this);
 		return;
 	}
-	
+
 	double *l; // iterator for 'line'
 	const double *const l_end=line+x_num;
 	unsigned short *mtr; // iterator for 'clr_matrix'
 	const double r_diff_max_min_v=(new_max<(new_min+1.0e-305))? 0.0 : (255.0/(new_max-new_min));
 	double val1;
-	
+
 	switch (working_mode)
 	{
 		case 0: /* single file */
@@ -766,7 +765,7 @@ void FullViewer::ReFillMatrix (const double new_min, const double new_max, const
 				{
 					// green color
 					val1=*l;
-					*mtr|=(val1<=new_min)? PUT_G(0x0) : 
+					*mtr|=(val1<=new_min)? PUT_G(0x0) :
 						  ((val1>=new_max)? PUT_G(0xff) : PUT_G(floor((val1-new_min)*r_diff_max_min_v+0.5)));
 					++mtr;
 				}
@@ -778,7 +777,7 @@ void FullViewer::ReFillMatrix (const double new_min, const double new_max, const
 			const double new_min2=coef*(new_min-min_val1)+min_val2; // proportional to 'new_min'
 			const double new_max2=coef*(new_max-max_val1)+max_val2; // proportional to 'new_max'
 			const double r_diff_max_min2=(new_max2<(new_min2+1.0e-305))? 0.0 : (255.0/(new_max2-new_min2));
-			double *line2=static_cast<double*>(malloc(x_num*sizeof(double))); // line of size 1xX_NUM 
+			double *line2=static_cast<double*>(malloc(x_num*sizeof(double))); // line of size 1xX_NUM
 																			  // in the file with deviations
 			double *l2,val2,koeff;
 
@@ -789,7 +788,7 @@ void FullViewer::ReFillMatrix (const double new_min, const double new_max, const
 				emit CloseOnEscape(this);
 				return;
 			}
-			
+
 			mtr=clr_matrix;
 			v_file->Begin(IData::Row,v_file->GetBeginMessageLength());
 			d_file->Begin(IData::Row,d_file->GetBeginMessageLength());
@@ -801,9 +800,9 @@ void FullViewer::ReFillMatrix (const double new_min, const double new_max, const
 					val1=*l;
 					val2=*l2;
 					koeff=((val1<1.0e-100) || (fabs(val2)>=fabs(val1)))? 1.0 : val2/val1;
-					val1=(val1<=new_min)? 0.0 : floor((val1>=new_max)? (255.0*(1.0-koeff)+0.5) : 
+					val1=(val1<=new_min)? 0.0 : floor((val1>=new_max)? (255.0*(1.0-koeff)+0.5) :
 													  ((val1-new_min)*r_diff_max_min_v*(1.0-koeff)+0.5));
-					val2=(val2<=new_min2)? 0.0 : floor((val2>=new_max2)? (255.0*koeff+0.5) : 
+					val2=(val2<=new_min2)? 0.0 : floor((val2>=new_max2)? (255.0*koeff+0.5) :
 													   ((val2-new_min2)*r_diff_max_min2*koeff+0.5));
 					*mtr|=(PUT_G(val1) | PUT_R(val2));
 					++mtr;
@@ -818,7 +817,7 @@ void FullViewer::ReFillMatrix (const double new_min, const double new_max, const
 			const double new_min2=coef*(new_min-min_val1)+min_val2; // proportional to 'new_min'
 			const double new_max2=coef*(new_max-max_val1)+max_val2; // proportional to 'new_max'
 			const double r_diff_max_min2=(new_max2<(new_min2+1.0e-305))? 0.0 : (255.0/(new_max2-new_min2));
-			double *line2=static_cast<double*>(malloc(x_num*sizeof(double))); // line of size 1xX_NUM 
+			double *line2=static_cast<double*>(malloc(x_num*sizeof(double))); // line of size 1xX_NUM
 																			  // in the second file
 			double *l2;
 
@@ -829,7 +828,7 @@ void FullViewer::ReFillMatrix (const double new_min, const double new_max, const
 				emit CloseOnEscape(this);
 				return;
 			}
-			
+
 			mtr=clr_matrix;
 			v_file->Begin(IData::Row,v_file->GetBeginMessageLength());
 			d_file->Begin(IData::Row,d_file->GetBeginMessageLength());
@@ -842,11 +841,11 @@ void FullViewer::ReFillMatrix (const double new_min, const double new_max, const
 					if (val1<0.0)
 					{
 						val1=-val1; // 'fchs' instruction in FPU
-						*mtr|=(val1<=new_min2)? PUT_R(0x0) : 
+						*mtr|=(val1<=new_min2)? PUT_R(0x0) :
 							  ((val1>=new_max2)? PUT_R(0xff) : PUT_R(floor((val1-new_min2)*r_diff_max_min2+0.5)));
 					}
 					else
-						*mtr|=(val1<=new_min)? PUT_G(0x0) : 
+						*mtr|=(val1<=new_min)? PUT_G(0x0) :
 							  ((val1>=new_max)? PUT_G(0xff) : PUT_G(floor((val1-new_min)*r_diff_max_min_v+0.5)));
 					++mtr;
 				}
@@ -856,11 +855,11 @@ void FullViewer::ReFillMatrix (const double new_min, const double new_max, const
 		}
 	}
 	free(line);
-	
+
 	renderer->SetClrMatrix(clr_matrix);
 }
 
-void FullViewer::AdjustMatrix (const double new_min_v, const double new_max_v, 
+void FullViewer::AdjustMatrix (const double new_min_v, const double new_max_v,
 							   const double new_min_d, const double new_max_d) {
 	const double r_diff_max_min_v=(max_val1<(min_val1+1.0e-305))? 0.0 : (255.0/(max_val1-min_val1));
 	const unsigned char color_min_v=static_cast<unsigned char>(floor((new_min_v-min_val1)*r_diff_max_min_v+0.5));
@@ -910,7 +909,7 @@ void FullViewer::AdjustMatrix (const double new_min_v, const double new_max_v,
 	else
 		SEND_ERR_MSG1(RenderError,renderer->GetError());
 #endif
-}  
+}
 
 void FullViewer::LeaveChosenInMatrix (const Coords *const pos, const int num) {
 	const size_t x_n=static_cast<size_t>(x_num),y_n=static_cast<size_t>(y_num);
@@ -975,7 +974,7 @@ void FullViewer::LeaveChosenInMatrix (const Coords *const pos, const int num) {
 		memset(clr_matrix+(ch_pnt2+1u),0,(x_n*y_n*static_cast<size_t>(z_num)-(ch_pnt2+1u))*sizeof(short));
 		free(pos_sort);
 	}
-	
+
 	renderer->SetClrMatrix(clr_matrix);
 }
 
@@ -990,13 +989,13 @@ void FullViewer::LeaveChosenInMatrix (const unsigned int proc_ind) {
 	const unsigned short inc=(working_mode==0)? 0x0001 : 0x0101; // see in FullViewer::LeaveChosenInMatrix (const Coords *const, const int)
 	unsigned short *mtr=clr_matrix;
 
-	// You can skip all explanations below if you can imagine how 
+	// You can skip all explanations below if you can imagine how
 	// 3D-matrices are stored in 1D-arrays (in row-by-row order) ;)
 
 	if (proc_ind!=0u)
 	{
-		// the beginning: go to the row with index 'proc_ind' not forgeting 
-		// to process cells with column indices equal to 'proc_ind' during 
+		// the beginning: go to the row with index 'proc_ind' not forgeting
+		// to process cells with column indices equal to 'proc_ind' during
 		// this "walk"; then process the whole row with index 'proc_ind'
 		memset(mtr,0,pr_ind_ss); // cells before column 'proc_ind'
 		mtr+=proc_ind;
@@ -1016,9 +1015,9 @@ void FullViewer::LeaveChosenInMatrix (const unsigned int proc_ind) {
 		*mtr|=inc;
 	for (int k=1; k<z_num; ++k)
 	{
-		// repeated part: with the help of two facts - that 'clr_matrix' is contigious 
-		// and that there is constant stride between rows with index 'proc_ind' in two 
-		// adjacent matrices - we can use ('x_num'-1)-stride ('y_num'-2) times (compare 
+		// repeated part: with the help of two facts - that 'clr_matrix' is contigious
+		// and that there is constant stride between rows with index 'proc_ind' in two
+		// adjacent matrices - we can use ('x_num'-1)-stride ('y_num'-2) times (compare
 		// to avg. ('y_num'/2) times when using per-matrix algorithm!)
 		memset(mtr,0,pr_ind_ss);
 		mtr+=proc_ind;
@@ -1038,8 +1037,8 @@ void FullViewer::LeaveChosenInMatrix (const unsigned int proc_ind) {
 	}
 	if (rmndr!=0u/*(proc_ind+1u)!=x_n*/)
 	{
-		// the end: there are no more rows with index 'proc_num', 
-		// only column with index 'proc_ind' is taken into account; 
+		// the end: there are no more rows with index 'proc_num',
+		// only column with index 'proc_ind' is taken into account;
 		// so we simply go to the end of 'clr_matrix'
 		memset(mtr,0,pr_ind_ss);
 		mtr+=proc_ind;
@@ -1111,24 +1110,24 @@ void FullViewer::PointInfo (const Coords &pos) {
 		if (pt_info==NULL) return;
 		pt_info->setFixedSize(250,110);
 		pt_info->setReadOnly(true);
-		pt_info->setTextInteractionFlags(Qt::LinksAccessibleByMouse); // something that differs from 
-																	  // 'Qt::NoTextInteraction' and 
+		pt_info->setTextInteractionFlags(Qt::LinksAccessibleByMouse); // something that differs from
+																	  // 'Qt::NoTextInteraction' and
 																	  // 'Qt::TextEditorInteraction'
-		pt_info->move(IMAGE_OFFS+img_w-pt_info->width(),1+img_h-pt_info->height()); // to right bottom corner 
+		pt_info->move(IMAGE_OFFS+img_w-pt_info->width(),1+img_h-pt_info->height()); // to right bottom corner
 																					// of the image
 		pt_info->raise();
 	}
-		
+
 	const int mes_len=pos.z*v_file->GetStepLength()+v_file->GetBeginMessageLength();
 	double val1,val2=0.0;
 	QString txt(tr("<p><span style=\"color:red\">Process-sender:</span> <span style=\"color:white\">r</span>%1<br>"
 				   "<span style=\"color:blue\">Process-receiver:</span> %2<br>"
 				   "<span style=\"color:yellow\">Message length:</span> <span style=\"color:white\">r</span>%3</p>"
 				   "<p>").arg(pos.x).arg(pos.y).arg(mes_len));
-	
+
 	if (v_file->GetSingleValue(mes_len,pos.y,pos.x,val1)!=NV::Success) return;
 	if ((working_mode!=0) && (d_file->GetSingleValue(mes_len,pos.y,pos.x,val2)!=NV::Success)) return;
-	
+
 	switch (working_mode)
 	{
 		case 0: /* single file */
