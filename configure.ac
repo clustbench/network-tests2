@@ -28,9 +28,6 @@ AC_DEFUN([AX_CHECK_PROG],
          ]
         )
 
-AC_ARG_VAR([JAVAC], [Place where javac is installed])
-AC_ARG_VAR([JAR], [Place where jar is installed])
-AC_ARG_VAR([ANT], [Place where ant utility is installed])
 # TODO: Change the value for qmake for QT5 later
 AC_ARG_VAR([QMAKE], [Place where qmake-qt4 is installed])
 AC_ARG_VAR([MPICC], [Path to MPI2 compatible C-compiler])
@@ -41,9 +38,6 @@ AC_ARG_VAR([MPI_LIBS], [Additional libs for parallel program])
 AC_ARG_VAR([MPI_LDFLAGS], [Path to additional libs for parallel program])
 AC_ARG_VAR([GOALS], [List of goals to be built])
 
-AX_ARG_ENABLE([java-gui], [" java "], [""],
-              [Enable Java version of network-viewer program (disabled by default)]
-             ) # java
 AX_ARG_ENABLE([qt-gui], [" network_viewer_qt_v2 "], [""],
               [Enable Qt version of network-viewer program (disabled by default)]
              ) # network_viewer_qt_v2
@@ -57,7 +51,7 @@ AX_ARG_ENABLE([clustering], [" clustering "], [""],
 AC_ARG_ENABLE([all],
               [AS_HELP_STRING([--enable-all], [Enable all modules])],
               [AS_CASE(["${enableval}"],
-                       [yes], [AC_SUBST([GOALS], ["java network_test network_viewer_qt_v2 clustering"])],
+                       [yes], [AC_SUBST([GOALS], ["network_test network_viewer_qt_v2 clustering"])],
                        [no],  [],
                        [AC_MSG_ERROR([Bad value ${enableval} for --enable-all])]
                       )
@@ -65,9 +59,6 @@ AC_ARG_ENABLE([all],
               # nothing to do because feature is disabled by default
              ) # all
 
-AS_IF([test "x$JAVAC" = "x"], [AC_SUBST([JAVAC], [javac])])
-AS_IF([test "x$JAR" = "x"], [AC_SUBST([JAR], [jar])])
-AS_IF([test "x$ANT" = "x"], [AC_SUBST([ANT], [ant])])
 AS_IF([test "x$MPICC" = "x"], [AC_SUBST([MPICC], [mpicc])])
 AS_IF([test "x$MPICXX" = "x"], [AC_SUBST([MPICXX], [mpicxx])])
 AS_IF([test "x$QMAKE" = "x"], [AC_SUBST([QMAKE], [qmake-qt4])])
@@ -83,11 +74,6 @@ AC_PROG_RANLIB
 AX_CHECK_PROG([MPICC], [MPI compiler for C programming language has not been found])
 AX_CHECK_PROG([MPICXX], [MPI compiler for C++ programming language has not been found])
 AS_CASE(["$GOALS"],
-        [*"java"*], [
-            AX_CHECK_PROG([ANT], [ant is required but has not been found])
-            AX_CHECK_PROG([JAR], [jar is required but has not been found])
-            AX_CHECK_PROG([JAVAC], [javac is required but has not been found])
-            ],
         [*"qt"*], [
             AX_CHECK_PROG([QMAKE], [qmake-qt4 is required but has not been found])
             AC_CHECK_LIB([qwt-qt4],[QwtPlot::axisScaleEngine])

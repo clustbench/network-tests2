@@ -58,9 +58,6 @@ network_viewer_qt_v2:
 clustering:
 	$(MAKE) -C ./src/clustering
 
-java:
-	$(MAKE) -C ./src/java
-
 clean: clean_core
 	$(foreach rule, $(GOALS), $(MAKE) clean -C ./src/$(rule);)
 
@@ -72,5 +69,3 @@ prepare_install:
 
 $(INSTALL_DIR)/config:
 	cp config $(INSTALL_DIR)/config
-
-.PHONY: src/java
