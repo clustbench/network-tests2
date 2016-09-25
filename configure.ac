@@ -50,12 +50,29 @@ AC_PROG_RANLIB
 
 AX_CHECK_PROG([MPICC], [MPI compiler for C programming language has not been found])
 AX_CHECK_PROG([MPICXX], [MPI compiler for C++ programming language has not been found])
-AS_CASE(["$GOALS"],
-        [*"qt"*], [
-            AX_CHECK_PROG([QMAKE], [qmake-qt4 is required but has not been found])
-            AC_CHECK_LIB([qwt-qt4],[QwtPlot::axisScaleEngine])
-            ]
-       )
+
+# Checks for -lnetcdf
+AX_CHECK_LIB([netcdf], [nc_create nc_close nc_sync nc_def_dim \
+	nc_def_var nc_enddef nc_put_var_int nc_put_vara_double]
+)
+
+for target in $GOALS
+do
+	AS_CASE(["$target"],
+		[*"network_viewer_qt"*], [
+			AX_CHECK_PROG([QMAKE], [qmake-qt4 is required but has not been found])
+			AX_CHECK_LIB([netcdf], [nc_open nc_inq_varid nc_get_var1 \
+				nc_inq_nvars nc_inq_varids nc_inq_varndims nc_inq_dimlen \
+				nc_inq_vardimid nc_get_vara_double nc_get_var1_int]
+			)
+		],
+		[*"network_test"*], [
+			AX_CHECK_LIB([netcdf], [nc_open nc_get_var_int nc_get_vara_double \
+				nc_inq_dimid nc_inq_dimlen nc_inq_varid]
+			)
+		]
+	)
+done
 
 AS_IF([test "x$MPI_CFLAGS" = "x"], [AC_SUBST([MPI_CFLAGS], $CFLAGS)])
 AS_IF([test "x$MPI_CXXFLAGS" = "x"], [AC_SUBST([MPI_CXXFLAGS], $CXXFLAGS)])
@@ -63,8 +80,7 @@ AS_IF([test "x$MPI_LDFLAGS" = "x"], [AC_SUBST([MPI_LDFLAGS], $LDFLAGS)])
 AS_IF([test "x$MPI_LIBS" = "x"], [AC_SUBST([MPI_LIBS], $LIBS)])
 
 # Checks for libraries.
-# -lqwt-qt4 -lnetcdf -lGLU -lQtOpenGL -lQtGui -lQtCore -lGL -lpthread
-AC_CHECK_LIB([netcdf], [nc_open])
+# -lqwt-qt4 -lGLU -lQtOpenGL -lQtGui -lQtCore -lGL -lpthread
 
 # Checks for header files.
 AC_CHECK_HEADERS([stdlib.h string.h sys/time.h unistd.h])
