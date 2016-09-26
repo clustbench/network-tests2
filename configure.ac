@@ -4,30 +4,7 @@
 AC_PREREQ([2.69])
 AC_INIT([network-tests2], [2.0.1], [Alexey Salnikov <salnikov@cs.msu.ru>])
 
-# Wrapper for AC_ARG_ENABLE for basic rules
-AC_DEFUN([AX_ARG_ENABLE],
-         [AC_ARG_ENABLE([$1],
-                        [AS_HELP_STRING([--enable-$1], [$4])],
-                        [AS_CASE(["${enableval}"],
-                                 [yes], [AS_VAR_APPEND([GOALS], [$2])],
-                                 [no],  [],
-                                 [AC_MSG_ERROR([Bad value ${enableval} for --enable-$1])]
-                                )
-                        ]
-                        [AS_VAR_APPEND([GOALS], [$3])]
-                       )
-         ]
-        )
-
-# Wrapper for AC_CHECK_PROG with gentle error
-AC_DEFUN([AX_CHECK_PROG],
-         [AC_CHECK_PROG([HAVE_$1], $$1, [true], [false])
-          AS_IF([test "x$HAVE_$1" == "xfalse"],
-                [AC_MSG_ERROR([$2])]
-               )
-         ]
-        )
-
+AC_CONFIG_MACRO_DIR([ac-macros])
 # TODO: Change the value for qmake for QT5 later
 AC_ARG_VAR([QMAKE], [Place where qmake-qt4 is installed])
 AC_ARG_VAR([MPICC], [Path to MPI2 compatible C-compiler])
