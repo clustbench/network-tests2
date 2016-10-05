@@ -42,40 +42,40 @@ class TVWidget: public QGLWidget {
     Q_OBJECT
 
 	friend class TopologyViewer;
-	
+
   private:
   	  unsigned int x_num; // both width and height of 2D matrices in input file(s)
       unsigned int z_num; // number of 2D matrices in input file(s)
       // both 'x_num' and 'z_num' are defined only once (while reading input file(s))
-      
+
       unsigned int *edge_counts; // the topology (general graph); it looks like adjacency matrix,
       							 // however each element stores not 0 or 1 but an integer between 0 and 'z_num';
       							 // it allows to represent both existing edges and the "probabilities" of edges;
       							 // its size is x_num*x_num;
-      
+
       /* visualization */
       float *points_x,*points_y,*points_z; // coordinates of graph's vertices in 3D (calculated approximately!)
       float geom_c_z; // z-coordinate of geometric centre of the graph
       float shift_x,shift_y,shift_z; // store all translations of the graph
       float alpha,beta; // store all rotations of the graph (in OXZ and OYZ correspondently); in degrees
-      static const float backgr_clr=0.9f; // light-gray color for widget's background
+      static constexpr float backgr_clr=0.9f; // light-gray color for widget's background
       QString *host_names; // array of hosts' names (its size is equal to 'x_num')
       unsigned int min_edg_count; // if edge_counts(i,j) is less than 'min_edg_count' then
       							  // do NOT draw an edge between vertices i and j
       bool show_host_names; // determines if hosts' names are drawn near the vertices
       /* visualization: "ideal" topology */
-      static const GLfloat ignore_clr=1.0f/*16.0f/51.0f*/; // "ignore" color (white)
+      static constexpr GLfloat ignore_clr=1.0f/*16.0f/51.0f*/; // "ignore" color (white)
       quint8 *i_v_color; // color index of a vertex in "ideal" topology: 0 - 'ignore_clr', 1 - magenta;
       					 // each element handles 8 vertices (| 7 | 6 | 5 | 4 | 3 | 2 | 1 | 0 |);
       					 // only matching vertices in "real" and "ideal" topology have magenta color
-      quint8 *i_e_color; // color index of existing edges in "ideal" topology: 
+      quint8 *i_e_color; // color index of existing edges in "ideal" topology:
       					 // 0 - 'ignore_clr', 1 - red spectrum, 2 - blue spectrum;
       					 // each element handles 4 edges (| 33 | 33 | 11 | 00 |);
       					 // must be iterated simultaneously with 'edge_counts'!
       unsigned char *i_e_color_val; // real colors of existing edges in "ideal" topology;
       								// values in 'i_e_color_val' correspond to values in 'i_e_color'
       								// so 'i_e_color_val' must be iterated simultaneously with 'i_e_color'
-      
+
       /* mouse tracker */
       bool mouse_pressed; // 'true' while mouse button is pressed
       bool click_disabled; // 'true' if mouse was moved while its button is pressed
@@ -84,16 +84,16 @@ class TVWidget: public QGLWidget {
       QPushButton *save_menu_btn; // button for save image as png
       QSpinBox    *save_width ; // width in pixels for image
       QSpinBox    *save_heigth ; // heigth in pixels for image
-      
+
   private:
       Q_DISABLE_COPY(TVWidget)
-      
+
       // the only constructor
   	  TVWidget (void);
-  	  
+
   	  // destructor
   	  ~TVWidget (void);
-  	  
+
   	  // computes coordinates of graph's vertices in 3D space trying to preserve lengths of edges
   	  // (the coordinates are stored in 'points_x', 'points_y' and 'points_z' arrays)
   	  //
@@ -105,11 +105,11 @@ class TVWidget: public QGLWidget {
   	  // 'edg99_num' - number of edges with length error not less than 99%
   	  //
       // returns 'false' if there was not enough memory
-      bool MapGraphInto3D (double *matr, const double m_d_impact, 
+      bool MapGraphInto3D (double *matr, const double m_d_impact,
       					   unsigned int &edg_num, unsigned int &edg50_num, unsigned int &edg99_num);
-  	  
+
   	  void ApplyTransform (void);
-      
+
       // draws a cone around Oz axis; wide "bottom" is on OXY plane,
       // and "top" is directed towards +Z
       //
@@ -119,24 +119,24 @@ class TVWidget: public QGLWidget {
       // 'slices' - number of points in a polygon which approximate a circle;
       //			it must not be less than 2
       static void tvCone (const float radius, const float height, const unsigned int slices);
-      
+
   protected:
 	  virtual void initializeGL ();
-  	  
+
 	  virtual void paintGL ();
-	  
+
 	  virtual void resizeGL (int, int);
-	  
+
 	  // processes keyboard
       virtual void keyPressEvent (QKeyEvent*);
-      
+
       // processes left mouse button's presses:
       // initializes mouse position to rotate the graph (in future)
       virtual void mousePressEvent (QMouseEvent*);
-      
+
       // processes mouse movements: gets mouse movement vector to compute rotation angles
       virtual void mouseMoveEvent (QMouseEvent*);
-      
+
       // processes left mouse button's releases
       virtual void mouseReleaseEvent (QMouseEvent*);
   private Q_SLOTS:
@@ -165,17 +165,17 @@ class TVWidget: public QGLWidget {
     }
 };
 
-/* A class for retrieving topology graphs from 
+/* A class for retrieving topology graphs from
    adjacency matrices and for viewing these graphs */
 class TopologyViewer: public QWidget {
     Q_OBJECT
-    
+
   private:
   	  static const QString my_sign; // sign for log messages
-  	  
+
   	  TVWidget main_wdg; // part of TopologyViewer's functionality closely connected to drawing graphs
-  	  QHBoxLayout *hor_layout; // layout-helper for placing 'main_wdg' 
-  	  
+  	  QHBoxLayout *hor_layout; // layout-helper for placing 'main_wdg'
+
   	  struct _for_NetCDF {
 		  int v_file; // descriptor of data file in NetCDF format
 		  int d_file; // descriptor of file with deviations (or of file to compare with) in NetCDF format
@@ -188,10 +188,10 @@ class TopologyViewer: public QWidget {
 		  FILE *d_file; // descriptor of file with deviations (or of file to compare with) in txt format
 		  char flt_pt; // decimal point character (',' or '.' in floating-point numbers)
       } *txt_files; // to process TXT files
-      
+
   	  int begin_message_length; // initial message length (obtained from file(s))
       int step_length; // step between two message lengths (obtained from file(s))
-      
+
       /* topology retrieving */
       double shmem_eps; // consider all edges which interconnect one group of processors
       					// as placed on shared memory;
@@ -199,7 +199,7 @@ class TopologyViewer: public QWidget {
       					// it's something close to 1.0
       double duplex_eps; // maximum acceptable ratio of lengths of two edges
       					 // connecting one pair of vertices; something close to 1.0
-      
+
       /* graph building */
       unsigned char vals_for_edgs; // variant of what shall we use to compute lengths of the edges:
       							   // 0 - use simple average of values corresponding to different
@@ -210,16 +210,16 @@ class TopologyViewer: public QWidget {
       double m_d_impact; // an importance of maximization of distances between unconnected vertices (0.0 .. 1.0);
       					 // if 'm_d_impact' is 0.0 then vertices are allowed to have the same coordinates;
       					 // increasing 'm_d_impact' means increasing distances between unconnected vertices
-      					 // while increasing (!) the overall error in placement of the vertices 
+      					 // while increasing (!) the overall error in placement of the vertices
       unsigned char m_d_imp_tries; // number of tries to find optimum value for 'm_d_impact'
-      
+
       /* misc */
       QString fname_for_tvwidget; // file name for title of TVWidget when it shows an "ideal" topology
       bool hosts_undefined; // 'true' if hosts' names are undefined
-      
+
   private:
       Q_DISABLE_COPY(TopologyViewer)
-      
+
       // the only constructor
       //
       // 'parent' - parent widget of this TopologyViewer
@@ -228,7 +228,7 @@ class TopologyViewer: public QWidget {
       //
       // Don't forget to call Init() after!
       TopologyViewer (QWidget *parent, const IData::Type f_type, bool &was_error);
-      
+
       // initializes all members; must be called once after the constructor
       //
       // 'two_files' - 'true' if the file with deviations was loaded too
@@ -239,9 +239,9 @@ class TopologyViewer: public QWidget {
       // returns 'true' if there were no errors; in case of 'false' the use of TopologyViewer is denied!
       bool Init (const bool two_files, const QString &data_fname, const QString &deviat_filename,
       			 const QString &hosts_fname);
-      
+
   public:
-      // replaces calls to both the constructor and Init() (it was designed to ensure a call to Init()); 
+      // replaces calls to both the constructor and Init() (it was designed to ensure a call to Init());
       // returns 'NULL' if any errors occured;
       // returned pointer should be deleted using 'delete'
       static TopologyViewer* Create (QWidget *parent, const bool two_files, const IData::Type f_type,
@@ -249,7 +249,7 @@ class TopologyViewer: public QWidget {
       								 const QString &hosts_fname) {
           TopologyViewer *tp_v;
           bool was_error=false;
-          
+
           try {
 	      	  tp_v=new TopologyViewer(parent,f_type,was_error);
 	      }
@@ -263,18 +263,18 @@ class TopologyViewer: public QWidget {
 		  }
 		  return tp_v;
       }
-      
+
       // destructor
       ~TopologyViewer ();
 
   private:
       Q_SLOT void Execute (void);
 
-      
+
       //
       // returns 'false' if there was not enough memory
       bool RetrieveTopology (double *by_what_values);
-      
+
       // fills 'matr' with values from input file
       //
       // 'vals_for_edgs' - determines the choice of message length
@@ -282,22 +282,22 @@ class TopologyViewer: public QWidget {
       //
       // returns 'false' if there was not enough memory
       bool GetMatrixByValsForEdgsVar (double *matr);
-      
+
       // compares retrieved topology with "ideal" topology loaded from file in DOT format
       void CompareTopologies (void);
-      
+
   protected:
   	  // processes keyboard
       virtual void keyPressEvent (QKeyEvent*);
-      
+
   Q_SIGNALS:
   	  // is connected to MainWindow::AddMessToLog()
   	  void SendMessToLog (const MainWindow::MsgType, const QString&, const QString&);
-  	  
+
   	  // is connected to MainWindow::ChangeTabTitle()
   	  void TitleChanged (QWidget*, const QString&);
-  	  
-  	  // 'Esc' will close the tab with this viewer; 
+
+  	  // 'Esc' will close the tab with this viewer;
   	  // is connected to MainWindow::CloseTab()
       void CloseOnEscape (QWidget*);
 };
@@ -305,13 +305,13 @@ class TopologyViewer: public QWidget {
 /* 'Options' dialog for TopologyViewer */
 class TopoViewerOpts: public QDialog {
 	Q_OBJECT
-	
+
   protected:
   	  virtual void keyPressEvent (QKeyEvent*);
-  	  
+
   public:
   	  TopoViewerOpts (QWidget *parent): QDialog(parent) {}
-  	  
+
       Q_SLOT void ShowMaxDistHelp (void);
 };
 
