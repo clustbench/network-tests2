@@ -58,6 +58,9 @@
 #include "tests_common.h"
 #include "parse_arguments.h"
 
+#include <spi/kernel_interface.h>
+#include <common/bgp_personality_inlines.h>
+
 int comm_size;
 int comm_rank;
 
@@ -183,7 +186,12 @@ int main(int argc,char **argv)
     /*
      * Going to get and write all processors' hostnames
      */
-    gethostname( host_name, 255 );
+    //gethostname( host_name, 255 );
+    _BGP_Personality_t personality;
+    Kernel_GetPersonality(&personality,sizeof(personality));
+    sprintf(host_name,"node_X%d_Y%d_Z%d",personality.Network_Config.Xcoord,
+					 personality.Network_Config.Ycoord,
+					 personality.Network_Config.Zcoord);
 
     if ( comm_rank == 0 )
     {

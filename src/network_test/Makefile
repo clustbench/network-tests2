@@ -23,6 +23,12 @@
 # This file makes the nework_test of the parus system
 #
 
+#
+# For BlueGene/P we neead add something like this 
+#
+# MPI_cc_INCLUDE= -I/bgsys/drivers/ppcfloor/arch/include
+#
+
 include ../../config
 
 FILES_COMMON=\
