@@ -13,7 +13,7 @@ AC_DEFUN([AX_ARG_ENABLE],
                                  [no],  [],
                                  [AC_MSG_ERROR([Bad value ${enableval} for --enable-$1])]
                                 )
-                        ]
+                        ],
                         [AS_VAR_APPEND([GOALS], [$3])]
                        )
          ]
