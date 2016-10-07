@@ -30,9 +30,6 @@ CCLINKER_FLAGS=
 CXXLINKER_FLAGS=
 LIB_PATH=
 LIBS=
-ANT=@ANT@
-JAVAC=@JAVAC@
-JAR=@JAR@
 GOALS=@GOALS@
 
 # full path to 'CL/opencl.h' (on Windows/UNIX) or 'OpenCL/opencl.h' (on Mac)
