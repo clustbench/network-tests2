@@ -23,12 +23,17 @@ AC_DEFUN([AX_RAW_CHECK_PROG], [
 	AS_IF([test "x$HAVE_$1" == "xfalse"], [AC_MSG_ERROR([$2])])
 ])
 
+# Wrapper for AC_CHECK_LIB for list of functions
 AC_DEFUN([AX_CHECK_LIB], [
 	for sub in $2
 	do
-		AC_CHECK_LIB([$1], [$sub], ,
-			[AC_MSG_ERROR([Function $sub does not exist in $1])]
-		)
+		AC_CHECK_LIB([$1], [$sub], [
+			AS_IF([echo $LIBS | grep -q "$1"], [], [
+				AS_VAR_APPEND([LIBS], [-l$1])
+			])
+		], [
+			AC_MSG_ERROR([Function $sub does not exist in $1])
+		])
 	done
 ])
 
