@@ -64,7 +64,7 @@ TopologyViewer::TopologyViewer (QWidget *parent, const IData::Type f_type, bool 
 			SLOT(AddMsgToLog(const MainWindow::MsgType,const QString&,const QString&)));
     connect(this,SIGNAL(TitleChanged(QWidget*,const QString&)),parent,SLOT(ChangeTabTitle(QWidget*,const QString&)));
     connect(this,SIGNAL(CloseOnEscape(QWidget*)),parent,SLOT(CloseTab(QWidget*)));
-    
+
     ncdf_files=NULL;
     txt_files=NULL;
   	hor_layout=NULL;
@@ -88,7 +88,7 @@ TopologyViewer::TopologyViewer (QWidget *parent, const IData::Type f_type, bool 
 		  txt_files->v_file=txt_files->d_file=NULL;
 		  break;
     }
-    
+
 	was_error=false;
 }
 
@@ -102,7 +102,7 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
     int noise_message_num=-1;
     int noise_processors=-1;
     int num_repeats=-1;
-    
+
     int ind_of_slash=data_filename.lastIndexOf('/');
     if (ind_of_slash<0)
     {
@@ -110,11 +110,11 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
     	if (ind_of_slash<0) ind_of_slash=-1;
     }
     fname_for_tvwidget=data_filename.right(data_filename.length()-(ind_of_slash+1));
-    
+
     if (txt_files==NULL)
     {
 		// reading NetCDF file(s)...
-		
+
 		if (nc_open(data_filename.toLocal8Bit().constData(),NC_NOWRITE,&(ncdf_files->v_file))!=NC_NOERR)
 		{
 			ncdf_files->v_file=-1;
@@ -130,9 +130,9 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 				return false;
 			}
 		}
-	
+
 		int id;
-	
+
 		#define FORMATCHECK(var,var_name,error) \
 			if ((nc_inq_varid(ncdf_files->v_file,var_name,&id)!=NC_NOERR) || \
 			    (nc_get_var1(ncdf_files->v_file,id,NULL,&var)!=NC_NOERR)) \
@@ -146,12 +146,12 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 		FORMATCHECK(noise_message_num,"num_noise_mes",NoNoiseMesNum)
 		FORMATCHECK(noise_processors,"num_noise_proc",NoNoiseNumProc)
 		FORMATCHECK(num_repeats,"num_repeates",NoRpts)
-		
+
 		int n_vars,i;
 		int *varids;
 		size_t len;
 		int dim_id[3];
-		
+
 		nc_inq_nvars(ncdf_files->v_file,&n_vars);
 		varids=static_cast<int*>(malloc(n_vars*sizeof(int)));
 		if (varids==NULL) { NOT_ENOUGH_MEM_RET(false); }
@@ -168,9 +168,9 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 		    SEND_ERR_MSG1(No3DData,data_filename);
 		    return false;
 		}
-		
+
 		ncdf_files->matr_v=varids[i]; // defined!
-		
+
 		free(varids);
 		nc_inq_vardimid(ncdf_files->v_file,ncdf_files->matr_v,dim_id);
 		/* get initial sizes of 3D matrix */
@@ -194,7 +194,7 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 			SEND_ERR_MSG1(DiffWdHght,data_filename);
 		    return false;
 		}
-		
+
 		/* get real end message length */
 		const int right_end_message_length=static_cast<int>(main_wdg.z_num)*step_length+begin_message_length;
 		if (right_end_message_length!=end_message_length)
@@ -204,7 +204,7 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 								 .arg(right_end_message_length-step_length).arg(end_message_length),QMessageBox::Ok);
 	    	//end_message_length=right_end_message_length;
 		}
-		
+
 		if (ncdf_files->d_file!=-1)
 		{
 		    nc_inq_nvars(ncdf_files->d_file,&n_vars);
@@ -223,9 +223,9 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 				SEND_ERR_MSG1(No3DData,deviat_filename);
 				return false;
 		    }
-		    
+
 		    ncdf_files->matr_d=varids[i]; // defined!
-		    
+
 		    free(varids);
 		    nc_inq_vardimid(ncdf_files->d_file,ncdf_files->matr_d,dim_id);
 		    nc_inq_dimlen(ncdf_files->d_file,dim_id[0],&len);
@@ -247,11 +247,11 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 				return false;
 		    }
 		}
-		
+
 		if (!hosts_fname.isEmpty())
 		{
 	    	// reading hosts' names...
-	    	
+
 	    	FILE *tmp_host_f=fopen(hosts_fname.toLocal8Bit().constData(),"r");
 	    	if (tmp_host_f==NULL)
 	    		SEND_ERR_MSG1(NoHosts,hosts_fname);
@@ -260,7 +260,7 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 		    	Data_Text::Line l;
 				char *line;
 				unsigned int host_num=0u;
-				
+
 				main_wdg.host_names=new(std::nothrow) QString[main_wdg.x_num];
 				if (main_wdg.host_names==NULL) { NOT_ENOUGH_MEM_RET(false); }
 				for ( ; ; )
@@ -282,7 +282,7 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
     else
     {
 		// reading TXT file(s)...
-		
+
 		txt_files->v_file=fopen(data_filename.toLocal8Bit().constData(),"r");
 		if (txt_files->v_file==NULL)
 		{
@@ -298,10 +298,10 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 				return false;
 			}
 		}
-		
+
 		Data_Text::Line l;
 		const char *work_line;
-		
+
 		#define GETNEXTLINE \
 			for ( ; ; ) \
 			{ \
@@ -312,7 +312,7 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 			    } \
 			    if (!l.isallws()) break; \
 			}
-    	
+
 		#define READVAR(comment,offs,var,error) \
 			work_line=strstr(l.Give(),comment); \
 			if ((work_line==NULL) || (sscanf(work_line+offs,"%d",&var)<1)) \
@@ -321,7 +321,7 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 			{ \
 			    GETNEXTLINE \
 			}
-		    
+
 		GETNEXTLINE
 		work_line=strstr(l.Give(),"processors ");
 		if ((work_line==NULL) || (sscanf(work_line+11,"%d",&num_processors)<1))
@@ -334,9 +334,9 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 			SEND_ERR_MSG1(No3DData,data_filename);
 		    return false;
 		}
-		
+
 		main_wdg.x_num=static_cast<unsigned int>(num_processors);
-		
+
 		for ( ; ; )
 		{
 		    GETNEXTLINE
@@ -344,7 +344,7 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 		    if ((work_line!=NULL) && (sscanf(work_line+21,"%d",&begin_message_length)==1))
 		    	break;
 		}
-			
+
 		GETNEXTLINE
 		READVAR("end message length ",19,end_message_length,NoEndMesLen)
 		READVAR("step length ",12,step_length,NoStepLen)
@@ -352,15 +352,15 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 		READVAR("number of noise messages ",25,noise_message_num,NoNoiseMesNum)
 		READVAR("number of noise processes ",26,noise_processors,NoNoiseNumProc)
 		READVAR("number of repeates ",19,num_repeats,NoRpts)
-		
+
 		main_wdg.z_num=0u;
 		if (strstr(l.Give(),"hosts:")!=NULL)
 		{
 		    // reading hosts' names...
-		    
+
 		    unsigned int host_num=0u;
 		    int last_c;
-		    
+
 		    main_wdg.host_names=new(std::nothrow) QString[main_wdg.x_num];
 		    if (main_wdg.host_names==NULL) { NOT_ENOUGH_MEM_RET(false); }
 		    for ( ; ; )
@@ -394,15 +394,15 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 				if (!Data_Text::readline(txt_files->v_file,l)) break;
 		    }
 		}
-		
+
 		if (main_wdg.z_num==0u)
 		{
 			SEND_ERR_MSG1(No3DData,data_filename);
 		    return false;
 		}
-		
+
 		fgetpos(txt_files->v_file,&txt_files->matr_v_pos); // 'matr_v_pos' is set!
-		
+
 		/* get real end message length */
 		while (Data_Text::readline(txt_files->v_file,l))
 		{
@@ -417,11 +417,11 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 		    					 .arg(wright_end_message_length-step_length).arg(end_message_length),QMessageBox::Ok);
 		    //end_message_length=wright_end_message_length;
 		}
-		
+
 		if (txt_files->d_file!=NULL)
 		{
 		    int var;
-		    
+
 		    /* check if X and Y dimensions in 'v_file' and 'd_file' are equal */
 		    for ( ; ; )
 		    {
@@ -443,7 +443,7 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 				SEND_ERR_MSG(IncmpDat1Dat2);
 				return false;
 		    }
-		    
+
 		    /* check if Z dimensions in 'v_file' and 'd_file' are equal (the beginning...) */
 		    var=0;
 		    while (Data_Text::readline(txt_files->d_file,l))
@@ -459,9 +459,9 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 				SEND_ERR_MSG(IncmpDat1Dat2);
 				return false;
 		    }
-		    
+
 		    fgetpos(txt_files->d_file,&txt_files->matr_d_pos); // 'matr_d_pos' is set!
-		    
+
 		    /* check if Z dimensions in 'v_file' and 'd_file' are equal (...the end) */
 		    while (Data_Text::readline(txt_files->d_file,l))
 		    {
@@ -473,14 +473,14 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 				return false;
 		    }
 		}
-		
+
 		txt_files->flt_pt=*(localeconv()->decimal_point);
     }
-    
+
     QString msg=tr(" file \"");
 	(msg+=data_filename)+=tr("\" is loaded");
 	emit SendMessToLog(MainWindow::Success,my_sign,msg);
-	    
+
     if (main_wdg.host_names==NULL)
     {
 		main_wdg.host_names=new(std::nothrow) QString[main_wdg.x_num];
@@ -488,18 +488,18 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 		for (unsigned int i=0u; i!=main_wdg.x_num; ++i)
 		    main_wdg.host_names[i]=QString("v%1").arg(i);
     }
-    
+
     /* initializing graph matrix */
     main_wdg.edge_counts=static_cast<unsigned int*>(calloc(main_wdg.x_num*main_wdg.x_num,sizeof(int))); // fill with zeroes
     if (main_wdg.edge_counts==NULL) { NOT_ENOUGH_MEM_RET(false); }
-    
+
     try { hor_layout=new QHBoxLayout(this); }
     catch (const std::bad_alloc&) { NOT_ENOUGH_MEM_RET(false); }
     hor_layout->setContentsMargins(3,3,3,3); // thin white borders
     hor_layout->addWidget(&main_wdg); // 'main_wdg' is "glued" to 'this'
-	
+
     QTimer::singleShot(100,this,SLOT(Execute())); // after 100 milliseconds Execute() will be called
-    
+
     return true;
 }
 
@@ -521,9 +521,9 @@ void TopologyViewer::Execute (void) {
 	opts_ui.mesLenSB->setRange(begin_message_length,
 							   begin_message_length+static_cast<int>(main_wdg.z_num-1u)*step_length);
 	opts_ui.mesLenSB->setSingleStep(step_length);
-	
+
 	(void)options->exec(); // run as modal(!); it will return only QDialog::Accepted
-	
+
 	shmem_eps=1.0+opts_ui.shmEpsSB->value();
 	duplex_eps=1.0+opts_ui.dupEpsSB->value();
 	if (opts_ui.srcMesLenRB->isChecked())
@@ -558,22 +558,22 @@ void TopologyViewer::Execute (void) {
 	main_wdg.show_host_names=opts_ui.showVertLblsCB->isChecked();
 	delete options;
 	options=NULL;
-	
+
 	/* go! */
 	const unsigned int xy_num=main_wdg.x_num*main_wdg.x_num;
     double *matr=static_cast<double*>(malloc(xy_num*sizeof(double))); // matrix of size x_num*x_num
     if (matr==NULL) { NOT_ENOUGH_MEM_CLOSE; }
-    
+
     printf("START\n\n");
     if (txt_files==NULL)
     {
 		// NetCDF file
-		
+
 		const int file1=ncdf_files->v_file,matr1=ncdf_files->matr_v;
 		size_t start[]={0u,0u,0u}; // 2nd and 3rd components are always 0
 		size_t &start0=start[0];
 		const size_t count[]={1u,main_wdg.x_num,main_wdg.x_num};
-		
+
 		for (start0=0u; start0!=main_wdg.z_num; ++start0)
 		{
 		    nc_get_vara_double(file1,matr1,start,count,matr);
@@ -587,7 +587,7 @@ void TopologyViewer::Execute (void) {
     else
     {
 		// text file
-		
+
 		const char float_pt=txt_files->flt_pt;
 		const char non_flt_pt=(float_pt=='.')? ',' : '.';
 		FILE *file1=txt_files->v_file;
@@ -596,7 +596,7 @@ void TopologyViewer::Execute (void) {
 		const unsigned int x_num1=main_wdg.x_num-1u;
 		Data_Text::Line l1;
 		char *line1,*splitter,*pt_pos;
-		
+
 		fsetpos(file1,&matr1);
 		for (k=0u; k!=main_wdg.z_num; ++k)
 		{
@@ -628,15 +628,15 @@ void TopologyViewer::Execute (void) {
 		}
     }
     printf("\nEND\n\n");
-    
+
     /*printf("WRITE FILE\n\n");
-    
+
     if (txt_files==NULL)
     {
 		const int file1=ncdf_files->v_file,matr1=ncdf_files->matr_v;
 		size_t start[3]={0u,0u,0u}; // 2nd and 3rd components are always 0
 		const size_t count[3]={1u,main_wdg.x_num,main_wdg.x_num};
-		
+
 		nc_get_vara_double(file1,matr1,start,count,matr);
     }
     else
@@ -649,7 +649,7 @@ void TopologyViewer::Execute (void) {
 		const unsigned int x_num1=main_wdg.x_num-1u;
 		Data_Text::Line l1;
 		char *line1,*splitter,*pt_pos;
-		
+
 		fsetpos(file1,&matr1);
 		for (j=0u; j!=main_wdg.x_num; ++j)
 		{
@@ -683,28 +683,28 @@ void TopologyViewer::Execute (void) {
     fprintf(ff,"}\n");
     fclose(ff);
     ff=NULL;
-    
+
     printf("WRITTEN\n\n");//return;
     */
-	
-	
+
+
 	printf("BUILD GRAPH\n\n");
-	
+
 	if (!GetMatrixByValsForEdgsVar(matr))
 	{
 		free(matr);
 		NOT_ENOUGH_MEM_CLOSE;
 	}
-    
+
     // forget about edges with low existence probability
-    for (unsigned int *edg_c=main_wdg.edge_counts,*edg_c_end=main_wdg.edge_counts+xy_num; 
+    for (unsigned int *edg_c=main_wdg.edge_counts,*edg_c_end=main_wdg.edge_counts+xy_num;
     	 edg_c!=edg_c_end; ++edg_c)
     	*edg_c=(*edg_c<min_edg_cnt)? 0u : *edg_c;
-    
+
     unsigned int edg_num=0u; // number of all edges
 	unsigned int edg50_num=0u; // number of edges with length error not less than 50%
 	unsigned int edg99_num=0u; // number of edges with length error not less than 99%
-	
+
     if (!main_wdg.MapGraphInto3D(matr,m_d_impact,edg_num,edg50_num,edg99_num))
     {
     	free(matr);
@@ -718,7 +718,7 @@ void TopologyViewer::Execute (void) {
 		mes+=tr(" was not precise:");
 		mes+=QString("<br>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <b>%1%</b> ")\
 						.arg(static_cast<double>(edg50_num)*r_edg_num,0,'f',2);
-		mes+=tr("of edges have %1% length error or greater").arg(50); // 'arg(const)' is used to minimize 
+		mes+=tr("of edges have %1% length error or greater").arg(50); // 'arg(const)' is used to minimize
 																	  // the number of translated strings
 		if (edg99_num!=0u)
 		{
@@ -730,7 +730,7 @@ void TopologyViewer::Execute (void) {
 		emit SendMessToLog(MainWindow::Info,my_sign,mes);
 		QMessageBox::information(this,tr("Graph building"),mes);
 	}
-	
+
     main_wdg.updateGL();
 }
 
@@ -741,7 +741,7 @@ void TopologyViewer::Execute (void) {
 class _FreeMeOnReturn {
 	private:
 		void *const ptr;
-		
+
 		_FreeMeOnReturn (const _FreeMeOnReturn&); // denied
 		void operator= (const _FreeMeOnReturn&); // denied
 	public:
@@ -751,7 +751,7 @@ class _FreeMeOnReturn {
 template <typename T> class _Delete_arr_MeOnReturn {
 	private:
 		T *const arr;
-		
+
 		_Delete_arr_MeOnReturn (const _Delete_arr_MeOnReturn&); // denied
 		void operator= (const _Delete_arr_MeOnReturn&); // denied
 	public:
@@ -761,26 +761,26 @@ template <typename T> class _Delete_arr_MeOnReturn {
 
 bool TopologyViewer::RetrieveTopology (double *matr) {
 	clock_t st=clock();
-	
+
 	// array of vertices; each vertex stores an array of adjacent vertices
     std::vector<unsigned int> *vertices=new(std::nothrow) std::vector<unsigned int>[main_wdg.x_num];
     if (vertices==NULL) { NOT_ENOUGH_MEM_RET(false); }
     _Delete_arr_MeOnReturn<std::vector<unsigned int> > _for_vertices(vertices); // calls "delete[] vertices"
     																			// when function returns
-    
+
     // distances between vertices; the structure is the same as the structure of 'vertices'
     std::vector<double> *edges=new(std::nothrow) std::vector<double>[main_wdg.x_num];
     if (edges==NULL) { NOT_ENOUGH_MEM_RET(false); }
     _Delete_arr_MeOnReturn<std::vector<double> > _for_edges(edges); // calls "delete[] edges" when function returns
-    
+
     // array of flags; a flag is 'true' when corresponding vertex is "viewed" or "done"
     bool *vert_done=static_cast<bool*>(calloc(main_wdg.x_num,sizeof(bool)));
     if (vert_done==NULL) { NOT_ENOUGH_MEM_RET(false); }
     _FreeMeOnReturn _for_vert_done(vert_done); // calls "free(vert_done)" when function returns
-    
+
     std::set<unsigned int> on_sh_mem; // processors on shared memory;
     								  // distances between such processors are not differ much
-    
+
     unsigned int i,j=main_wdg.x_num+1u;
     unsigned int bigi=main_wdg.x_num*(main_wdg.x_num+1u); // saves a value of "<some_var>*main_wdg.x_num"
     double glob_min; // minimum value in 'matr'
@@ -788,14 +788,14 @@ bool TopologyViewer::RetrieveTopology (double *matr) {
     double *cur; // an iterator for 'matr'
     std::vector<unsigned int> *verts,*verts_end; // iterators for 'vertices'
 	std::vector<double> *edgs; // an iterator for 'edges'
-    bool main_break=false; // becomes 'true' when we need to exit the main cycle 
-    
+    bool main_break=false; // becomes 'true' when we need to exit the main cycle
+
     /* 1st part: retrieve spanning subgraph */
-    
+
     // erase diagonal elements to avoid self-pointing
     for (i=0u; i!=bigi; i+=j)
 		matr[i]=DBL_MAX;
-	
+
 	// start: find minimum value among values of the whole matrix;
 	// it's clear that two corresponding vertices are linked
 	glob_min=DBL_MAX;
@@ -879,10 +879,10 @@ bool TopologyViewer::RetrieveTopology (double *matr) {
 				cur+=main_wdg.x_num;
 			}
 		}
-		
+
 		/*for (i=0u; (i!=main_wdg.x_num) && vert_done[i]; ++i) ;
 		if (i==main_wdg.x_num) break;*/
-		
+
 		for ( ; ; )
 		{
 			// "throw" an edge from "visited" processors to "not visited" ones;
@@ -992,22 +992,22 @@ bool TopologyViewer::RetrieveTopology (double *matr) {
 		}
 		if (main_break) break; // first part of the algorithm is done
 	}
-	
+
 	st=clock()-st;
 	printf("\n%g мс",static_cast<float>(st*1000u)/static_cast<float>(CLOCKS_PER_SEC));
 	st=clock();
-	
+
 	/* 2nd part: retrieve "good" cycles */
-	
+
 	// a "good" cycle is a cycle 1->2, 2->3, ... (k-1)->k, 1->k (direction is important),
 	// where |12| + |23| + ... +|k-1,k|> |1k| (|| is a length of an edge)
 	std::vector<unsigned int>::const_iterator it,it_end;
 	double *d=static_cast<double*>(malloc(main_wdg.x_num*sizeof(double)));
-	
+
 	if (d!=NULL)
 	{
 		_FreeMeOnReturn _for_d(d); // calls "free(d)" at the end of scope
-		
+
 		verts=vertices;
 		edgs=edges;
 		for (i=0u,bigi=0u; i!=main_wdg.x_num; ++i,bigi+=main_wdg.x_num,++verts,++edgs)
@@ -1067,11 +1067,11 @@ bool TopologyViewer::RetrieveTopology (double *matr) {
 			}
 		}
 	}
-	
+
 	st=clock()-st;
 	printf(", %g мс",static_cast<float>(st*1000u)/static_cast<float>(CLOCKS_PER_SEC));
 	st=clock();
-	
+
 	/* 3rd part: add new edges */
 	unsigned int *edg_cs=main_wdg.edge_counts;
 	for (verts=vertices,verts_end=vertices+main_wdg.x_num; verts!=verts_end; ++verts,edg_cs+=main_wdg.x_num)
@@ -1079,38 +1079,38 @@ bool TopologyViewer::RetrieveTopology (double *matr) {
 		for (it=verts->begin(),it_end=verts->end(); it!=it_end; ++it)
 			++*(edg_cs+*it);
 	}
-	
+
 	st=clock()-st;
 	printf(", %g мс\n",static_cast<float>(st*1000u)/static_cast<float>(CLOCKS_PER_SEC));
-	
+
 	return true;
 }
 
 bool TopologyViewer::GetMatrixByValsForEdgsVar (double *matr) {
 	const unsigned int xy_num=main_wdg.x_num*main_wdg.x_num;
 	double val;
-	
+
 	if (txt_files==NULL)
     {
 		const int file1=ncdf_files->v_file,matr1=ncdf_files->matr_v;
 		size_t start[3]={0u,0u,0u}; // 3rd component is always equal to 0
 		size_t &start0=start[0];
 		size_t count[3]={1u,main_wdg.x_num,main_wdg.x_num};
-		
+
 		switch (vals_for_edgs)
 		{
 			case 0u: // simple average
 			{
 				nc_get_vara_double(file1,matr1,start,count,matr); // safely get the first matrix
 				++start0;
-				
+
 				double *other_data=static_cast<double*>(malloc(xy_num*sizeof(double))); // aux. buffer
 				double *iter,*o_iter;
 				const double *iter_end;
-				
+
 				if (other_data==NULL)
 				{
-					// there is not enough memory to perform fast version - 
+					// there is not enough memory to perform fast version -
 					// we have to read single rows
 					other_data=static_cast<double*>(malloc(main_wdg.x_num*sizeof(double)));
 					if (other_data==NULL) { NOT_ENOUGH_MEM_RET(false); } // too bad
@@ -1156,7 +1156,7 @@ bool TopologyViewer::GetMatrixByValsForEdgsVar (double *matr) {
 				double *iter=matr,*o_iter,*o_iter1,*o_iter2;
 				const double *o_iter_end;
 				double tmp;
-				
+
 				if (data==NULL) { NOT_ENOUGH_MEM_RET(false); } // too bad
 				count[1]=1u;
 				count[0]=main_wdg.z_num;
@@ -1224,7 +1224,7 @@ bool TopologyViewer::GetMatrixByValsForEdgsVar (double *matr) {
 		Data_Text::Line l1;
 		char *line1,*splitter,*pt_pos;
 		double *iter=matr;
-		
+
 		switch (vals_for_edgs)
 		{
 			case 0u: // simple average
@@ -1270,7 +1270,7 @@ bool TopologyViewer::GetMatrixByValsForEdgsVar (double *matr) {
 				double *o_iter,*o_iter1,*o_iter2;
 				const double *o_iter_end;
 				double tmp;
-				
+
 				if (data==NULL) { NOT_ENOUGH_MEM_RET(false); } // too bad
 				for (unsigned int k=0u; k!=main_wdg.x_num; ++k)
 				{
@@ -1405,10 +1405,10 @@ void TVWidget::SaveImageMenu (){
     window->show();
 }
 
-bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact, 
+bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 							   unsigned int &edg_n, unsigned int &edg50_n, unsigned int &edg99_n) {
 	clock_t st=clock();
-	
+
 	unsigned int i,j,v,k,k1;
 	double *mtr1=matr;
 	double val;
@@ -1446,9 +1446,9 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 			*mtr1=val*val*min_val;
 		}
 	}
-	
+
 	//! only the upper triangle of 'matr' is valid now!
-		
+
 	double *xx=static_cast<double*>(malloc(x_num*sizeof(double)));
 	if (xx==NULL) return false;
 	double *yy=static_cast<double*>(malloc(x_num*sizeof(double)));
@@ -1474,7 +1474,7 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 	double t=1.0e-7,f_prev,f;
 	double x_i,y_i,z_i,dx,dy,dz,grx,gry,grz;
 	const double half_m_d_impact=0.5*m_d_impact;
-	
+
 	srand(x_num);
 	for (i=0u; i!=x_num; ++i)
 	{
@@ -1482,7 +1482,7 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 		yy[i]=static_cast<double>(i)*(1.0+static_cast<double>(rand())/static_cast<double>(RAND_MAX));
 		zz[i]=static_cast<double>(i)*(1.0+static_cast<double>(rand())/static_cast<double>(RAND_MAX));
 	}
-	
+
 	/* temporary add lower triangle to upper triangle;
 	   this action makes access to 'edge_counts' in the descent cache friendly
 	   (and speeds up each iteration by the ratio of 2 and greater when 'x_num'>2000)
@@ -1495,7 +1495,7 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 		for ( ; j!=x_num; ++j,++k,v+=x_num)
 			edge_counts[k]+=edge_counts[v];
 	}
-	/* move all necessary values in 'matr' closer 
+	/* move all necessary values in 'matr' closer
 	   to the beginning to improve cache friendliness */
 	mtr=mtr1=matr; // first row is OK
 	edg_cnt=edge_counts;
@@ -1513,7 +1513,7 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 			}
 		}
 	}
-	
+
 	f=0.0;
 	mtr=matr;
 	edg_cnt=edge_counts;
@@ -1543,7 +1543,7 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 	l.move((width()-l.width())/2,(height()-l.height())/2);
 	l.setAutoFillBackground(true);
 	l.show();
-	
+
 	clock_t st1;
 	for (k=0u; k!=max_iter; ++k)
 	{
@@ -1652,15 +1652,15 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 	free(gradz);
 	free(grady);
 	free(gradx);
-	
+
 	l.hide();
-	
+
 	st=clock()-st;
-    
+
 	printf("\nReached optimum: %.12g\n\n",f);
-	
+
 	printf("\nEND BUILD GRAPH: %g мс\n\n",static_cast<double>(st*1000u)/static_cast<double>(CLOCKS_PER_SEC));
-	
+
 	/* count errors */
 	unsigned int edg_num=0u; // number of all edges
 	unsigned int edg50_num=0u; // number of edges with length error not less than 50%
@@ -1690,7 +1690,7 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 	edg_n=edg_num;
 	edg50_n=edg50_num;
 	edg99_n=edg99_num;
-	
+
 	// rollback the changes
 	for (i=0u,k=0u; i!=x_num1; ++i)
 	{
@@ -1700,7 +1700,7 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 		for ( ; j!=x_num; ++j,++k,v+=x_num)
 			edge_counts[k]-=edge_counts[v];
 	}
-	
+
 	/* centre the graph */
 	double min_x=DBL_MAX,max_x=1.0-DBL_MAX,min_y=DBL_MAX,max_y=1.0-DBL_MAX,min_z=DBL_MAX,max_z=1.0-DBL_MAX;
 	for (i=0u; i!=x_num; ++i)
@@ -1723,7 +1723,7 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 		yy[i]+=min_y;
 		zz[i]+=min_z;
 	}
-	
+
 	/* convert coordinates from double to float */
 	double *arr_end;
 	float *arr;
@@ -1748,7 +1748,7 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 		*arr=static_cast<float>(*xx);
 	xx-=x_num;
 	free(xx);
-	
+
 	return true;
 }
 
@@ -1762,10 +1762,10 @@ void TopologyViewer::CompareTopologies (void) {
 	QString ideal_topo_fname(QFileDialog::getOpenFileName(this,tr("Open file with \"ideal\" topology")));
 
 	if (ideal_topo_fname.isEmpty()) return;
-	
+
 	// without this line file dialog remains wisible until the end (!) of the function
 	QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents,20);
-	
+
 	FILE *ideal_topo_file=fopen(ideal_topo_fname.toLocal8Bit().constData(),"r");
 
 	if (ideal_topo_file==NULL)
@@ -1773,7 +1773,7 @@ void TopologyViewer::CompareTopologies (void) {
 		SEND_ERR_MSG1(CannotOpen,ideal_topo_fname);
 		return;
 	}
-	
+
 	Data_Text::Line l;
 	const char *line1;
 
@@ -1802,15 +1802,15 @@ void TopologyViewer::CompareTopologies (void) {
 		SEND_ERR_MSG1(BraceNotLast,ideal_topo_fname);
 		return;
 	}
-	
+
 	// this map is put into operation to reorder 'host_names' for faster search;
 	// hosts' names are not unique what means that one name corresponds to several processes
 	// (for example, cores of a single processor have the same names)
 	std::map<QString,std::pair<std::vector<unsigned int>,unsigned int> > our_hosts;
-	
+
 	unsigned int i;
 	std::map<QString,std::pair<std::vector<unsigned int>,unsigned int> >::iterator o_h_it,o_h_it_end;
-	
+
 	try {
 		for (i=0u; i!=main_wdg.x_num; ++i)
 			our_hosts[main_wdg.host_names[i]].first.push_back(i);
@@ -1823,23 +1823,23 @@ void TopologyViewer::CompareTopologies (void) {
 	o_h_it_end=our_hosts.end(); // and it won't be changed
 	for (o_h_it=our_hosts.begin(); o_h_it!=o_h_it_end; ++o_h_it)
 		o_h_it->second.second=0u; // this is a number of accesses to '*o_h_it' during searches
-	
+
 	// "ideal" topology graph (directed!);
 	// each vertex has a name and an array of adjacent vertices;
 	// the map is used for faster search of duplicate edges;
-	// the second elements of the map store weights of edges 
+	// the second elements of the map store weights of edges
 	// (reciprocal to bandwidth of that channel, that is number of nanoseconds to send 1 bit)
 	std::vector<std::pair<QString,std::map<unsigned int,double> > > ideal_topo;
-	
+
 	static const unsigned int UINT_MAX_DIV_10=UINT_MAX / 10u;
 	static const char UINT_MAX_MOD_10=static_cast<const char>(UINT_MAX % 10u);
-	
+
 	unsigned int v1,v2;
 	QString name;
-	
+
 	for ( ; ; )
 	{
-		/* collect vertices of "ideal" topology graph; 
+		/* collect vertices of "ideal" topology graph;
 		   each vertex must be written in the folowing format:
 		   'v123 [label="name"];',
 		   where 'v', '[]', 'label=' and ';' are necessary elements */
@@ -1981,14 +1981,14 @@ void TopologyViewer::CompareTopologies (void) {
 			return;
 		}
 	}
-	
+
 	std::pair<unsigned int,double> sec_end; // the second end and a reciprocal to a bandwidth of an edge
 	std::pair<std::map<unsigned int,double>::iterator,bool> i_tp_ins; // result of insertion into 'ideal_topo'
 	char *line;
-	
+
 	for ( ; ; )
 	{
-		/* collect edges of "ideal" topology graph; 
+		/* collect edges of "ideal" topology graph;
 		   each edge must be written in the folowing format:
 		   'v123 -- v456 [label="789Gbit/s"];',
 		   where 'v', '--', '[]', 'label=', 'Gbit/s' and ';' are necessary elements */
@@ -2193,7 +2193,7 @@ void TopologyViewer::CompareTopologies (void) {
 	}
 	l.Destroy();
 	fclose(ideal_topo_file);
-	
+
 	double similarity=0.0; // percent of per-edge similarity between "real" and "ideal" topology
 	unsigned int edges_num_in_ideal=0u; // number of edges in "ideal" topology which connect
 										// vertices in "real" topology
@@ -2202,7 +2202,7 @@ void TopologyViewer::CompareTopologies (void) {
 	unsigned int max_edg_cnt;
 	const unsigned int n=ideal_topo.size();
 	unsigned int *edg_cnt;
-	
+
 	for (i=0u; i!=n; ++i)
 	{
 		o_h_it=our_hosts.find(ideal_topo[i].first);
@@ -2227,7 +2227,7 @@ void TopologyViewer::CompareTopologies (void) {
 			similarity+=static_cast<double>(max_edg_cnt); // first part of magic formula!
 		}
 	}
-	// note that 'edges_num_in_ideal' is two times greater than the real number of edges 
+	// note that 'edges_num_in_ideal' is two times greater than the real number of edges
 	// because "ideal" topology is undirected graph and we store it like directed graph
 	if (edges_num_in_ideal!=0u)
 	{
@@ -2241,11 +2241,11 @@ void TopologyViewer::CompareTopologies (void) {
 			return;
 		}
 	}
-	
+
 	// "ideal" topology is hierarchical (trees, stars etc...)
-	
+
 	/* show a red-blue representation of "ideal" (!) topology */
-	
+
 	// this structure represents a list of weighted edges;
 	// each edge is a map 'v1'->'v2', where 'v1' and 'v2' are vertices;
 	// (note that 'v1' is strongly less than 'v2');
@@ -2253,10 +2253,10 @@ void TopologyViewer::CompareTopologies (void) {
 	// to compute a simple average a {double,int} pair is used;
 	// useful information: 'real_times' is a subset of 'ideal_topo'
 	std::map<unsigned int,std::map<unsigned int,std::pair<double,unsigned int> > > real_times;
-	
+
 	double *matr; // values for "real" topology
 	double ml; // message length (or a simple average of all message lengths depending on 'vals_for_edgs')
-	
+
 	matr=static_cast<double*>(malloc(main_wdg.x_num*main_wdg.x_num*sizeof(double)));
 	if (matr==NULL) { NOT_ENOUGH_MEM_RET(); }
 	if (!GetMatrixByValsForEdgsVar(matr))
@@ -2279,7 +2279,7 @@ void TopologyViewer::CompareTopologies (void) {
 			break;
 	}
 	ml=(ml<DBL_EPSILON)? 1.0 : ml; // move away from zero to keep edges' weights positive
-	
+
 	unsigned int *previous; // reverse of shortest path between 2 vertices in "ideal" topology
 	bool *visited; // array of indicators for vertices
 	double *dist; // array of distances to vertices
@@ -2290,7 +2290,7 @@ void TopologyViewer::CompareTopologies (void) {
 	std::map<unsigned int,std::pair<double,unsigned int> > *e2; // right part of the first map in 'real_times'
 	std::pair<double,unsigned int> *e1e2; // right part of the map in 'e2'
 	unsigned int vb,ve;
-	
+
 	dist=static_cast<double*>(malloc(n*sizeof(double)));
 	if (dist==NULL) { free(matr); NOT_ENOUGH_MEM_RET(); }
 	previous=static_cast<unsigned int*>(malloc(n*sizeof(int)));
@@ -2346,7 +2346,7 @@ void TopologyViewer::CompareTopologies (void) {
 			v2=i1;
 			v1=previous[v2];
 			if (v1==UINT_MAX) break; // 'i' and 'i1' are not connected
-			
+
 			// so, we have a weighted path from 'i' to 'i1' (direction is important!)
 			// in "ideal" topology and a measure of time for this pair of vertices in "real" topology;
 			//
@@ -2354,18 +2354,18 @@ void TopologyViewer::CompareTopologies (void) {
 			// 'p[0]', 'p[1]', ..., 'p['pn'-1]'; and let 'tp[j]' be the length of the edge 'p[j]';
 			// we can distribute 't' to edge 'p[j]' using the following formula: t*tp[j] / (tp[0]+...+tp[pn-1]),
 			// i.e. the more 'tp[j]' is, the bigger part of 't' is given to 'p[j]';
-			// let 'e1' and 'e2' be the two ends of an edge 'p[j]', then add the result of the 
+			// let 'e1' and 'e2' be the two ends of an edge 'p[j]', then add the result of the
 			// mentioned formula to real_times[e1][e2].first and add 1 to real_times[e1][e2].second;
-			// in general, more than one path containes 'p[j]', so a simple average of collected 
+			// in general, more than one path containes 'p[j]', so a simple average of collected
 			// values is used;
 			//
 			// let's designate 'tp_i' as (real_times[e1][e2].first/real_times[e1][e2].second);
 			//
-			// a group of edges in "real" topology corresponds to a single edge in "ideal" topology, 
-			// so 't' is a simple average of weights of edges in that group (the weights depend on 
-			// 'vals_for_edgs' variable) and 'ml' as message length (or a simple average of 
+			// a group of edges in "real" topology corresponds to a single edge in "ideal" topology,
+			// so 't' is a simple average of weights of edges in that group (the weights depend on
+			// 'vals_for_edgs' variable) and 'ml' as message length (or a simple average of
 			// all message lengths depending on 'vals_for_edgs');
-			
+
 			// compute 1/('tp[0]'+...+'tp[pn-1]')
 			printf("\r111111: %u->%u",i,i1);fflush(stdout);r_sum_tm=0.0;
 			for ( ; ; )
@@ -2413,7 +2413,7 @@ void TopologyViewer::CompareTopologies (void) {
 					// new edge
 					e1e2->first=time_real*ideal_topo[vb].second[ve];
 					e1e2->second=1u;
-				}	
+				}
 				if (v1==i) break;
 				v2=v1;
 				v1=previous[v2];
@@ -2424,38 +2424,38 @@ void TopologyViewer::CompareTopologies (void) {
 	free(previous);
 	free(dist);
 	free(matr);
-	
+
 	if (real_times.empty())
 	{
-		// it means that "ideal" topology does not provide useful information: 
+		// it means that "ideal" topology does not provide useful information:
 		// all vertices we are interested in are unconnected
 		emit SendMessToLog(MainWindow::Info,my_sign,ErrMsgs::ToString(NV::UselessTopoMatch,1,&ideal_topo_fname));
 		return;
 	}
-	
+
 	std::map<unsigned int,std::map<unsigned int,std::pair<double,unsigned int> > >::iterator r_t_it,r_t_it_end;
 	std::map<unsigned int,std::pair<double,unsigned int> >::iterator it4,it4_end;
 	std::map<unsigned int,double>::iterator it5,it5_end;
-	
+
 	/* finish calculations in 'real_times' */
 	for (r_t_it=real_times.begin(),r_t_it_end=real_times.end(); r_t_it!=r_t_it_end; ++r_t_it)
 	{
 		for (it4=r_t_it->second.begin(),it4_end=r_t_it->second.end(); it4!=it4_end; ++it4)
 			it4->second.first/=static_cast<double>(it4->second.second);
 	}
-	
+
 	/* multiply all weights of edges in 'ideal_topo' by 'ml' */
 	for (i=0u; i!=n; ++i)
 	{
 		for (it5=ideal_topo[i].second.begin(),it5_end=ideal_topo[i].second.end(); it5!=it5_end; ++it5)
 			it5->second*=ml; // now 'it5->second' represents an "ideal" message pass
 	}
-	
-	/* find minimum and maximum values in the intersection 
+
+	/* find minimum and maximum values in the intersection
 	   of 'real_times' and 'ideal_topo' to paint edges */
 	double gt_min,gt_max; // minimum and maximum of positive differencies for color mapping
 	double lt_min,lt_max; // minimum and maximum of negative differencies for color mapping
-	
+
 	gt_min=DBL_MAX;
 	gt_max=0.0;
 	lt_min=DBL_MAX;
@@ -2499,24 +2499,24 @@ void TopologyViewer::CompareTopologies (void) {
 	gt_max=(gt_max<DBL_EPSILON)? 255.0 : 255.0/gt_max;
 	lt_max-=lt_min; // turn 'lt_max' into color mapping coefficient
 	lt_max=(lt_max<DBL_EPSILON)? 255.0 : 255.0/lt_max;
-	
+
 	// free some memory
 	for (o_h_it=our_hosts.begin(); o_h_it!=o_h_it_end; ++o_h_it)
 		o_h_it->second.first.clear();
-	
+
 	TVWidget *ideal_topo_view; // widget with red-blue representation of "ideal" topology graph
-	
+
 	try {
 		ideal_topo_view=new TVWidget;
 	}
 	catch (...) { NOT_ENOUGH_MEM_RET(); }
 	ideal_topo_view->x_num=n;
 	ideal_topo_view->z_num=1u;
-	
+
 	quint8 *bit_arr; // iterator for bit arrays
 	quint8 one_byte;
 	unsigned int n1;
-	
+
 	/* determine colors of vertices in "ideal" topology */
 	bit_arr=static_cast<quint8*>(malloc((n>>3u)+1u));
 	if (bit_arr==NULL) { delete ideal_topo_view; NOT_ENOUGH_MEM_RET(); }
@@ -2537,9 +2537,9 @@ void TopologyViewer::CompareTopologies (void) {
 		}
 	}
 	if ((n & 0x7)!=0u) *bit_arr=one_byte; // the last byte
-	
+
 	our_hosts.clear(); // no longer necessary
-	
+
 	/* compute the number of edges in "ideal" topology (remember that it is undirected) */
 	n1=0u;
 	for (i=0u; i!=n; ++i)
@@ -2547,21 +2547,21 @@ void TopologyViewer::CompareTopologies (void) {
 	bit_arr=static_cast<quint8*>(calloc((n1>>3u)+1u,1u)); // n1 / 2
 	if (bit_arr==NULL) { delete ideal_topo_view; NOT_ENOUGH_MEM_RET(); }
 	ideal_topo_view->i_e_color=bit_arr;
-	
+
 	/* paint existing edges */
 	unsigned char *clr_arr;
-	
+
 	n1=0u;
 	for (r_t_it=real_times.begin(); r_t_it!=r_t_it_end; ++r_t_it)
 		n1+=r_t_it->second.size();
 	clr_arr=static_cast<unsigned char*>(malloc(n1*sizeof(char)));
 	if (clr_arr==NULL) { delete ideal_topo_view; NOT_ENOUGH_MEM_RET(); }
 	ideal_topo_view->i_e_color_val=clr_arr;
-	
+
 	// (all designations were taken from that big comment high above)
 	//
 	// 'tp[i]'*'ml' represents an "ideal" message pass and 'tp_i' represents a "real" message pass;
-	// colors of edges are determined by comparing 'tp[i]'*'ml' and 'tp_i': if the former is greater 
+	// colors of edges are determined by comparing 'tp[i]'*'ml' and 'tp_i': if the former is greater
 	// than the latter then the edge is painted in red else the edge is painted in blue (very rare case!)
 	n1=0u;
 	r_t_it=real_times.begin();
@@ -2611,9 +2611,9 @@ void TopologyViewer::CompareTopologies (void) {
 		bit_arr+=(n1>>3u);
 		n1&=0x7;
 	}
-	
+
 	real_times.clear(); // no longer necessary
-	
+
 	/* turn adjacency list into adjacency matrix */
 	/* fill distance matrix with edges' lengths */
 	matr=static_cast<double*>(calloc(n*n,sizeof(double)));
@@ -2631,7 +2631,7 @@ void TopologyViewer::CompareTopologies (void) {
 			dist[k]=it->second;
 		}
 	}
-	
+
 	/* assign names */
 	ideal_topo_view->host_names=new(std::nothrow) QString[n];
 	if (ideal_topo_view->host_names==NULL) { free(matr); delete ideal_topo_view; NOT_ENOUGH_MEM_RET(); }
@@ -2640,16 +2640,16 @@ void TopologyViewer::CompareTopologies (void) {
 		ideal_topo_view->host_names[i]=ideal_topo[i].first;
 		ideal_topo[i].first.clear();
 	}
-	
+
 	ideal_topo.clear(); // no longer necessary
-	
+
 	ideal_topo_view->resize(main_wdg.size());
 	ideal_topo_view->show();
-	
+
 	unsigned int edg_num=0u; // number of all edges
 	unsigned int edg50_num=0u; // number of edges with length error not less than 50%
 	unsigned int edg99_num=0u; // number of edges with length error not less than 99%
-	
+
 	if (!ideal_topo_view->MapGraphInto3D(matr,m_d_impact,edg_num,edg50_num,edg99_num))
 	{
 		free(matr);
@@ -2657,14 +2657,14 @@ void TopologyViewer::CompareTopologies (void) {
 		NOT_ENOUGH_MEM_RET();
 	}
 	free(matr);
-	
+
 	ideal_topo_view->setParent(this); // hope that 'ideal_topo_view' will be deleted by Qt
 	ideal_topo_view->setAttribute(Qt::WA_DeleteOnClose,true);
 	ideal_topo_view->setWindowFlags(ideal_topo_view->windowFlags() | Qt::Window); // tear away from 'this'
 	ideal_topo_view->window()->setWindowTitle(QString("PARUS - Network Viewer 2 - ")+
 											  tr("\"ideal\" topology for '")+fname_for_tvwidget+"'");
 	if (ideal_topo_view->isHidden()) ideal_topo_view->show(); // why does the window disappear sometimes??
-		
+
 	if (edg50_num!=0u)
 	{
 		const double r_edg_num=100.0/static_cast<double>(edg_num);
@@ -2672,8 +2672,8 @@ void TopologyViewer::CompareTopologies (void) {
 		mes+=tr(" was not precise:");
 		mes+=QString("<br>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <b>%1%</b> ")\
 					.arg(static_cast<double>(edg50_num)*r_edg_num,0,'f',2);
-		mes+=tr("of edges have %1% length error or greater").arg(50); // 'arg(const)' is used to minimize 
-																	  // the number of translated strings 
+		mes+=tr("of edges have %1% length error or greater").arg(50); // 'arg(const)' is used to minimize
+																	  // the number of translated strings
 		if (edg99_num!=0u)
 		{
 			mes+=QString("<br>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <b>%1%</b> ")\
@@ -2684,7 +2684,7 @@ void TopologyViewer::CompareTopologies (void) {
 		emit SendMessToLog(MainWindow::Info,my_sign,mes);
 		QMessageBox::information(ideal_topo_view,tr("Graph building"),mes);
 	}
-	
+
 	ideal_topo_view->updateGL();
 }
 
@@ -2694,20 +2694,20 @@ void TopologyViewer::keyPressEvent (QKeyEvent *key_event) {
 		emit CloseOnEscape(this);
 		return;
 	}
-	
+
 	if ((key_event->modifiers()==Qt::ControlModifier) && (key_event->key()==Qt::Key_O))
 	{
 		// 'Ctrl'+'O' was pressed -> open file with "ideal" topology to compare with retrieved topology
 		CompareTopologies();
 		return;
 	}
-	
+
 	main_wdg.keyPressEvent(key_event); // "redirection" of the event
 }
 
 void TVWidget::keyPressEvent (QKeyEvent *key_event) {
 	static const float shift_xy=0.2f,shift_zz=0.1f;
-	
+
 	switch (key_event->key())
 	{
 	  case Qt::Key_A: // shift "camera" left
@@ -2765,29 +2765,29 @@ void TVWidget::mouseMoveEvent (QMouseEvent *mouse_event) {
 	{
 		const int new_x=mouse_event->x(),new_y=mouse_event->y();
 		static const int min_move=3;
-		
-		if ((new_x<0) || (new_y<0) || (new_x>=width()) || (new_y>=height()) || 
-			((new_x<x_move+min_move) && (new_x+min_move>x_move) && 
+
+		if ((new_x<0) || (new_y<0) || (new_x>=width()) || (new_y>=height()) ||
+			((new_x<x_move+min_move) && (new_x+min_move>x_move) &&
 			 (new_y<y_move+min_move) && (new_y+min_move>y_move))) return;
-		
+
 		click_disabled=true;
-		
+
 		// rotation in OXZ
 		alpha+=(static_cast<float>(180*(new_x-x_move))/static_cast<float>(width()));
 		// rotation in OYZ
 		beta+=(static_cast<float>(180*(y_move-new_y))/static_cast<float>(height()));
-		
+
 		if (alpha>360.0f) alpha-=360.0f;
 		else
 			if (alpha<-360.0f) alpha+=360.0f;
 		if (beta>360.0f) beta-=360.0f;
 		else
 			if (beta<-360.0f) beta+=360.0f;
-			
+
 		// move vector origin to the new point
 		x_move=new_x;
 		y_move=new_y;
-		
+
 		ApplyTransform();
 		updateGL();
 	}
@@ -2798,7 +2798,7 @@ void TVWidget::mouseReleaseEvent (QMouseEvent *mouse_event) {
 	if (mouse_event->button()==Qt::LeftButton)
 	{
 		const int m_x=mouse_event->x(),m_y=mouse_event->y();
-		
+
 		mouse_pressed=false;
 		if ((m_x<0) || (m_y<0) || (m_x>=width()) || (m_y>=height())) click_disabled=false;
 	}
@@ -2808,23 +2808,23 @@ void TVWidget::ApplyTransform (void) {
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	gluLookAt(0.0,0.0,0.0,0.0,0.0,1.0,0.0,1.0,0.0);
-	
+
 	glTranslatef(shift_x,shift_y,shift_z+geom_c_z);
-	
+
 	glRotatef(alpha,0.0f,1.0f,0.0f);
 	glRotatef(beta,1.0f,0.0f,0.0f);
-		
+
 	glTranslatef(0.0f,0.0f,-geom_c_z);
 }
 
 void TVWidget::tvCone (const float radius, const float height, const unsigned int slices) {
 	if (slices<2u) return;
-	
+
 	const float alpha=(M_PI+M_PI)/static_cast<float>(slices);
 	const float sina=sinf(alpha),cosa=cosf(alpha);
 	unsigned int i;
 	float dir_x=radius,dir_y=0.0f,tmp;
-	
+
 	// cone surface
 	glBegin(GL_TRIANGLE_FAN);
 	  glNormal3f(0.0f,0.0f,1.0f); // top point has this normal
@@ -2864,47 +2864,47 @@ void TVWidget::tvCone (const float radius, const float height, const unsigned in
 void TVWidget::initializeGL () {
 	glClearColor(backgr_clr,backgr_clr,backgr_clr,1.0f);
 	glClearDepth(1.0f);
-	
+
 	glEnable(GL_DEPTH_TEST);
-	
+
 	glShadeModel(GL_SMOOTH/*GL_FLAT*/);
-	
+
 	//glHint(GL_PERSPECTIVE_CORRECTION_HINT,GL_NICEST);
-		
+
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
-	
+
 	glLineWidth(3.0f);
 	glEnable(GL_LINE_SMOOTH);
 }
 
 void TVWidget::paintGL () {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	
+
 	if (points_x==NULL) return;
-	
+
 	static const float vert_rad=0.025f,edg_rad=0.01f,rad_to_deg=180.0f/M_PI;
 	GLfloat mat_clr_diff[]={32.0f/51.0f,0.0f,0.0f};
 	static const GLfloat mat_clr_spec[]={0.0f,0.0f,0.0f};
 	unsigned int i,j;
 	unsigned int *edgs=edge_counts;
 	float coef;
-	
+
 	GLUquadric *quadr_obj=gluNewQuadric();
-	
+
 	glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,mat_clr_spec);
-	
+
 	if (i_v_color==NULL)
 	{
 		// "real" topology
-		
+
 		unsigned int from,to;
 		unsigned int *edgs2;
 		float rb,len;
 		static const unsigned int simplex_times=2u;
 		static const float exist_eps=0.5f;
 		bool arrow;
-	
+
 		// vertices
 		glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,mat_clr_diff);//glColor3ub(160u,0u,0u);
 		for (i=0u; i!=x_num; ++i)
@@ -2914,7 +2914,7 @@ void TVWidget::paintGL () {
 			gluSphere(quadr_obj,vert_rad,4,2);
 			glPopMatrix();
 		}
-	
+
 		// edges
 		for (i=0u; i!=x_num; ++i)
 		{
@@ -2999,7 +2999,7 @@ void TVWidget::paintGL () {
 				glPopMatrix();
 			}
 		}
-	
+
 		// vertices' labels
 		if (show_host_names)
 		{
@@ -3016,14 +3016,14 @@ void TVWidget::paintGL () {
 	else
 	{
 		// "ideal" topology
-		
+
 		quint8 *bit_arr; // iterator for bit arrays
 		quint8 one_byte; // stores '*bit_arr'
 		unsigned int n1; // bit counter
 		bool gray=true; // flag to minimize calls to glMaterialfv() due to color switching
 		unsigned char *clr_arr; // iterator for 'i_e_color_val'
 		static const GLfloat _1_div_255=1.0f/255.0f;
-		
+
 		// vertices
 		mat_clr_diff[0]=mat_clr_diff[1]=mat_clr_diff[2]=ignore_clr;
 		glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,mat_clr_diff);
@@ -3068,7 +3068,7 @@ void TVWidget::paintGL () {
 			gluSphere(quadr_obj,vert_rad,4,2);
 			glPopMatrix();
 		}
-				
+
 		// edges
 		bit_arr=i_e_color;
 		one_byte=*bit_arr;
@@ -3118,7 +3118,7 @@ void TVWidget::paintGL () {
 				glPopMatrix();
 			}
 		}
-		
+
 		// vertices' labels
 		//glDisable(GL_DEPTH_TEST);
 		glDisable(GL_LIGHTING);
@@ -3129,24 +3129,24 @@ void TVWidget::paintGL () {
 		glEnable(GL_LIGHTING);
 		//glEnable(GL_DEPTH_TEST);
 	}
-	
+
 	gluDeleteQuadric(quadr_obj);
 }
 
 void TVWidget::resizeGL (int width, int height) {
 	glViewport(0,0,width,height);
-	
+
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluPerspective(45.0,static_cast<double>(width)/static_cast<double>(height),1.0,1000.0);
-	
+
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	gluLookAt(0.0,0.0,0.0,0.0,0.0,1.0,0.0,1.0,0.0);
-	
+
 	const GLfloat light_pos[]={0.0f,0.0f,0.0f,1.0f};
 	glLightfv(GL_LIGHT0,GL_POSITION,light_pos);
-	
+
 	ApplyTransform();
 }
 

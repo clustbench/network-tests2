@@ -39,40 +39,40 @@ class PairViewer: public QMdiSubWindow {
 	  QwtPlotCurve curve1,curve2,curve3;
 	  QwtLegend legend;
 	  QwtLegendItem leg_item1,leg_item2,leg_item3;
-	  
+	
 	  Q_DISABLE_COPY(PairViewer);
 
   public:
 	  explicit PairViewer (QWidget *parent): QMdiSubWindow(parent) {}
-	  
-	  void Init (const QString &title, const double *x_points, const double *y_points, const double *y_points_aux, 
+	
+	  void Init (const QString &title, const double *x_points, const double *y_points, const double *y_points_aux,
 				 const unsigned int num_points, const char type) {
 		  QPen pen;
 		  pen.setWidth(2);
-		  
+		
 		  this->setWindowTitle(title);
 		  this->resize(parentWidget()->size());
-		  
+		
 		  plot.setParent(this);
 		  legend.setParent(this);
 		  legend.hide();
-		  
+		
 		  curve1.setData(x_points,y_points,num_points);
 		  curve1.setPen(pen);
-		  
+		
 		  plot.enableAxis(QwtPlot::xBottom,true);
 		  plot.setAxisTitle(QwtPlot::xBottom,tr("message<br>lengths")); // Ox
 		  plot.enableAxis(QwtPlot::yLeft,true);
 		  plot.setAxisTitle(QwtPlot::yLeft,tr("values")); // Oy
-		  
+		
 		  curve1.attach(&plot);
-		  
+		
 		  if (y_points_aux!=NULL)
 		  {
 			  // add curve for values in the second file
-			  
+			
 			  QwtText text;
-			  
+			
 			  if (type==1)
 			  {
 				  curve1.setTitle(tr("values"));
@@ -88,11 +88,11 @@ class PairViewer: public QMdiSubWindow {
 				  text.setText(tr("values<br>in file 2"));
 				  text.setColor(Qt::red);
 				  curve2.setTitle(text);
-				  
+				
 				  // green curve for values in the first file
 				  pen.setColor(Qt::green);
 				  curve1.setPen(pen);
-				  
+				
 				  // brown curve for difference of values in files
 				  double *dfr=static_cast<double*>(malloc(num_points*sizeof(double)));
 				  for (unsigned int i=0u; i<num_points; ++i)
@@ -111,7 +111,7 @@ class PairViewer: public QMdiSubWindow {
 			  pen.setColor(Qt::red);
 			  curve2.setPen(pen);
 			  curve2.attach(&plot);
-			  
+			
 			  leg_item1.setIdentifierMode(QwtLegendItem::ShowText);
 			  legend.insert(&curve1,&leg_item1);
 			  leg_item2.setIdentifierMode(QwtLegendItem::ShowText);
@@ -124,12 +124,12 @@ class PairViewer: public QMdiSubWindow {
 			  legend.show();
 			  plot.insertLegend(&legend,QwtPlot::RightLegend);
 		  }
-		  
+		
 		  this->layout()->addWidget(&plot);
-		  
+		
 		  plot.replot();
 	  }
-	  
+	
 	  Q_SIGNAL void Closing (QWidget*); // class 'TabViewer' uses this
 
   protected:

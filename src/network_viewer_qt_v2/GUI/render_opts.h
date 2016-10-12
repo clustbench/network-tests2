@@ -61,36 +61,36 @@ class RenderOpts: public QWidget {
 
   public:
 	  RenderOpts (const int my_width, const int working_mode, bool &was_error);
-	  
+	
 	  // must be called once after the constructor
 	  void Init (FullViewer *par);
-	  
+	
 	  ~RenderOpts ();
 
   private Q_SLOTS:
 	  void ChangePtRepr (void) const;
-	  
+	
 	  void ShowReprSpheresInfo (void) {
 		  QMessageBox::information(this,tr("About \"spheres, type 1\" representation"),
 								   tr("\"Points\" are represented as spheres<br>"
 								   	  "with constant intensities"));
 	  }
-	  
+	
 	  void ShowReprLightsInfo (void) {
 		  QMessageBox::information(this,tr("About \"spheres, type 2\" representation"),
 								   tr("\"Points\" are represented as spheres<br>"
 								   	  "with their intensities descending<br>from "
 								   	  "centres to borders (~ 1/r<sup>2</sup>)"));
 	  }
-	  
+	
 	  void SetDepthConstraint (void) const;
-	  
+	
 	  void ShowDepthConstraintInfo (void) {
 		  QMessageBox::information(this,tr("About \"depth constraint\""),
 		  						   tr("\"Depth constraint\" means maximum<br>"
 		  						      "number of \"points\" which can intersect<br>with one virtual ray"));
 	  }
-	  
+	
 	  void ShowClrStretchingInfo (void) {
 		  QMessageBox::information(this,tr("About color stretching"),
 								   tr("Normally minimum of all values in a file turns<br>"
@@ -102,19 +102,19 @@ class RenderOpts: public QWidget {
 									  "than this maximum value will turn to color 255<br>"
 									  "(linear interpolation algorithm is left unchanged)."));
 	  }
-	  
+	
 	  void AdjustClrStretchingMin (const int);
 	  void AdjustClrStretchingMax (const int);
-	  
+	
 	  void ShowVolBuildingInfo (void) {
 		  QMessageBox::information(this,tr("About volume building"),
 								   tr("Only \"points\" with values between specified<br>minimum and maximum will "
 									  "be visible<br><br><b>'Depth constraint' will take<br>no effect in this mode!"
 									  "</b>"));
 	  }
-	  
+	
 	  void EnterVolBuildingMode (const int);
-	  
+	
 	  void AdjustVolBuildingMin1 (const int);
 	  void AdjustVolBuildingMax1 (const int);
 	  void AdjustVolBuildingMin2 (const int);
@@ -122,7 +122,7 @@ class RenderOpts: public QWidget {
 
   public:
 	  void ActivateAll (void);
-	  
+	
 	  void GetClrStretchingMinMax (double&, double&);
 };
 

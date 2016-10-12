@@ -47,11 +47,11 @@ class MatrixViewer: public QWidget {
 	  QwtPlotCurve *cursor;
 	  QwtPlotCurve *selection_rect;
 	  QwtPlotPicker *zoomer;
-	  
+	
 	  QPoint _length; // lengths for matrix: from and to; if from==to then matrix will be shown else row or column
 	  QPoint _p_from; // first point of matrix
 	  QPoint _p_to; // last point of matrix
-	  
+	
 	  const int inv; // matrix invariant (row or column); equals to (-1) when the matrix is built by message length
 	  double minw, maxw;
 
@@ -64,18 +64,18 @@ class MatrixViewer: public QWidget {
 		  zoomer=NULL;
 		  minw = maxw = 0;
 	  }
-	  
+	
 	  // must be called once after constructor;
 	  // 'data[0]' must NOT be NULL and 'data' must match '_cntrl'!
 	  void Init (const QString &title, MatrixRaster* data[2]);
-	  
+	
 	  // destructor
 	  ~MatrixViewer ();
-	  
+	
 	  void SetLength (const QPoint &len);
 	  void SetPointFrom (const QPoint &pnt);
 	  void SetPointTo (const QPoint &pnt);
-	  
+	
 	  void IAmActivated (void) { // class 'TabViewer' uses this
 		  GetRowAndCol();
 		  emit GiveInvariant(inv);
@@ -93,7 +93,7 @@ class MatrixViewer: public QWidget {
 				break;
 		  }
 	  }
-	  
+	
 	  virtual void closeEvent (QCloseEvent*) { emit Closing(this); }
 
   private:
@@ -103,7 +103,7 @@ class MatrixViewer: public QWidget {
   Q_SIGNALS:
 	  void GiveInvariant (const int); // class 'TabViewer' uses this
 	  void Closing (QWidget*); // class 'TabViewer' uses this
-	  
+	
 	  void ZoomMatrix (MatrixViewer*);
 	  void RowChng (int val);
 	  void ColChng (int val);
@@ -113,7 +113,7 @@ class MatrixViewer: public QWidget {
 		  ui->RB_normalizeCurrWindow->setEnabled(val);
 		  ui->RB_normalizeLocal->setChecked(!val);
 	  }
-	  
+	
 	  void GetRowAndCol (void) {
 		  emit RowChng(ui->SB_yFrom->value());
 		  emit ColChng(ui->SB_xFrom->value());

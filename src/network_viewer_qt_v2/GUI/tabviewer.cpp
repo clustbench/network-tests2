@@ -195,7 +195,7 @@ void TabViewer::ShowRow () {
 	const int row=ui->SB_row->value();
 	MatrixRaster *matr_raster[2];
 	const QPoint len(controller->GetWindowBorders()[0],controller->GetWindowBorders()[1]);
-	MatrixViewer *new_m_v=new MatrixViewer(ui->mdiArea,controller, row);   
+	MatrixViewer *new_m_v=new MatrixViewer(ui->mdiArea,controller, row);
 	controller->GetRowRaster(row,matr_raster[0],matr_raster[1]);
 
 	new_m_v->Init(tr("Row %1, message lengths from %2 to %3").arg(row).arg(len.x()).arg(len.y()),matr_raster);
