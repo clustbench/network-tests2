@@ -58,13 +58,13 @@ class TVWidget: public QGLWidget {
       float geom_c_z; // z-coordinate of geometric centre of the graph
       float shift_x,shift_y,shift_z; // store all translations of the graph
       float alpha,beta; // store all rotations of the graph (in OXZ and OYZ correspondently); in degrees
-      static constexpr float backgr_clr=0.9f; // light-gray color for widget's background
+      static const float backgr_clr; // color for widget's background
       QString *host_names; // array of hosts' names (its size is equal to 'x_num')
       unsigned int min_edg_count; // if edge_counts(i,j) is less than 'min_edg_count' then
       							  // do NOT draw an edge between vertices i and j
       bool show_host_names; // determines if hosts' names are drawn near the vertices
       /* visualization: "ideal" topology */
-      static constexpr GLfloat ignore_clr=1.0f/*16.0f/51.0f*/; // "ignore" color (white)
+      static const GLfloat ignore_clr; // "ignore" color
       quint8 *i_v_color; // color index of a vertex in "ideal" topology: 0 - 'ignore_clr', 1 - magenta;
       					 // each element handles 8 vertices (| 7 | 6 | 5 | 4 | 3 | 2 | 1 | 0 |);
       					 // only matching vertices in "real" and "ideal" topology have magenta color

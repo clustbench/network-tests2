@@ -3177,3 +3177,8 @@ TopologyViewer::~TopologyViewer () {
 	if (hor_layout!=NULL) delete hor_layout;
 }
 
+// light-gray color for widget's background
+const float TVWidget::backgr_clr = 0.9f;
+
+// "ignore" color (white)
+const GLfloat TVWidget::ignore_clr = 1.0f/*16.0f/51.0f*/;
