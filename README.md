@@ -10,7 +10,7 @@ Deploying on Lomonosov 2
 `deploy_on_lomonosov2.mk` is a Makefile which can download and build everything
 needed to run *network-tests2* on Lomonosov 2 cluster. Here is how to do it:
 
-```
+```shell
 # use scripts available on lomonosov 2 to initialize environment variables
 # these 2 commands must be run every time you start new ssh session to lom2
 # you can add them to your .bashrc for convenience
@@ -32,7 +32,7 @@ not. This makefile will create directories `bin`, `include` and others in
 `~/_scratch/network_tests_prefix` and set environment variables like `PATH` and
 `LD_LIBRARY_PATH` accordingly, so that everything works as it should.
 
-```
+```shell
 # download, build and install everything to _scratch/network_tests_prefix
 $ make -j9 all
 
