@@ -29,7 +29,7 @@ CXXLINKER=$(CXX)
 CCLINKER_FLAGS=
 CXXLINKER_FLAGS=
 LIB_PATH=
-LIBS=
+LIBS=@LIBS@
 GOALS=@GOALS@
 
 # full path to 'CL/opencl.h' (on Windows/UNIX) or 'OpenCL/opencl.h' (on Mac)
