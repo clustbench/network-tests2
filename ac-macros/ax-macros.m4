@@ -41,16 +41,20 @@ AC_DEFUN([AX_RAW_CHECK_PROG], [
 # $1 - library name (without 'lib' prefix and extension suffix)
 # $2 - list of required functions
 AC_DEFUN([AX_CHECK_LIB], [
+	NOT_FOUND=''
+	CACHED_LIBS=$LIBS
 	for sub in $2
 	do
-		AC_CHECK_LIB([$1], [$sub], [
-			# The check below is necessary for deduplication of $1 library
-			# within LIBS variable
-			AS_IF([echo $LIBS | grep -q "$1"], [], [
-				AS_VAR_APPEND([LIBS], [-l$1])
-			])
-		], [
-			AC_MSG_ERROR([Function $sub does not exist in $1])
-		])
+		AC_CHECK_LIB([$1], [$sub], [ ], [ NOT_FOUND="$NOT_FOUND $sub" ])
 	done
+	AS_IF([test "x$NOT_FOUND" == "x"], [
+		# Deduplication of $1 library in LIBS: if library $1 already exists in
+		# LIBS it won't be added, otherwise new LIBS will contain CACHED_LIBS
+		# and -l$1.
+		# Rationale for this hack # is written in autoconf documentation
+		# (https://www.gnu.org/software/autoconf/manual/autoconf-2.69/html_node/Libraries.html)
+		AS_CASE(["$LIBS"], [*"-l$1"*], [], [LIBS="$CACHED_LIBS -l$1"])
+	], [
+		AC_MSG_ERROR([Functions:$NOT_FOUND do not exist in $1])
+	])
 ])
