@@ -41,7 +41,7 @@ void MatrixViewer::Init (const QString &title, MatrixRaster* data[2]) {
 	ui->Plot->enableAxis(QwtPlot::yLeft,false);
 	ui->Plot->enableAxis(QwtPlot::yRight,false);
 
-	QwtColorMap *c_map=_cntrl->AllocMainCMap(ui->S_Left->minValue(),ui->S_Right->maxValue());
+	//QwtColorMap *c_map=_cntrl->AllocMainCMap(ui->S_Left->minValue(),ui->S_Right->maxValue());
 	QwtColorMap *c_map=_cntrl->AllocMainCMap(0.0,1.0);
 
 	QwtPlotSpectrogram *dt=new QwtPlotSpectrogram;
@@ -350,8 +350,8 @@ void MatrixViewer::LocalNormalization(bool checked) {
 		ui->S_Left->setValue(ui->S_Left->minValue());
 		ui->S_Right->setRange(ui->S_Left->minValue(),ui->S_Left->maxValue());
 		ui->S_Right->setValue(ui->S_Right->maxValue());
-		double range = ui->S_Right->maxValue() - ui->S_Left->minValue();
-		double left = ui->S_Left->minValue();
+		//double range = ui->S_Right->maxValue() - ui->S_Left->minValue();
+// 		double left = ui->S_Left->minValue();
 		//if (range<DBL_EPSILON) return;
 
 		QwtColorMap *c_map=_cntrl->AllocMainCMap(0,1.0);
@@ -363,10 +363,10 @@ void MatrixViewer::LocalNormalization(bool checked) {
 
 void MatrixViewer::WindowNormalization(bool checked) {
 	if (checked) {
-	   	double range = maxw - minw;
-		double left = minw;
-		ui->S_Left->setRange(minw, maxw);
-		ui->S_Left->setValue(minw);
+	   //	double range = maxw - minw;
+		//double left = minw;
+		ui->S_Left->setRange(this->minw, this->maxw);
+		ui->S_Left->setValue(this->minw);
 		ui->S_Right->setRange(ui->S_Left->minValue(),ui->S_Left->maxValue());
 		ui->S_Right->setValue(ui->S_Right->maxValue());
 	//	if (range<DBL_EPSILON) return;
