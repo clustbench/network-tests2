@@ -31,6 +31,7 @@
 #include <QMdiArea>
 #include <QMdiSubWindow>
 
+
 class MatrixViewer: public QWidget {
 	Q_OBJECT
 
@@ -52,6 +53,7 @@ class MatrixViewer: public QWidget {
 	  QPoint _p_to; // last point of matrix
 	  
 	  const int inv; // matrix invariant (row or column); equals to (-1) when the matrix is built by message length
+	  double minw, maxw;
 
   public:
 	  // constructor
@@ -60,6 +62,7 @@ class MatrixViewer: public QWidget {
 		  _data[0]=_data[1]=NULL;
 		  cursor=selection_rect=NULL;
 		  zoomer=NULL;
+		  minw = maxw = 0;
 	  }
 	  
 	  // must be called once after constructor;
@@ -94,6 +97,7 @@ class MatrixViewer: public QWidget {
 	  virtual void closeEvent (QCloseEvent*) { emit Closing(this); }
 
   private:
+
 	  void SetInfo ();
 
   Q_SIGNALS:
@@ -115,6 +119,11 @@ class MatrixViewer: public QWidget {
 		  emit ColChng(ui->SB_xFrom->value());
 	  }
 
+	  void GetMinWMaxW (double min, double max) {
+	  	minw = min;
+	  	maxw = max;
+	  }
+
   private Q_SLOTS:
 	  void SetRightSldrMinVal (const double val);
 	  void SetLeftSldrMaxVal (const double val);
@@ -124,5 +133,7 @@ class MatrixViewer: public QWidget {
 	  void DrawSelectionRect ();
 	  void ShowZoom ();
       void SaveImage ();
+      void LocalNormalization(bool checked);
+      void WindowNormalization(bool checked);
 };
 

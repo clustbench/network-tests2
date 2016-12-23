@@ -23,10 +23,13 @@
 #pragma once
 
 #include <QMainWindow>
+#include <map>
 #include "ui_tabviewer.h"
 #include "../core/cntrlr_abstract.h"
 #include "matrixviewer.h"
 #include "mainwindow.h"
+#include <iostream>
+
 
 class TabViewer: public QMainWindow {
 	Q_OBJECT
@@ -35,11 +38,13 @@ class TabViewer: public QMainWindow {
   	  static const QString my_sign; // sign for log messages
   	  ICntrlr *const controller;
 	  Ui::ui_TabViewer *ui;
+	  double minw, maxw;
 
   private:
 	  // constructor
 	  TabViewer (ICntrlr *cntrlr, QMainWindow *parent): QMainWindow(parent), controller(cntrlr) {
 		  ui=NULL;
+		  minw = maxw = 0;
 	  }
 	  
 	  // must be called once after constructor
@@ -89,6 +94,7 @@ class TabViewer: public QMainWindow {
 
   Q_SIGNALS:
 	  void SendMessToLog (const MainWindow::MsgType, const QString &msg, const QString &stat);
+	  void MinMaxWindow (const double, const double);
 
   private Q_SLOTS:
 	  void Initialize ();
