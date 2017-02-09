@@ -45,6 +45,7 @@ class TVWidget: public QGLWidget {
 	
   private:
   	  unsigned int x_num; // both width and height of 2D matrices in input file(s)
+      unsigned int real_vertex_num;
       unsigned int z_num; // number of 2D matrices in input file(s)
       // both 'x_num' and 'z_num' are defined only once (while reading input file(s))
       
@@ -55,6 +56,17 @@ class TVWidget: public QGLWidget {
       
       /* visualization */
       float *points_x,*points_y,*points_z; // coordinates of graph's vertices in 3D (calculated approximately!)
+      int *partitioning_vector;
+      int nmb_prt;//number of graph partition
+      double *matr;
+      int *size_of_partitioning;
+      double *reduced_matr;
+      QVector<int> flag_cluster;
+      QVector<QVector<double> > open_vertex;
+      double m_d_impact;
+      unsigned int edg_num=0u;
+      unsigned int edg50_num=0u;
+      unsigned int edg99_num=0u;
       float geom_c_z; // z-coordinate of geometric centre of the graph
       float shift_x,shift_y,shift_z; // store all translations of the graph
       float alpha,beta; // store all rotations of the graph (in OXZ and OYZ correspondently); in degrees
@@ -109,6 +121,10 @@ class TVWidget: public QGLWidget {
       					   unsigned int &edg_num, unsigned int &edg50_num, unsigned int &edg99_num);
   	  
   	  void ApplyTransform (void);
+      //open vertex
+      void OpenVertex (double *matr,double *reduced_matr,QVector<QVector<double> > open_vertex, int *partitioning_vector,QVector<int>flag_cluster, int which_cluster, int *size_of_partition);
+
+      void selectFigures();
       
       // draws a cone around Oz axis; wide "bottom" is on OXY plane,
       // and "top" is directed towards +Z
@@ -123,7 +139,7 @@ class TVWidget: public QGLWidget {
   protected:
 	  virtual void initializeGL ();
   	  
-	  virtual void paintGL ();
+      virtual void paintGL ();
 	  
 	  virtual void resizeGL (int, int);
 	  
@@ -163,6 +179,10 @@ class TVWidget: public QGLWidget {
             }
         }
     }
+    void MapReducedGraph(int which_cluster);
+Q_SIGNALS:
+    //is connected to Execute, when we click on vertex
+    void ClickOnVertex (int which_cluster);
 };
 
 /* A class for retrieving topology graphs from 
@@ -286,6 +306,11 @@ class TopologyViewer: public QWidget {
       // compares retrieved topology with "ideal" topology loaded from file in DOT format
       void CompareTopologies (void);
       
+      // split graph into n parts
+      void GraphPartitioning (double *matr,double *reduced_matr,int prt_nmb,int *size_of_partition);
+      //reduce matrix size by making subgraph as special vertex
+      void ReduceMatrix (double *matr,double *reduced_matr,int *partitioning_vector,int *size_of_partition);
+
   protected:
   	  // processes keyboard
       virtual void keyPressEvent (QKeyEvent*);
@@ -300,6 +325,7 @@ class TopologyViewer: public QWidget {
   	  // 'Esc' will close the tab with this viewer; 
   	  // is connected to MainWindow::CloseTab()
       void CloseOnEscape (QWidget*);
+
 };
 
 /* 'Options' dialog for TopologyViewer */
