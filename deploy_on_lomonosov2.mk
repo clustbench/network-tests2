@@ -219,8 +219,8 @@ ${NETCDF_INSTALLED_SUCCESSFULLY}: ${NETCDF_BUILT_SUCCESSFULLY} | ${PREFIX}
 ###### NETWORK TESTS 2 ######
 #############################
 
-NETWORK_TESTS2_GIT_REPO ?= https://github.com/philip-bl/network-tests2.git
-NETWORK_TESTS2_BRANCH ?= phil_master
+NETWORK_TESTS2_GIT_REPO ?= https://github.com/clustbench/network-tests2.git
+NETWORK_TESTS2_BRANCH ?= master
 
 NETWORK_TESTS2_DIR = network-tests2
 
