@@ -39,3 +39,14 @@ config.log
 config
 /Makefile
 aclocal.m4
+/configure
+/parus_config.h
+
+# network test viewer v2
+/src/network_viewer_qt_v2/qrc_*.cpp
+/src/network_viewer_qt_v2/moc_*.cpp
+/src/network_viewer_qt_v2/ui_*.h
+opencl_defs.h
+src/network_viewer_qt_v2/Makefile_network_viewer_qt.mk
+src/network_viewer_qt_v2/network_viewer_qt_v2
+src/network_viewer_qt_v2/translations/nv_tr_ru.qm

@@ -1,12 +1,12 @@
 /*
  *  This file is a part of the PARUS project.
  *  Copyright (C) 2006  Alexey N. Salnikov (salnikov@cmc.msu.ru)
- *  
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  */
 
 #include "network_speed.h"
@@ -55,7 +55,7 @@ Network_speed::Network_speed()
     return;
 }
 /***********************************************************************/
-            
+
 Network_speed::~Network_speed()
 {
 
@@ -117,7 +117,7 @@ int Network_speed::fread(char *file_name)
     state = info_state_processors;
 
     /* After revision 61 file header contains only processor number
-     * 
+     *
      * flag=get_word(f,str);
      * if(flag==-1) return -1;
      * if(strcmp(str,"num"))
@@ -126,7 +126,7 @@ int Network_speed::fread(char *file_name)
      *  printf(" record 'num' not precent '%s'\n",str);
      *  return -1;
      * }
-     * 
+     *
      * flag=get_word(f,str);
      * if(flag==-1) return -1;
      * if(strcmp(str,"messages"))
@@ -193,13 +193,13 @@ int Network_speed::fread(char *file_name)
     GETWORD FORMATCHECK( "of" )
     GETWORD FORMATCHECK( "repeates" )
     GETWORD num_repeats = atoi( str );
-    
+
     /*
      * Commented by Alexey Salnikov.
      *
      * I think commented code fragment is abuse for file format.
      */
-    
+
     /*
     GETWORD FORMATCHECK( "result" )
     GETWORD FORMATCHECK( "file" )
@@ -208,7 +208,7 @@ int Network_speed::fread(char *file_name)
     */
 
     GETWORD FORMATCHECK( "hosts:" )
-    
+
     // Update state
     state = info_state_test_parameters;
 
@@ -223,12 +223,12 @@ int Network_speed::fread(char *file_name)
         if ( flag ) return -1;
 	
 	/*
-	 * 
+	 *
 	 * Why we need to describe host rank in file?
 	 *
 	 * The order of hosts in a file sets natural order of hosts in
 	 * a MPI-programm.
-	 * 
+	 *
 	 */
 	/*
 	GETWORD FORMATCHECK( "rank" )
@@ -311,9 +311,9 @@ double Network_speed::translate_time(int from,int to,int length)
 	/*
 	 * There is not line interpolation scheme.
 	 *
-	 * We discussed does line interpolation nesessary 
+	 * We discussed does line interpolation nesessary
 	 * here and decide it will be other scheme.
-	 * 
+	 *
 	 */
 	
 	for(i=0;i<num_messages;i++)

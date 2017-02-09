@@ -43,7 +43,7 @@ extern int random_choice( int proc1, int proc2, int num_processors, int* process
 
 /**
  * This function fill mode_array on one MPI-proccess. The formed array contains data with all MPI-processes modes (Idle,Noise,Goal).
- * This array should be brodcasted to all MPI-processes.  
+ * This array should be brodcasted to all MPI-processes.
  */
 extern int init_mode_array(int proc1,int proc2,int num_noise_procs,int num_all_procs,int *mode_array);
 

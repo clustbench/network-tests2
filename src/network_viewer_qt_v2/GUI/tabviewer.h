@@ -46,19 +46,19 @@ class TabViewer: public QMainWindow {
 		  ui=NULL;
 		  minw = maxw = 0;
 	  }
-	  
+	
 	  // must be called once after constructor
 	  bool Init (void);
-	  
+	
 	  Q_DISABLE_COPY(TabViewer);
 
   public:
-	  // replaces calls to both the constructor and Init() (it was designed to ensure a call to Init()); 
-	  // returns 'NULL' if any errors occured; 
+	  // replaces calls to both the constructor and Init() (it was designed to ensure a call to Init());
+	  // returns 'NULL' if any errors occured;
 	  // returned pointer should be deleted using 'delete'
 	  static TabViewer* Create (ICntrlr *cntrlr, QMainWindow *parent) {
 		  TabViewer *new_tv;
-		  
+		
 		  try {
 			  new_tv=new TabViewer(cntrlr,parent);
 		  }
@@ -72,7 +72,7 @@ class TabViewer: public QMainWindow {
 		  }
 		  return new_tv;
 	  }
-	  
+	
 	  // destructor
 	  ~TabViewer () {
 		  if (controller!=NULL) delete controller;
@@ -98,26 +98,26 @@ class TabViewer: public QMainWindow {
 
   private Q_SLOTS:
 	  void Initialize ();
-	  
+	
 	  void ShowMesLen ();
 	  void ShowRow ();
 	  void ShowCol ();
 	  void ShowPair ();
-	  
+	
 	  void LoadWindow ();
 	  void DropWindow ();
-	  
+	
 	  void ChangeMatrNumber (const double val) { ui->SB_MatrixNumber->setValue(val); }
-	  
+	
 	  void ChangeLoadWindowBtn (void) {
 	  	  ui->B_LoadWindow->setEnabled(ui->SB_LoadWinFrom->value()<ui->SB_LoadWinTo->value());
 	  }
-	  
+	
 	  void DeleteSubWindow (QWidget *sub) {
 		  ui->mdiArea->removeSubWindow(sub);
 		  delete sub;
 	  }
-	  
+	
 	  void SubActivated (QMdiSubWindow *sub) const {
 		  if (sub!=NULL)
 		  {
@@ -135,17 +135,17 @@ class TabViewer: public QMainWindow {
 			  ui->progressBar->setValue(val);
 		  }
 	  }
-	  
+	
 	  void SetRowValue (const int val) {
 		  if (ui->CB_updFromCurrMtr->isChecked() /*&& ui->SB_row->isEnabled()*/)
 			  ui->SB_row->setValue(val);
 	  }
-	  
+	
 	  void SetColValue (const int val) {
 		  if (ui->CB_updFromCurrMtr->isChecked() /*&& ui->SB_column->isEnabled()*/)
 			  ui->SB_column->setValue(val);
 	  }
-	  
+	
 	  void NewMatrix_mes (MatrixViewer*);
 	  void NewMatrix_row (MatrixViewer*);
 	  void NewMatrix_col (MatrixViewer*);

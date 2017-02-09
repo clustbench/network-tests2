@@ -125,7 +125,7 @@ void CntrlrSingle::GetColRaster (const int col, MatrixRaster* &res1, MatrixRaste
 	}
 }
 
-void CntrlrSingle::GetPairRaster (const int row, const int col, double* &x_points, double* &y_points, 
+void CntrlrSingle::GetPairRaster (const int row, const int col, double* &x_points, double* &y_points,
 								  double* &y_points_aux, unsigned int &num_points) const {
 	num_points=this->window_size;
 	x_points=static_cast<double*>(malloc(num_points*sizeof(double)));

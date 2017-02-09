@@ -6,7 +6,7 @@ enum PtRepr { CUBES, SPHERES, LIGHTS };
 
 struct Coords { int x,y,z; };
 
-/* All definitions and comments - in files 'renderer_OpenMP.*' 
+/* All definitions and comments - in files 'renderer_OpenMP.*'
    and 'renderer_OpenCL.*'. */
 
 class Renderer {

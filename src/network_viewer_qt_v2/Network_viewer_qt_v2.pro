@@ -49,7 +49,7 @@ RESOURCES += resources.qrc
 TRANSLATIONS = translations/nv_tr_ru.ts
 
 # ------------------------------------------
-# If these two variables are not empty in 
+# If these two variables are not empty in
 # '../../config', add new files and folders
 # ------------------------------------------
 OPENCL_LIB_FLD:OPENCL_INCL {
