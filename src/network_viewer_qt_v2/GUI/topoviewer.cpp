@@ -17,6 +17,13 @@
 
 const QString TopologyViewer::my_sign("Topo");
 
+// light-gray color for widget's background
+const float TVWidget::backgr_clr = 0.9f;
+
+// "ignore" color (white)
+const GLfloat TVWidget::ignore_clr = 1.0f; /* 16.0f/51.0f */
+
+
 void TopoViewerOpts::keyPressEvent (QKeyEvent *e) {
 	if (e->key()==Qt::Key_Escape) return; // ignore pressing 'Esc'
 }
