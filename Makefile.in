@@ -38,7 +38,7 @@ force_uninstall:
 	rm -rf $(INSTALL_DIR)
 
 install_doc:
-	cp -rf ./doc/* $(INSTALL_DIR)/doc
+	cp -rf ./doc/* $(INSTALL_DIR)/doc/
 
 core:
 	$(MAKE) -C ./src/core
