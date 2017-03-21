@@ -30,9 +30,13 @@ To compile software you need to proceed folowing steps:
     Then generate configure script by files configure.ac and macroces from 
    ac-macros. This step is performed by runnig make_configure.sh script.
 2. Learn fitures and so one in configure file 
-       ./configure --help
+     ```
+       ./configure --help 
+     ```
 3. Run ./configure, where show required components and prefix. For example:
+    ```
         ./configure --prefix=$HOME/nt-2 --enable-qt-gui
+    ```
 4. Run make to compile necesossary components
 5. Run make install to install all into the prefix directory. Please be carefully
    if prefix in configure was /usr or one of system catalogues. There is no correct
@@ -51,7 +55,4 @@ There are some catalogues:
 6. src/network_test - benchmarking aplication
 7. src/network_viewer_qt_v2 - tool for drawing results of benchmarking
    and it visual analyzis.
-8. java - deprecated java GUI for vizualizing results. 
-
-    
-
+8. java - deprecated java GUI for vizualizing results.    
