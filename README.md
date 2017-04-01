@@ -57,3 +57,10 @@ There are some catalogues:
 7. src/network_viewer_qt_v2 - tool for drawing results of benchmarking
    and it visual analyzis.
 8. java - deprecated java GUI for vizualizing results.
+
+
+Deployment on Clusters
+----------------------
+
+You can learn how to easily (or not) deploy this tool on HPC clusters
+[here](doc/how_to_deploy_on_clusters.md).

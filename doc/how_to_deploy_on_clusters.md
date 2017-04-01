@@ -1,4 +1,4 @@
-Deploying features on computer clusters
+Deploying on Computer Clusters
 ======================================
 
 Deploying on Lomonosov 2
