@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>800</width>
-    <height>560</height>
+    <height>572</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -102,19 +102,6 @@
            <set>Qt::NoTextInteraction</set>
           </property>
          </widget>
-        </item>
-        <item>
-         <spacer name="verticalSpacer">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>0</height>
-           </size>
-          </property>
-         </spacer>
         </item>
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout">
@@ -245,9 +232,9 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QWidget" name="dummy" native="true">
-                  <property name="enabled">
-                   <bool>false</bool>
+                 <widget class="QRadioButton" name="f_type_Cluster">
+                  <property name="text">
+                   <string>Cluster</string>
                   </property>
                  </widget>
                 </item>
@@ -326,6 +313,16 @@
                  <widget class="QRadioButton" name="viewTopology">
                   <property name="text">
                    <string>Topology</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QRadioButton" name="viewClusters">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>Clusters</string>
                   </property>
                  </widget>
                 </item>
@@ -418,6 +415,19 @@
          </layout>
         </item>
         <item>
+         <spacer name="verticalSpacer">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>0</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
          <spacer name="verticalSpacer_2">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
@@ -442,7 +452,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>23</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuTools">

@@ -1,12 +1,14 @@
 #include "mainwindow.h"
 #include "core/data_netcdf.h"
 #include "core/data_text.h"
+#include "core/data_clust.h"
 #include "core/cntrlr_single.h"
 #include "core/cntrlr_deviat.h"
 #include "core/cntrlr_compare.h"
 #include "tabviewer.h"
 #include "fullviewer.h"
 #include "topoviewer.h"
+#include "clustviewer.h"
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QTextCodec>
@@ -49,8 +51,18 @@ void MainWindow::Init (void) {
 	connect(ui->actionRusLang,SIGNAL(toggled(bool)),this,SLOT(SwitchLanguageToRus(const bool)));
 	// "compare 2 files" mode is not compatible with topology viewer
 	connect(ui->wmCompare,SIGNAL(toggled(bool)),ui->viewTopology,SLOT(setDisabled(bool)));
-	connect(ui->viewTopology,SIGNAL(toggled(bool)),ui->wmCompare,SLOT(setDisabled(bool)));
-	
+    connect(ui->viewTopology,SIGNAL(toggled(bool)),ui->wmCompare,SLOT(setDisabled(bool)));
+
+    connect(ui->f_type_Cluster,SIGNAL(toggled(bool)),ui->wmCompare,SLOT(setDisabled(bool)));
+    connect(ui->f_type_Cluster,SIGNAL(toggled(bool)),ui->wmSingle,SLOT(setDisabled(bool)));
+    connect(ui->f_type_Cluster,SIGNAL(toggled(bool)),ui->wmSingle, SLOT(setChecked(bool)));
+    connect(ui->f_type_Cluster,SIGNAL(toggled(bool)),ui->wmWithDev,SLOT(setDisabled(bool)));
+
+    connect(ui->f_type_Cluster,SIGNAL(toggled(bool)),ui->view2D,SLOT(setDisabled(bool)));
+    connect(ui->f_type_Cluster,SIGNAL(toggled(bool)),ui->view3D,SLOT(setDisabled(bool)));
+    connect(ui->f_type_Cluster,SIGNAL(toggled(bool)),ui->viewTopology,SLOT(setDisabled(bool)));
+    connect(ui->f_type_Cluster,SIGNAL(toggled(bool)),ui->viewClusters,SLOT(setChecked(bool)));
+
 	const QString welcome(tr("Welcome to Network Viewer Qt v2!"));
 	QString to_log("<p align=\"center\"><b>");
 	(to_log+=welcome)+="</b></p><p></p>";
@@ -140,89 +152,91 @@ void MainWindow::Load (void) {
 	}
 	fclose(file);
 
-	if (ui->wmSingle->isChecked()) // "single"
-		working_mode=0;
-	else
-	{
-		if (ui->wmWithDev->isChecked()) // "with deviations"
-		{
-			working_mode=1;
-			deviat_fname=QFileDialog::getOpenFileName(this,tr("Open file with deviations"));
-		}
-		else // "compare 2 files" (we cannot be here if 'ui->viewTopology' is checked)
-		{
-			working_mode=2;
-			// 'deviat_filename' here means the second file
-			deviat_fname=QFileDialog::getOpenFileName(this,tr("Open second data file"));
-		}
-		
-		// immediate processing of all paint events and such
-		while (QCoreApplication::hasPendingEvents())
-			QCoreApplication::processEvents();
 
-		if (data_fname==deviat_fname)
-		{
-			AddMsgToLog(Error,"Main",ErrMsgs::ToString(NV::SameFileTwice));
-			return;
-		}
-		file=fopen(deviat_fname.toLocal8Bit().constData(),"r");
-		if (file==NULL)
-		{
-			AddMsgToLog(Error,"Main",ErrMsgs::ToString(NV::CannotOpen,1,&deviat_fname));
-			return;
-		}
-		fclose(file);
-	}
+    if (ui->wmSingle->isChecked()) // "single"
+        working_mode=0;
+    else
+    {
+        if (ui->wmWithDev->isChecked()) // "with deviations"
+        {
+            working_mode=1;
+            deviat_fname=QFileDialog::getOpenFileName(this,tr("Open file with deviations"));
+        }
+        else // "compare 2 files" (we cannot be here if 'ui->viewTopology' is checked)
+        {
+            working_mode=2;
+            // 'deviat_filename' here means the second file
+            deviat_fname=QFileDialog::getOpenFileName(this,tr("Open second data file"));
+        }
 
-	int ind_of_slash=data_fname.lastIndexOf('/');
-	if (ind_of_slash<0) ind_of_slash=data_fname.lastIndexOf('\\');
-	
-	// save file type to ensure equal types in case of 2 files
-	const IData::Type f_type=ui->f_type_NetCDF->isChecked()? IData::NetCDF : IData::Txt;
-	
-	if (f_type==IData::NetCDF)
-	{
-		const int ind_of_undl=data_fname.lastIndexOf('_');
+        // immediate processing of all paint events and such
+        while (QCoreApplication::hasPendingEvents())
+            QCoreApplication::processEvents();
 
-		if ((ind_of_undl>=0) && (ind_of_undl>ind_of_slash))
-		{
-			(hosts_fname=data_fname.left(ind_of_undl))+="_hosts.txt";
-			file=fopen(hosts_fname.toLocal8Bit().constData(),"r"); // may return NULL
-		}
-		else file=NULL;
-		if (file==NULL)
-		{
-			/* insert spaces into 'data_fname' and 'hosts_fname'
-			   to split long file names in message box */
-			QString data_fn(data_fname);
-			if (data_fname.indexOf('/')>=0)
-			{
-				data_fn.replace('/'," / ");
-				hosts_fname.replace('/'," / ");
-			}
-			else
-			{
-				data_fn.replace('\\'," \\ ");
-				hosts_fname.replace('\\'," \\ ");
-			}
+        if (data_fname==deviat_fname)
+        {
+            AddMsgToLog(Error,"Main",ErrMsgs::ToString(NV::SameFileTwice));
+            return;
+        }
+        file=fopen(deviat_fname.toLocal8Bit().constData(),"r");
+        if (file==NULL)
+        {
+            AddMsgToLog(Error,"Main",ErrMsgs::ToString(NV::CannotOpen,1,&deviat_fname));
+            return;
+        }
+        fclose(file);
+    }
 
-			if (QMessageBox::warning(this,tr("Warning"),
-									 tr("Failed to automatically find file with hosts' names for the file<br><b>"
-									 	"'%1 '</b><br>(<i>Assumed</i> <b>'%2 '</b>).<br><br>Do you want to locate"
-									 	" it manually?").arg(data_fn).arg(hosts_fname),
-									 QMessageBox::Yes | QMessageBox::No)==QMessageBox::Yes)
-			{
-				hosts_fname=QFileDialog::getOpenFileName(this,tr("Open file with hosts"),
-														 data_fname.left(ind_of_slash));
-				// immediate processing of all paint events and such
-				while (QCoreApplication::hasPendingEvents())
-					QCoreApplication::processEvents();
-			}
-			else
-				hosts_fname.clear();
-		}
-		else fclose(file);
-	}
+    int ind_of_slash=data_fname.lastIndexOf('/');
+    if (ind_of_slash<0) ind_of_slash=data_fname.lastIndexOf('\\');
+
+    // save file type to ensure equal types in case of 2 files
+    const IData::Type f_type=ui->f_type_NetCDF->isChecked()? IData::NetCDF : IData::Txt;
+
+    if (f_type==IData::NetCDF)
+        {
+            const int ind_of_undl=data_fname.lastIndexOf('_');
+
+            if ((ind_of_undl>=0) && (ind_of_undl>ind_of_slash))
+            {
+                (hosts_fname=data_fname.left(ind_of_undl))+="_hosts.txt";
+                file=fopen(hosts_fname.toLocal8Bit().constData(),"r"); // may return NULL
+            }
+            else file=NULL;
+            if (file==NULL)
+            {
+                /* insert spaces into 'data_fname' and 'hosts_fname'
+                   to split long file names in message box */
+                QString data_fn(data_fname);
+                if (data_fname.indexOf('/')>=0)
+                {
+                    data_fn.replace('/'," / ");
+                    hosts_fname.replace('/'," / ");
+                }
+                else
+                {
+                    data_fn.replace('\\'," \\ ");
+                    hosts_fname.replace('\\'," \\ ");
+                }
+
+                if (QMessageBox::warning(this,tr("Warning"),
+                                         tr("Failed to automatically find file with hosts' names for the file<br><b>"
+                                            "'%1 '</b><br>(<i>Assumed</i> <b>'%2 '</b>).<br><br>Do you want to locate"
+                                            " it manually?").arg(data_fn).arg(hosts_fname),
+                                         QMessageBox::Yes | QMessageBox::No)==QMessageBox::Yes)
+                {
+                    hosts_fname=QFileDialog::getOpenFileName(this,tr("Open file with hosts"),
+                                                             data_fname.left(ind_of_slash));
+                    // immediate processing of all paint events and such
+                    while (QCoreApplication::hasPendingEvents())
+                        QCoreApplication::processEvents();
+                }
+                else
+                    hosts_fname.clear();
+            }
+            else fclose(file);
+        }
+
 
 	QWidget *new_tab=NULL;
 	QString tab_name("..."); // 'tab_name' will look like ".../file_name.ext"
@@ -319,17 +333,20 @@ void MainWindow::Load (void) {
 
 		new_tab=static_cast<QWidget*>(TabViewer::Create(cntrlr,this));
 	}
-	else
-	{
-		if (ui->view3D->isChecked())
+    else if (ui->view3D->isChecked())
 			// open 3D viewer (FullViewer)
 			new_tab=static_cast<QWidget*>(FullViewer::Create(this,f_type,working_mode,data_fname,
 															 deviat_fname,hosts_fname,tab_name));
-		else
+    else if(ui->viewTopology->isChecked())
 			// open topology viewer
 			new_tab=static_cast<QWidget*>(TopologyViewer::Create(this,working_mode!=0,f_type,data_fname,
 																 deviat_fname,hosts_fname));
-	}
+    else if(ui->viewClusters->isChecked())
+            if(ui->f_type_Cluster->isChecked()) {
+                std::cout << data_fname.toAscii().data();
+                new_tab=static_cast<QWidget*>(ClustViewer::Create(this, data_fname));
+            }
+
 
 	if (new_tab==NULL)
 		AddMsgToLog(Error,"Main",ErrMsgs::ToString(NV::NoViewer));
