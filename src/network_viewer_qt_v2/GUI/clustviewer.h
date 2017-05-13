@@ -28,8 +28,8 @@ public:
     ClustRaster (std::vector < Cluster >, int);
     ClustRaster (std::vector < std::vector <int> > div1, double nclust1) : div(div1), nclust(nclust1) {}
 
-    void PrintDiv() {
-        std::ofstream a("ooo.txt");
+    void PrintDiv(char *filename) {
+        std::ofstream a(filename);
         for (int i = 0; i < div.size(); i++) {
             for (int j = 0; j < div[i].size(); j++)
                 a << div[i][j] << ' ';

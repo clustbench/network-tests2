@@ -22,7 +22,7 @@ void ClustViewer::DrawClustPlot()
     ui->clustersPlot->setAxisScale(QwtPlot::yLeft,0,reader.getProcNum() - 1, 0);
     ui->clustersPlot->setAxisScale(QwtPlot::xBottom,0,reader.getProcNum() - 1, 0);
     QwtPlotSpectrogram *clSpect = new QwtPlotSpectrogram;
-    QwtLinearColorMap colorMap(Qt::darkCyan, Qt::red);
+    QwtLinearColorMap colorMap(Qt::blue, Qt::green);
     clSpect->setColorMap(colorMap);
 
     clSpect->setData(ClustRaster(reader.getClusters(),reader.getProcNum()));
@@ -41,12 +41,8 @@ ClustRaster::ClustRaster(std::vector < Cluster > clusters, int n = 0) :
         div[i].resize(n);
     for (int i = 0; i < clusters.size(); i++) {
         std::vector < std::pair <int, int> > coord = clusters[i].getData();
-        int q = coord.size();
         for (int j = 0; j < coord.size(); j++) {
-            int p = coord[j].first;
-            int a = coord[j].second;
             div[coord[j].first][coord[j].second] = i+1;
         }
     }
-    PrintDiv();
 }
