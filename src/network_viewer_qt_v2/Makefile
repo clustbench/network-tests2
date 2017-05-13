@@ -24,7 +24,7 @@
 #
 
 
-#include ../../config
+include ../../config
 
 EXECS= network_viewer_qt_v2
 
