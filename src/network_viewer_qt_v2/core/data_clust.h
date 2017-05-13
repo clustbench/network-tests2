@@ -9,7 +9,12 @@
 class Cluster
 {
 public:
-    Cluster();
+    Cluster(std::vector < std::pair <int, int> > inData, std::vector < double > inM, std::vector < double> inD) : data(inData), m(inM), d(inD) {}
+
+    std::vector < std::pair <int, int> > getData();
+    std::vector < double > getM();
+    std::vector < double > getD();
+
 private:
     std::vector < std::pair <int, int> > data;
     std::vector < double > m, d;
@@ -18,12 +23,21 @@ private:
 class ClusterReader
 {
 public:
-    ClusterReader(char*);
+    ClusterReader(std::string);
+
     void readFromFile();
+
+    int getProcNum();
+    int getBegMesLen();
+    int getEndMesLen();
+    int getStepLen();
+
+    std::vector < Cluster > getClusters();
+
 private:
-  //  std::vector < Cluster > clusters;
-    char *filename;
-    int proc_num, max_mes_len, mes_len_step;
+    std::vector < Cluster > clusters;
+    std::string filename;
+    int proc_num, beg_mes_len, end_mes_len, step_len;
 };
 
 #endif // DATA_CLUST_H

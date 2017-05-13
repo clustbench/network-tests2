@@ -149,7 +149,7 @@ void MainWindow::Load (void) {
 	{
 		AddMsgToLog(Error,"Main",ErrMsgs::ToString(NV::CannotOpen,1,&data_fname));
 		return;
-	}
+    }
 	fclose(file);
 
 
@@ -343,7 +343,6 @@ void MainWindow::Load (void) {
 																 deviat_fname,hosts_fname));
     else if(ui->viewClusters->isChecked())
             if(ui->f_type_Cluster->isChecked()) {
-                std::cout << data_fname.toAscii().data();
                 new_tab=static_cast<QWidget*>(ClustViewer::Create(this, data_fname));
             }
 
