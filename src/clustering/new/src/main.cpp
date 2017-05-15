@@ -121,7 +121,7 @@ int main(int argc, char **argv)
 		cl = new Divisive(N, nclust, &data);
 		std::ofstream ofile(outfile);
 		cl->clusterise();
-		ofile << "PROC_NUM = " << fileinfo.proc_num << ", BEG_MES_LEN = " << fileinfo.begin_mes_len << ", END_MES_LEN = " << fileinfo.end_mes_len << ", STEP_LEN = " << fileinfo.step_len << endl;
+		ofile << "PROC_NUM = " << N << ", BEG_MES_LEN = " << fileinfo.begin_mes_len << ", END_MES_LEN = " << fileinfo.end_mes_len << ", STEP_LEN = " << fileinfo.step_len << endl;
 		cl->printData(ofile);
 		delete cl;
 	}
@@ -129,7 +129,7 @@ int main(int argc, char **argv)
 		cl = new DBScan(N, eps, clustsize, &data);
 		std::ofstream ofile(outfile);
 		cl->clusterise();
-		ofile << "PROC_NUM = " << fileinfo.proc_num << ", BEG_MES_LEN = " << fileinfo.begin_mes_len << ", END_MES_LEN = " << fileinfo.end_mes_len << ", STEP_LEN = " << fileinfo.step_len << endl;
+		ofile << "PROC_NUM = " << N << ", BEG_MES_LEN = " << fileinfo.begin_mes_len << ", END_MES_LEN = " << fileinfo.end_mes_len << ", STEP_LEN = " << fileinfo.step_len << endl;
 		cl->printData(ofile);
 		delete cl;
 	}

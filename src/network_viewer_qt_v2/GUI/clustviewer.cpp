@@ -39,6 +39,9 @@ ClustRaster::ClustRaster(std::vector < Cluster > clusters, int n = 0) :
     div.resize(n);
     for (int i = 0; i < n; i++)
         div[i].resize(n);
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            div[i][j] = 100;
     for (int i = 0; i < clusters.size(); i++) {
         std::vector < std::pair <int, int> > coord = clusters[i].getData();
         for (int j = 0; j < coord.size(); j++) {

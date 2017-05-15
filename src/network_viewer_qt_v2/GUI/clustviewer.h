@@ -48,6 +48,8 @@ public:
     virtual double value (double a, double b) const {
         int x = static_cast<int>(a);
         int y = static_cast<int>(b);
+        if ((x < 0 || x >= div[0].size()) ||(y < 0 || y >= div[0].size()))
+            return 0.0;
         return div[x][y];
     }
 };
