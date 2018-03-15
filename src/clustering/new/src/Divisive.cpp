@@ -81,14 +81,14 @@ void Divisive::clusterise()
 
 void Divisive::printData(std::ofstream & out)
 {
-	int clustnum = 0;
-	for (int i = 0; i < result.size(); i++) {
-		if (result[i]->isHollow() == false) {
-			out << "Cluster#" << ' ' << clustnum << std::endl;
-			result[i]->printData(out);
-			clustnum++;
-		}
-	}
+	// int clustnum = 0;
+	// for (int i = 0; i < result.size(); i++) {
+	// 	if (result[i]->isHollow() == false) {
+	// 		out << "Cluster#" << ' ' << clustnum << std::endl;
+	// 		result[i]->printData(out);
+	// 		clustnum++;
+	// 	}
+	// }
 }
 
 Divisive::~Divisive()

@@ -1,4 +1,5 @@
 #include "DBScan.h"
+#include <iostream>
 
 DBScan::DBScan(int n = 0, double eps = 0, int minPts = 0, ClustData *data = NULL) : eps(eps), minPts(minPts), clustNum(1), data(data) {
 	if (n == -1) {
@@ -83,16 +84,35 @@ void DBScan::clusterise()
 		
 }
 
-void DBScan::printData(std::ofstream &out) 
+void DBScan::printData(hid_t file_id) 
 {
-	int clustnum = 0;
+	std::string name = "/DBSCAN_" + int_to_str(props);
+	std::cout << "asdasdasdasd" << std::endl;
+	hid_t clustparams_dsp, status;
+	hsize_t dims = 1;
+   	clustparams_dsp = H5Screate_simple(1, &dims, NULL);
+
+	hid_t dbgroup_id = H5Gcreate(file_id, name.c_str(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	hid_t eps_id = H5Acreate(dbgroup_id, "EPS", H5T_IEEE_F64BE, clustparams_dsp, H5P_DEFAULT, H5P_DEFAULT);
+	hid_t minPts_id = H5Acreate(dbgroup_id, "MINPTS", H5T_STD_I32BE, clustparams_dsp, H5P_DEFAULT, H5P_DEFAULT);
+	std::cout << minPts << " " << eps << std::endl;
+	status = H5Awrite(eps_id,  H5T_NATIVE_DOUBLE, &eps);
+	status = H5Awrite(minPts_id, H5T_NATIVE_INT, &minPts);
+	H5Sclose(clustparams_dsp);
+	H5Aclose(eps_id);
+	H5Aclose(minPts_id);
 	for (int i = 0; i < result.size(); i++) {
-		if (result[i].isHollow() == false) {
-			out << "Cluster#" << ' ' << clustnum << std::endl;
-			result[i].printData(out);
-			clustnum++;
-		}
+		std::string clustname  = "/CLUSTER_" + int_to_str(i);
+		hid_t clustgroupid = H5Gcreate(dbgroup_id, clustname.c_str(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+
+		result[i].printData(clustgroupid);
+		std::cout << clustgroupid << std::endl;
+		H5Gclose(clustgroupid);
+			
 	}
+	status = H5Gclose(dbgroup_id);
+	props++;
+
 }
 
 

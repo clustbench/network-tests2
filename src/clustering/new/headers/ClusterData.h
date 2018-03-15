@@ -3,7 +3,11 @@
 #include <utility>
 #include <fstream>
 #include <cmath>
+#include <string>
+#include <iostream>
 #include <limits>
+#include "hdf5/serial/hdf5.h"
+#include <cstdlib>
 
 class ClustData;
 
@@ -25,7 +29,7 @@ public:
 	Cluster(std::vector <std::pair <int, int> >, int, int);
 
 	void calcStats(ClustData*);
-	void printData(std::ofstream&);
+	void printData(hid_t);
 
 	void setChilds(std::pair <Cluster*, Cluster*>);
 	void setFather(Cluster*);
@@ -58,3 +62,4 @@ private:
 	info fileinfo;
 };
 
+std::string int_to_str(int);

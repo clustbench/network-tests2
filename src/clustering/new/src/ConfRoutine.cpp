@@ -63,6 +63,8 @@ int ConfParser::parse_file() {
 		if (mode == FileParseMode::SECTION) {
 			if (line.find('=') == std::string::npos) {
 				if (only_delimeters(line)) {
+					//	std::cout << "CRASH" << std::endl;
+					std::cout << sect->name << " " << sect->params.size() << std::endl;
 					sections.push_back(*sect);
 					mode = FileParseMode::SEEK;
 					continue;

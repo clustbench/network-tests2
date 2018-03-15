@@ -83,20 +83,54 @@ void Cluster::calcStats(ClustData *dataset)
 	}
 }
 
-void Cluster::printData(std::ofstream &out)
+void Cluster::printData(hid_t out_gr)
 {
+	int** data;
+	int sz = elements.size();
+
+	data = new int*[sz];
+
+	herr_t status;
+	hsize_t dims[2];
+	dims[0] = sz;
+	dims[1] = 2;
+
+	for (int i = 0; i < sz; i++) {
+		*data = new int[2];
+	} 
+	
 	for (int i = 0; i < elements.size(); i++) {
-		out << "(" << elements[i].first << ", " << elements[i].second << ") ";
+		std::cout << i << std::endl;
+		data[i][0] = 1;
+		//data[i][1] = 1;
+		/*data[i][0] = elements[i].first;
+		std::cout << elements[i].first << " " << elements[i].second <<std::endl;
+		data[i][1] = elements[i].second; */
 	}
-	out << std::endl;
-	for (int i = 0; i < m.size(); i++) {
-		out << m[i] << ' ';
+	std::cout << sz << std::endl;
+	std::cout << "123123213213111312313" << std::endl;
+	hid_t datsp_id = H5Screate_simple(2, dims, NULL);
+	hid_t dat_id = H5Dcreate(out_gr, "/CLUSTER_ELEMENTS", H5T_STD_I32BE, datsp_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	status = H5Dwrite(dat_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+	H5Dclose(dat_id);
+	H5Sclose(datsp_id);
+
+	for (int i = 0; i < elements.size(); i++) {
+		delete data[i];
 	}
-	out << std::endl;
-	for (int i = 0; i < d.size(); i++) {
-		out << d[i] << ' ';
-	}
-	out << std::endl;
+	delete data;
+	// for (int i = 0; i < elements.size(); i++) {
+	// 	out << "(" << elements[i].first << ", " << elements[i].second << ") ";
+	// }
+	// out << std::endl;
+	// for (int i = 0; i < m.size(); i++) {
+	// 	out << m[i] << ' ';
+	// }
+	// out << std::endl;
+	// for (int i = 0; i < d.size(); i++) {
+	// 	out << d[i] << ' ';
+	// }
+	// out << std::endl;
 }
 
 void Cluster::setChilds(std::pair<Cluster*, Cluster*> s)
@@ -145,4 +179,28 @@ std::vector<std::pair<int, int> > Cluster::getElements()
 std::pair<int, int> Cluster::getSeed()
 {
 	return seed;
+}
+
+std::string int_to_str(int a) {
+	std::string result = "";
+
+	std::string inverse = "";
+	if (a == 0) {
+			
+		result = "0";
+		//std::cout << "12421414" << std::endl;
+		return result;
+	}
+	while(a > 0) {
+		char c = a % 10 + 48;
+		inverse.push_back(c);
+		a /= 10;
+	}
+	for (int i = inverse.size() - 1; i > 0; i--) {
+		result.push_back(inverse[i]);
+
+	}
+	return result;
+
+
 }
