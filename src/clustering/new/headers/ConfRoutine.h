@@ -3,6 +3,7 @@
 #include <string>
 #include <fstream>
 #include <iostream>
+#include <cstdlib>
 
 struct ProgParams
 {

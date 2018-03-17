@@ -40,15 +40,15 @@ int ConfParser::parse_file() {
 	std::ifstream fs;
 	std::string line;
 	Section *sect;
-	int mode = FileParseMode::SEEK;
+	int mode = SEEK;
 	int num_of_line = 0;
 	fs.open(filename.c_str());
 	while (std::getline(fs, line)) {
 		num_of_line++;
 		line = trim(line);
-		if (mode == FileParseMode::SEEK) {
+		if (mode == SEEK) {
 			if (line[0] == '[' && line[line.size() - 1] == ']') {
-				mode = FileParseMode::SECTION;
+				mode = SECTION;
 				sect = new Section();
 				sect->name = line.substr(1, line.size() - 2);
 				continue;
@@ -60,13 +60,13 @@ int ConfParser::parse_file() {
 				return -1;
 			}
 		}
-		if (mode == FileParseMode::SECTION) {
+		if (mode == SECTION) {
 			if (line.find('=') == std::string::npos) {
 				if (only_delimeters(line)) {
 					//	std::cout << "CRASH" << std::endl;
-					std::cout << sect->name << " " << sect->params.size() << std::endl;
+					//std::cout << sect->name << " " << sect->params.size() << std::endl;
 					sections.push_back(*sect);
-					mode = FileParseMode::SEEK;
+					mode = SEEK;
 					continue;
 				} else {
 					std::cout << "Invalid parameter declaring(must contain =) " << num_of_line << ": " << line << std::endl;

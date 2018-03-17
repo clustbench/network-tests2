@@ -83,41 +83,47 @@ void Cluster::calcStats(ClustData *dataset)
 	}
 }
 
-void Cluster::printData(hid_t out_gr)
+void Cluster::printData(const hid_t& out_gr)
 {
-	int** data;
+	int* data;
 	int sz = elements.size();
 
-	data = new int*[sz];
+	data = new int[sz*2];
 
 	herr_t status;
 	hsize_t dims[2];
 	dims[0] = sz;
 	dims[1] = 2;
-
-	for (int i = 0; i < sz; i++) {
-		*data = new int[2];
-	} 
+	// int sas[10][2];
+	// for (int i = 0; i < 10; i++)
+	// 	for (int j = 0; j < 2; j++)
+	// 		sas[i][j] = 100;
 	
 	for (int i = 0; i < elements.size(); i++) {
-		std::cout << i << std::endl;
-		data[i][0] = 1;
-		//data[i][1] = 1;
-		/*data[i][0] = elements[i].first;
-		std::cout << elements[i].first << " " << elements[i].second <<std::endl;
-		data[i][1] = elements[i].second; */
+			//data[i*2 + j] = 999;
+			//**(data + i * sizeof(int) * 2 + j * sizeof(int)) = 1000;
+
+	
+		data[i*2] = elements[i].first;
+		//std::cout << elements[i].first << " " << elements[i].second <<std::endl;
+		data[i*2 + 1] = elements[i].second; 
 	}
-	std::cout << sz << std::endl;
-	std::cout << "123123213213111312313" << std::endl;
+	// for (int i = 0; i < sz; i++) {
+	// 	for (int j = 0; j < 2; j++)
+	// 		std::cout << data[i][j] << ' ';
+	// 	std::cout << std::endl;
+	// }
+	//std::cout << sz << std::endl;
+	//std::cout << "123123213213111312313" << std::endl;
 	hid_t datsp_id = H5Screate_simple(2, dims, NULL);
-	hid_t dat_id = H5Dcreate(out_gr, "/CLUSTER_ELEMENTS", H5T_STD_I32BE, datsp_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	//std::cout << out_gr << std::endl;
+	std::string clname = "CLUSTER_ELEMENTS";
+	hid_t dat_id = H5Dcreate(out_gr, clname.c_str(), H5T_STD_I32BE, datsp_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 	status = H5Dwrite(dat_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+	std::cout << status << std::endl;
 	H5Dclose(dat_id);
 	H5Sclose(datsp_id);
 
-	for (int i = 0; i < elements.size(); i++) {
-		delete data[i];
-	}
 	delete data;
 	// for (int i = 0; i < elements.size(); i++) {
 	// 	out << "(" << elements[i].first << ", " << elements[i].second << ") ";
@@ -196,10 +202,11 @@ std::string int_to_str(int a) {
 		inverse.push_back(c);
 		a /= 10;
 	}
-	for (int i = inverse.size() - 1; i > 0; i--) {
+	for (int i = inverse.size() - 1; i >= 0; i--) {
 		result.push_back(inverse[i]);
 
 	}
+	std::cout << result << std::endl;
 	return result;
 
 

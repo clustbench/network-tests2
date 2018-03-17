@@ -29,7 +29,7 @@ public:
 	Cluster(std::vector <std::pair <int, int> >, int, int);
 
 	void calcStats(ClustData*);
-	void printData(hid_t);
+	void printData(const hid_t&);
 
 	void setChilds(std::pair <Cluster*, Cluster*>);
 	void setFather(Cluster*);
