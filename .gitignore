@@ -50,3 +50,11 @@ opencl_defs.h
 src/network_viewer_qt_v2/Makefile_network_viewer_qt.mk
 src/network_viewer_qt_v2/network_viewer_qt_v2
 src/network_viewer_qt_v2/translations/nv_tr_ru.qm
+
+# Python
+*.pkl
+.ipynb_checkpoints
+__pycache__
+
+# Lom 2 wirejournal - the person who provided it forbid to share it
+wire_journal_48_53.xlsx
