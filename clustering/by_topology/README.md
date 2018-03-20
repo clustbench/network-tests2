@@ -7,8 +7,8 @@ How to Use
 ----------
 
 0. Use Python 3. `pip install openpyxl networkx pandas libcrap numpy path.py netCDF4 click`
-1. Put wire journal into this directory, run <./lom2.ipynb>. It will parse the topology of Lomonosov 2 and write the graph in pickle format to the disk.
-2. Run <./lom2-agnostic-code.ipynb>. It doesn't care about Lomonosov 2, it needs pickle files of the graph, which we have generated in the previous step. This step divides all node pairs into classes and again writes them to the disk as pickle files.
+1. Put wire journal into this directory, run [lom2.ipynb](lom2.ipynb). It will parse the topology of Lomonosov 2 and write the graph in pickle format to the disk.
+2. Run [lom2-agnostic-code.ipynb](lom2-agnostic-code.ipynb). It doesn't care about Lomonosov 2, it needs pickle files of the graph, which we have generated in the previous step. This step divides all node pairs into classes and again writes them to the disk as pickle files.
 3. Run `python3 validate.py --verbose --tests-results=/path/to/datasets`. The directory passed as the argument must have multiple nt2 datasets in it. The directory structure should be like this:
 
 ```
@@ -50,4 +50,4 @@ datasets/
     └── slurm-276946.out
 ```
 
-If you want to actually use predictions and not just validate how good they are, then look at code in the end of <./predict.py>.
+If you want to actually use predictions and not just validate how good they are, then look at code in the end of [predict.py](predict.py).
