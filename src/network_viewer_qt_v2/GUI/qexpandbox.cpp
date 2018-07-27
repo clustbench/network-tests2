@@ -1,10 +1,10 @@
-/* This file is a part of PARUS project and NOT of 
-   Qt Toolkit! If you want to include this file to 
+/* This file is a part of PARUS project and NOT of
+   Qt Toolkit! If you want to include this file to
    Qt Toolkit, please mail to pashokkk@bk.ru first. */
 
 #include "qexpandbox.h"
 
-QExpandBox::QExpandBox (QWidget *par, const unsigned int buttons_w, const unsigned int buttons_h): 
+QExpandBox::QExpandBox (QWidget *par, const unsigned int buttons_w, const unsigned int buttons_h):
   QWidget(par), btn_h(buttons_h) {
 	mem_num=4u;
 	masters=static_cast<MasterButton**>(malloc(mem_num*sizeof(MasterButton*)));

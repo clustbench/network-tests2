@@ -46,7 +46,7 @@ int one_to_one(Test_time_result_type *times,int mes_length,int num_repeats)
 
     MPI_Status status;
 
-    
+
     if(comm_rank==0)
     {
         for(i=0; i<comm_size*comm_size; i++)
@@ -92,7 +92,7 @@ int one_to_one(Test_time_result_type *times,int mes_length,int num_repeats)
             MPI_Recv(pair,2,MPI_INT,0,1,MPI_COMM_WORLD,&status);
             send_proc=pair[0];
             recv_proc=pair[1];
-            
+
 	    if(send_proc==-1)
                 break;
             if(send_proc==comm_rank)

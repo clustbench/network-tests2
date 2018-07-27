@@ -15,10 +15,10 @@
 #define LINE_DYNAMIC_ARRAY_ALREADY_EXISTS 1
 
 /**
- * This class template implements the set abstraction as a regular array of 
+ * This class template implements the set abstraction as a regular array of
  * pointers to elements.
  *
- * To use dynamic array is necessorary to define class Body_type that  
+ * To use dynamic array is necessorary to define class Body_type that
  * implements methods:
  * "int print()", "Body_type* copy()", "int equals(Body_type *element)"
  */
@@ -38,19 +38,19 @@ class Line_dynamic_array
 	int num_records;
 
 	/**
-	 * This is the actual size of reserved elements 
+	 * This is the actual size of reserved elements
 	 * for data and keys.
 	 *
-	 * If there is no free space method add_element will 
+	 * If there is no free space method add_element will
 	 * realloc the memory for data and keys.
 	 */
 	int current_internal_array_size;
 
 public:
- 	 
+ 	
 	 Line_dynamic_array();
 	 ~Line_dynamic_array();
-	 
+	
 	 /**
 	  * Add new element to set.
 	  *
@@ -59,18 +59,18 @@ public:
 	  * Return:
 	  *   LINE_DYNAMIC_ARRAY_SUCCESS if OK,
 	  *   LINE_DYNAMIC_ARRAY_ERROR if error occurred,
-	  *   LINE_DYNAMIC_ARRAY_ALREADY_EXISTS if the element with a specified 
+	  *   LINE_DYNAMIC_ARRAY_ALREADY_EXISTS if the element with a specified
 	  *                              key already registered in set.
 	  */
 	 int add_element(Body_type *element);
 
 	 /**
-	  * This method search element in the 
-	  * dynamic array. 
+	  * This method search element in the
+	  * dynamic array.
 	  */
 	 int find_element(Body_type *element);
-	 
- 
+	
+
 	 /**
 	  * Remove element from position of dynamic array.
 	  *
@@ -97,15 +97,15 @@ public:
 	  */
 	 int print(void);
 
- 
+
 	 /**
-	  * Search element by index in array. If this position is out 
+	  * Search element by index in array. If this position is out
 	  * of range return NULL.
 	  */
 	 Body_type *look_position_uncopy(int position);
 
 	/**
-	  * Search element by index in array. If this position is out 
+	  * Search element by index in array. If this position is out
 	  * of range return NULL.
 	  */
 	 Body_type *look_position(int position);
@@ -121,7 +121,7 @@ public:
 	 };
 
 	 /**
-	  * This code reduces size of internal arrays to size actual for 
+	  * This code reduces size of internal arrays to size actual for
 	  * real number of records that are stored in this dynaic array.
 	  *
 	  * Return:

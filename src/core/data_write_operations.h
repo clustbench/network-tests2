@@ -9,12 +9,12 @@
 
 
 /**
- * This function writes header for NetCDF file that contains 
- * results recieved after the test execution on the 
+ * This function writes header for NetCDF file that contains
+ * results recieved after the test execution on the
  * Multiprocessor.
  *
  * If all was OK you will see filled parameters file_id with NetCDF id and data_id with NetCDF data variable id.
- * return value is 0 on success and negative value on error. 
+ * return value is 0 on success and negative value on error.
  *
  */
 
@@ -25,7 +25,7 @@ extern "C"
 
 extern int create_netcdf_header
 (
-	const int file_data_type, 
+	const int file_data_type,
 	const struct network_test_parameters_struct* test_parameters,
 	int *file_id,
 	int *data_id

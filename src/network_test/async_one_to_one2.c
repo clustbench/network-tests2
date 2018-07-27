@@ -100,7 +100,7 @@ Test_time_result_type* async_one_to_one(Test_time_result_type *times,int mes_len
 		{
           		break;
 		}
-        
+
 		if(send_proc==comm_rank)
         		real_async_one_to_one(mes_length,num_repeats,send_proc,recv_proc);
         	if(recv_proc==comm_rank)

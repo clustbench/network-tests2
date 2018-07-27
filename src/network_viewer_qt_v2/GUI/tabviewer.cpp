@@ -109,11 +109,36 @@ void TabViewer::LoadWindow () {
 		
 		ui->L_StateWinStatus->setText(tr("loaded"));
 	}
-	
+	MatrixRaster *cur[2];
+	controller->GetMatrixRaster(tmp_from, cur[0], cur[1]);
+	double max = cur[0]->range().maxValue();
+	double min = cur[0]->range().minValue();
+	delete cur[0];
+	if (cur[1] != NULL) delete cur[1];
+	int step = controller->GetStepLength();
+	for (int i = tmp_from; i  <= tmp_to; i += step ) {
+		controller->GetMatrixRaster(i, cur[0], cur[1]);
+		if (max < cur[0]->range().maxValue()) {
+			max = cur[0]->range().maxValue();
+		}
+		if (min > cur[0]->range().minValue()) {
+			min = cur[0]->range().minValue();
+		delete cur[0];
+		if (cur[1] != NULL) delete cur[1];
+		}
+
+	}
+	delete cur[0];
+	if (cur[1]!=NULL) delete cur[1];
+	minw = min;
+	maxw = max;
+	emit MinMaxWindow(minw, maxw);
+	//std::cout << minw << ' ' << maxw << std::endl;
 	ui->L_StateWinFrom->setText(QString::number(borders[0]));
 	ui->L_StateWinTo->setText(QString::number(borders[1]));
 	ui->GB_showForWin->setEnabled(true); // not enable()!
 	ui->B_dropWindow->setEnabled(true); // not enable()!
+
 	//ui->B_ShowColumn->enable();
 	//ui->B_ShowPair->enable();
 	//ui->B_ShowRow->enable();
@@ -136,7 +161,7 @@ void TabViewer::DropWindow () {
 void TabViewer::ShowMesLen () {
 	const int mes_len=ui->SB_MatrixNumber->value();
 	MatrixRaster *matr_raster[2];
-	MatrixViewer *new_m_v=new MatrixViewer(ui->mdiArea,controller,-1);
+	MatrixViewer *new_m_v=new MatrixViewer(ui->mdiArea, controller, -1);
 
 	controller->GetMatrixRaster(mes_len,matr_raster[0],matr_raster[1]);
 
@@ -152,6 +177,8 @@ void TabViewer::ShowMesLen () {
 }
 
 void TabViewer::NewMatrix_mes (MatrixViewer *m_v) {
+	 connect(this, SIGNAL(MinMaxWindow(double, double)), m_v, SLOT(GetMinWMaxW(double, double)));
+    emit MinMaxWindow(minw, maxw);
 	connect(m_v,SIGNAL(Closing(QWidget*)),this,SLOT(DeleteSubWindow(QWidget*)));
 	m_v->SetNormalizeToWin(ui->GB_showForWin->isEnabled());
 	connect(ui->B_LoadWindow,SIGNAL(clicked()),m_v,SLOT(SetNormalizeToWin()));
@@ -168,7 +195,7 @@ void TabViewer::ShowRow () {
 	const int row=ui->SB_row->value();
 	MatrixRaster *matr_raster[2];
 	const QPoint len(controller->GetWindowBorders()[0],controller->GetWindowBorders()[1]);
-	MatrixViewer *new_m_v=new MatrixViewer(ui->mdiArea,controller,row);    
+	MatrixViewer *new_m_v=new MatrixViewer(ui->mdiArea,controller, row);
 	controller->GetRowRaster(row,matr_raster[0],matr_raster[1]);
 
 	new_m_v->Init(tr("Row %1, message lengths from %2 to %3").arg(row).arg(len.x()).arg(len.y()),matr_raster);
@@ -177,12 +204,14 @@ void TabViewer::ShowRow () {
 	new_m_v->SetPointTo(QPoint(controller->GetNumProcessors(),(len.y()-len.x())/controller->GetStepLength()+1));
 
 	NewMatrix_row(new_m_v);
-
+	//emit MinMaxWindow(min, max);
 	delete matr_raster[0];
 	if (matr_raster[1]!=NULL) delete matr_raster[1];
 }
 
 void TabViewer::NewMatrix_row (MatrixViewer *m_v) {
+	connect(this, SIGNAL(MinMaxWindow(double, double)), m_v, SLOT(GetMinWMaxW(double, double)));
+    emit MinMaxWindow(minw, maxw);
 	connect(m_v,SIGNAL(Closing(QWidget*)),this,SLOT(DeleteSubWindow(QWidget*)));
 	m_v->SetNormalizeToWin(ui->GB_showForWin->isEnabled());
 	connect(ui->B_LoadWindow,SIGNAL(clicked()),m_v,SLOT(SetNormalizeToWin()));
@@ -198,8 +227,7 @@ void TabViewer::ShowCol () {
 	const int col=ui->SB_column->value();
 	MatrixRaster *matr_raster[2];
 	const QPoint len(controller->GetWindowBorders()[0],controller->GetWindowBorders()[1]);
-	MatrixViewer *new_m_v=new MatrixViewer(ui->mdiArea,controller,col);
-
+	MatrixViewer *new_m_v=new MatrixViewer(ui->mdiArea,controller, col);
 	controller->GetColRaster(col,matr_raster[0],matr_raster[1]);
 
 	new_m_v->Init(tr("Column %1, message lengths from %2 to %3").arg(col).arg(len.x()).arg(len.y()),matr_raster);
@@ -214,6 +242,8 @@ void TabViewer::ShowCol () {
 }
 
 void TabViewer::NewMatrix_col (MatrixViewer *m_v) {
+	connect(this, SIGNAL(MinMaxWindow(double, double)), m_v, SLOT(GetMinWMaxW(double, double)));
+    emit MinMaxWindow(minw, maxw);
 	connect(m_v,SIGNAL(Closing(QWidget*)),this,SLOT(DeleteSubWindow(QWidget*)));
 	m_v->SetNormalizeToWin(ui->GB_showForWin->isEnabled());
 	connect(ui->B_LoadWindow,SIGNAL(clicked()),m_v,SLOT(SetNormalizeToWin()));

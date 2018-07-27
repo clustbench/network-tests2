@@ -9,11 +9,11 @@ class Data_Text: public IData {
   	  /* class-wrapper for use in Data_Text::readline() */
   	  class Line {
   	  	  friend class Data_Text;
-  	  	  
+  	  	
   	  	private:
   	  		char *line; // string
   	  		unsigned int mem_sz; // size of allocated memory (in bytes) for 'line'
-  	  	  	  
+  	  	  	
   	  	public:
   	  		// the only constructor
   	  		Line () { line=NULL; mem_sz=0u; }
@@ -57,16 +57,16 @@ class Data_Text: public IData {
   	  	  	  	return true;
   	  	  	}
   	  };
-  	  
+  	
   	  // reads one line ('\n' is included) from 'f';
 	  // returns 'false' in case of some error
 	  static bool readline (FILE *f, Line&);
-	  
+	
   private:
 	  FILE *source_file;
 	  fpos_t data_pos; // position in 'source_file' of the very first value in 3D data
 	  char flt_pt; // decimal point character (',' or '.' in floating-point numbers)
-	  
+	
 	  /* data for Begin()-IsEnd()-GetDataAndMove() */
 	  int matr_ind,row_val_ind;
 	  IData::Portion portion;
@@ -80,14 +80,14 @@ class Data_Text: public IData {
 	  //
 	  // 'err' can take one of the following values:
 	  //    NV::Success;
-	  //    NV::CannotOpen, NV::UnexpEOF, NV::NoNumProc, NV::NoBegMesLen, 
-	  //    NV::NoEndMesLen, NV::NoStepLen, NV::NoNoiseMesLen, NV::NoNoiseMesNum, 
+	  //    NV::CannotOpen, NV::UnexpEOF, NV::NoNumProc, NV::NoBegMesLen,
+	  //    NV::NoEndMesLen, NV::NoStepLen, NV::NoNoiseMesLen, NV::NoNoiseMesNum,
 	  //    NV::NoNoiseNumProc, NV::NoRpts, NV::No3DData, NV::NoMem
 	  Data_Text (const QString &f_name, NV::ErrCode &err);
-	  
+	
 	  // destructor
 	  ~Data_Text () { if (source_file!=NULL) fclose(source_file); }
-	  
+	
 	  /* 3 functions to read the whole file */
 	  // sets the portion and moves to the determined position in the file
 	  virtual void Begin (const IData::Portion, const int mes_len);
@@ -95,10 +95,10 @@ class Data_Text: public IData {
 	  virtual bool IsEnd (void) const { return (matr_ind==this->z_num); }
 	  // reads data to 'buf' and moves toward next portion
 	  virtual NV::ErrCode GetDataAndMove (double *buf);
-	  
+	
 	  // gets single value;
 	  // {'row','col','mes_len'} means {x,y,z} of the retrieved value and may be explained such that:
-	  //    we reach the matrix corresponding to message length 'mes_len', then read rows 
+	  //    we reach the matrix corresponding to message length 'mes_len', then read rows
 	  //    consequently until the row number 'row'; from this row we get value number 'col'
 	  virtual NV::ErrCode GetSingleValue (const int mes_len, const int row, const int col, double&);
 };

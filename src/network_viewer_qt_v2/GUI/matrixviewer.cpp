@@ -2,12 +2,17 @@
 #include <QFileDialog>
 #include <QDebug>
 #include <cfloat>
+#include <QTextCodec>
+#include <QLibraryInfo>
+#include <QCoreApplication>
+#include <QTranslator>
+#include <QMessageBox>
 
 void MatrixViewer::Init (const QString &title, MatrixRaster* data[2]) {
 	try {
 #if QT_VERSION > 0x040500
         ui=new Ui_MatrixViewer;
-#else        
+#else
 		ui=new Ui::ui_MatrixViewer;
 #endif
 	}
@@ -113,9 +118,13 @@ void MatrixViewer::Init (const QString &title, MatrixRaster* data[2]) {
 
     connect(ui->pic_save,SIGNAL(clicked()),this,SLOT(SaveImage()));
 
+    connect(ui->RB_normalizeLocal, SIGNAL(toggled(bool)), this, SLOT(LocalNormalization(bool)));
+    connect(ui->RB_normalizeCurrWindow, SIGNAL(toggled(bool)), this, SLOT(WindowNormalization(bool)));
+
 	ShowInfo();
 
 	DrawSelectionRect();
+		ui->retranslateUi(this);
 }
 
 void MatrixViewer::SetLength (const QPoint &len) {
@@ -296,7 +305,7 @@ void MatrixViewer::ShowZoom () {
 	QString z_title=(zoomed_ind>0)? title.left(zoomed_ind) : title;
 	(z_title+=tr(": zoomed"))+=QString(" (%1,%2)-(%3,%4)").arg(from_x).arg(from_y).arg(to_x-1).arg(to_y-1);
 
-	MatrixViewer *tmp_m_v=new MatrixViewer(static_cast<QMdiArea*>(parentWidget()),_cntrl,inv);
+	MatrixViewer *tmp_m_v=new MatrixViewer(static_cast<QMdiArea*>(parentWidget()),_cntrl, inv);
 	tmp_m_v->Init(z_title,tmp_m_r_list);
 	tmp_m_v->SetLength(_length);
 	tmp_m_v->SetPointFrom(QPoint(from_x,from_y));
@@ -312,7 +321,7 @@ void MatrixViewer::ShowZoom () {
 
 void MatrixViewer::SaveImage() {
     QString fileName;
-
+   // std::cout << minw << ' ' << maxw << std::endl;
     fileName = QFileDialog::getSaveFileName(this, tr("Name of file for saving"), QString(),"Graphic files (*.png )");
 
     if ( !fileName.isEmpty() )
@@ -331,6 +340,44 @@ void MatrixViewer::SaveImage() {
             qDebug()<<"Uhmm";
         }
     }
+}
+
+void MatrixViewer::LocalNormalization(bool checked) {
+	if (checked) {
+		const QwtDoubleInterval tmp_range=_data[0]->data().range();
+
+		ui->S_Left->setRange(tmp_range.minValue(),tmp_range.maxValue());
+		ui->S_Left->setValue(ui->S_Left->minValue());
+		ui->S_Right->setRange(ui->S_Left->minValue(),ui->S_Left->maxValue());
+		ui->S_Right->setValue(ui->S_Right->maxValue());
+		//double range = ui->S_Right->maxValue() - ui->S_Left->minValue();
+// 		double left = ui->S_Left->minValue();
+		//if (range<DBL_EPSILON) return;
+
+		QwtColorMap *c_map=_cntrl->AllocMainCMap(0,1.0);
+		_data[0]->setColorMap(*c_map);
+		_cntrl->FreeMainCMap(c_map);
+		ui->Plot->replot();
+	}
+}
+
+void MatrixViewer::WindowNormalization(bool checked) {
+	if (checked) {
+	   //	double range = maxw - minw;
+		//double left = minw;
+		ui->S_Left->setRange(this->minw, this->maxw);
+		ui->S_Left->setValue(this->minw);
+		ui->S_Right->setRange(ui->S_Left->minValue(),ui->S_Left->maxValue());
+		ui->S_Right->setValue(ui->S_Right->maxValue());
+	//	if (range<DBL_EPSILON) return;
+
+		QwtColorMap *c_map=_cntrl->AllocMainCMap(0,1.0);
+		_data[0]->setColorMap(*c_map);
+		_cntrl->FreeMainCMap(c_map);
+		ui->Plot->replot();
+	}
+
+
 }
 
 MatrixViewer::~MatrixViewer () {

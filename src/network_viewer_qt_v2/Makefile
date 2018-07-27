@@ -18,10 +18,10 @@
 #
 # Alexey N. Salnikov (salnikov@cmc.msu.ru)
 #
-# 
-#  This file makes the nework_viewer_qt program for PARUS instrumental 
+#
+#  This file makes the nework_viewer_qt program for PARUS instrumental
 #  system.
-# 
+#
 
 
 include ../../config
@@ -60,7 +60,7 @@ ifneq ($(OPENCL_INCL)$(OPENCL_LIB_FLD),$(OPENCL_LIB_FLD)$(OPENCL_INCL))
 	@echo "#endif"                                                >> core/opencl_defs.h
 endif
 	
-network_viewer_qt_v2: translations Makefile_network_viewer_qt.mk 
+network_viewer_qt_v2: translations Makefile_network_viewer_qt.mk
 	$(MAKE) -f Makefile_network_viewer_qt.mk
 
 translations:
