@@ -66,8 +66,13 @@ install: libparus_network.a
 clean:
 	rm -f *.o libparus_network.a
 
-%.o: %.c %.h
+%.c: %.h
+%.cpp: %.h
+
+%.o: %.c
 	 $(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) $(NETCDF_INCLUDE) -I ../..  -c $< -o $@
 
-%.o: %.cpp %.h
+%.o: %.cpp
 	 $(MPI_CXX) $(MPI_CXX_FLAGS) $(MPI_CXX_INCLUDE) $(NETCDF_INCLUDE) -I ../..  -c $< -o $@
+
+
