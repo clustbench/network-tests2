@@ -58,16 +58,20 @@
 #include "tests_common.h"
 #include "parse_arguments.h"
 
-extern int comm_size;
-extern int comm_rank;
-
-
+/*
+ * This variables is available as
+ * extern from tests_common.h
+ * Do not panic! 
+ *
+ * int comm_size;
+ * int comm_rank;
+ */
 
 int main(int argc,char **argv)
 {
     MPI_Status status;
 
-    Test_time_result_type *times=NULL; /* old px_my_time_type *times=NULL;*/
+    Test_time_result_type *times=NULL;
 
     /*
      * The structure with network_test parameters.
