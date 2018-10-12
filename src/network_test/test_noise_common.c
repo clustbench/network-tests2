@@ -1,12 +1,12 @@
 /*
  *  This file is a part of the PARUS project.
  *  Copyright (C) 2006  Alexey N. Salnikov
- *  
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -15,14 +15,14 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Alexey N. Salnikov (salnikov@cmc.msu.ru)
  * Ivan Beloborodov
  *
  */
 
 #include "my_time.h"
-/*#include "line_dynamic_array.h" 
+/*#include "line_dynamic_array.h"
 #include "id.h"
 */
 
@@ -110,7 +110,7 @@ void clear_more_test_data( test_data* td, int i )
  */
 int alloc_test_data( test_data* td, int mes_length, int num_repeats, int loading, int num_processors )
 {
- 
+
 	if ( !( td->tmp_results = (px_my_time_type**)
 		malloc( comm_size * sizeof(px_my_time_type*) ) ) )
 	{
@@ -242,10 +242,10 @@ int random_choice( int proc1, int proc2, int num_processors, int* processors )
 	/*
 	 * Check for boundaries
 	 * /
-	if( 
+	if(
 		( comm_size <= 2 ) ||
 		( num_processors <= 0 ) ||
-		( num_processors > comm_size - 2 ) 
+		( num_processors > comm_size - 2 )
 	  )
 	{
 		return 0;
@@ -342,10 +342,10 @@ int init_mode_array(int proc1,int proc2,int num_noise_procs,int num_all_procs,in
 	}
 	*/
 	
-	if( 
+	if(
 		( num_all_procs <= 2 ) ||
 		( num_noise_procs <= 0 ) ||
-		( num_noise_procs > num_all_procs - 2 ) 
+		( num_noise_procs > num_all_procs - 2 )
 	  )
 	{
 		return 0;

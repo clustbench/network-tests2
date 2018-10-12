@@ -38,28 +38,26 @@ FILES_TEST2=\
 	test_noise2.o\
 	test_noise_blocking2.o\
 	bcast2.o\
-    	get2.o\
-    	put2.o\
+	get2.o\
+	put2.o\
 	parse_arguments.o
 
 FILES_PRINT_FROM_TO=\
 	print_from_to.o
 
-	
-               
 EXECS= print_from_to convert_to_netcdf network_test2
 
 all: $(EXECS)
 
 network_test2: $(FILES_TEST2) $(FILES_COMMON)
-	$(MPI_CLINKER) $(MPI_CLINKER_FLAGS) $(MPI_LIB_PATH) $(NETCDF_INCLUDE) -L ../core -o network_test2 $(FILES_COMMON) $(FILES_TEST2) $(MPI_LIBS) -lparus_network  -lnetcdf
+	$(MPI_CCLINKER) $(MPI_CCLINKER_FLAGS) $(MPI_LIB_PATH) $(NETCDF_INCLUDE) -L ../core -o network_test2 $(FILES_COMMON) $(FILES_TEST2) $(MPI_LIBS) -lparus_network  -lnetcdf -lm
 
 
 print_from_to: $(FILES_PRINT_FROM_TO)
-	$(CCLINKER) $(CCLINKER_FLAGS) $(MPI_LIB_PATH) $(NETCDF_INCLUDE) -L ../core -o print_from_to $(FILES_PRINT_FROM_TO) $(MPI_LIBS) -lnetcdf
+	$(CXXLINKER) $(CXXLINKER_FLAGS) $(MPI_LIB_PATH) $(NETCDF_INCLUDE) -L ../core -o print_from_to $(FILES_PRINT_FROM_TO) $(MPI_LIBS) -lnetcdf
 
-convert_to_netcdf: convert_to_netcdf.o $(FILES_COMMON) 
-	$(MPI_CCLINKER) $(MPI_CCLINKER_FLAGS) $(MPI_LIB_PATH) -L ../core -o  convert_to_netcdf convert_to_netcdf.o ../core/string_id_converters.o  $(FILES_COMMON) $(MPI_LIBS) -lparus_network -lnetcdf
+convert_to_netcdf: convert_to_netcdf.o $(FILES_COMMON)
+	$(MPI_CXXLINKER) $(MPI_CXXLINKER_FLAGS) $(MPI_LIB_PATH) -L ../core -o  convert_to_netcdf convert_to_netcdf.o ../core/string_id_converters.o  $(FILES_COMMON) $(MPI_LIBS) -lparus_network -lnetcdf
 
 
 clean:
@@ -70,9 +68,7 @@ install: all
 	cp -rf $(EXECS) $(INSTALL_DIR)/bin/
 
 %.o: %.c
-	$(MPI_cc) $(MPI_cc_FLAGS) $(MPI_cc_INCLUDE) -I ../core -I ../.. -c $^ -o $@ 
-
-   
-%.o: %.cpp
 	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -I ../core -I ../.. -c $^ -o $@
 
+%.o: %.cpp
+	$(MPI_CXX) $(MPI_CXX_FLAGS) $(MPI_CXX_INCLUDE) -I ../core -I ../.. -c $^ -o $@

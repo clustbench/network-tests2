@@ -15,8 +15,8 @@
 #define SOURCE_FILE "core/renderer_OpenCL.ocl" // file with code for kernels above
 
 #define ARG_PASS_ERR(num,ret) { this->err_str=QObject::tr("cannot pass the argument %1 to the kernel").arg(num); return ret; }
-			    
-RendererOCL::RendererOCL (int *const fv_sl_cube_x, int *const fv_sl_cube_y, bool *const fv_sl_cube_vis): 
+			
+RendererOCL::RendererOCL (int *const fv_sl_cube_x, int *const fv_sl_cube_y, bool *const fv_sl_cube_vis):
   fv_sel_cube_x(fv_sl_cube_x), fv_sel_cube_y(fv_sl_cube_y), fv_sel_cube_vis(fv_sl_cube_vis) {
 	contxt=NULL;
 	program=NULL;
@@ -142,8 +142,8 @@ RendererOCL::RendererOCL (int *const fv_sl_cube_x, int *const fv_sl_cube_y, bool
 	}
 }
 
-void RendererOCL::Init (const unsigned int image_w, const unsigned int image_h, 
-						const int num_x, const int num_y, const int num_z) {  
+void RendererOCL::Init (const unsigned int image_w, const unsigned int image_h,
+						const int num_x, const int num_y, const int num_z) {
 	img_w=image_w;
 	img_h=image_h;
 
@@ -343,7 +343,7 @@ bool RendererOCL::ToggleVolumeMode (const bool on) {
 	return true;
 }
 
-bool RendererOCL::BuildVolume (const unsigned char min_green, const unsigned char max_green, 
+bool RendererOCL::BuildVolume (const unsigned char min_green, const unsigned char max_green,
 							   const unsigned char min_red, const unsigned char max_red) {
 	this->err_str.clear();
 	clr_minmax.x=min_green;
@@ -355,7 +355,7 @@ bool RendererOCL::BuildVolume (const unsigned char min_green, const unsigned cha
 	return true;
 }
 
-void RendererOCL::SelectPoints_by_click (const int x, const int y, const unsigned short *const clr_matrix, 
+void RendererOCL::SelectPoints_by_click (const int x, const int y, const unsigned short *const clr_matrix,
 										 Coords* &pos, int &points_num) const {
 	/* see original algorithm in "./renderer_OpenCL.ocl" */
 
@@ -383,8 +383,8 @@ void RendererOCL::SelectPoints_by_click (const int x, const int y, const unsigne
 
 	float r_p_div_p_st_x,r_p_div_p_st_y,r_p_div_p_st_z;
 
-	if ((ray_pos_const_x>h_sizes_x) || (ray_pos_const_x<-h_sizes_x) || 
-		(ray_pos_const_y>h_sizes_y) || (ray_pos_const_y<-h_sizes_y) || 
+	if ((ray_pos_const_x>h_sizes_x) || (ray_pos_const_x<-h_sizes_x) ||
+		(ray_pos_const_y>h_sizes_y) || (ray_pos_const_y<-h_sizes_y) ||
 		(ray_pos_const_z>h_sizes_z) || (ray_pos_const_z<-h_sizes_z))
 	{
 		float ttime=FLT_MAX,t,coord;
@@ -582,7 +582,7 @@ void RendererOCL::SelectPoints_by_click (const int x, const int y, const unsigne
 				if (t_max_x<=t_max_z)
 				{
 					ind_x+=ind_step_x;
-					if ((ind_x>=num.x) || (ind_x<0) || (ind_init_x>ind_x+depth_constraint) || 
+					if ((ind_x>=num.x) || (ind_x<0) || (ind_init_x>ind_x+depth_constraint) ||
 						(ind_init_x+depth_constraint<static_cast<unsigned>(ind_x))) break;
 					t_max_x+=t_delta_x;
 					mtr_indx+=ind_step_x;
@@ -590,7 +590,7 @@ void RendererOCL::SelectPoints_by_click (const int x, const int y, const unsigne
 				else
 				{
 					ind_z+=ind_step_z;
-					if ((ind_z>=num.z) || (ind_z<0) || (ind_init_z>ind_z+depth_constraint) || 
+					if ((ind_z>=num.z) || (ind_z<0) || (ind_init_z>ind_z+depth_constraint) ||
 						(ind_init_z+depth_constraint<static_cast<unsigned>(ind_z))) break;
 					t_max_z+=t_delta_z;
 					mtr_indx+=xy_num;
@@ -601,7 +601,7 @@ void RendererOCL::SelectPoints_by_click (const int x, const int y, const unsigne
 				if (t_max_y<=t_max_z)
 				{
 					ind_y+=ind_step_y;
-					if ((ind_y>=num.y) || (ind_y<0) || (ind_init_y>ind_y+depth_constraint) || 
+					if ((ind_y>=num.y) || (ind_y<0) || (ind_init_y>ind_y+depth_constraint) ||
 						(ind_init_y+depth_constraint<static_cast<unsigned>(ind_y))) break;
 					t_max_y+=t_delta_y;
 					mtr_indx+=yl_num;
@@ -609,7 +609,7 @@ void RendererOCL::SelectPoints_by_click (const int x, const int y, const unsigne
 				else
 				{
 					ind_z+=ind_step_z;
-					if ((ind_z>=num.z) || (ind_z<0) || (ind_init_z>ind_z+depth_constraint) || 
+					if ((ind_z>=num.z) || (ind_z<0) || (ind_init_z>ind_z+depth_constraint) ||
 						(ind_init_z+depth_constraint<static_cast<unsigned>(ind_z))) break;
 					t_max_z+=t_delta_z;
 					mtr_indx+=xy_num;
@@ -619,7 +619,7 @@ void RendererOCL::SelectPoints_by_click (const int x, const int y, const unsigne
 	}
 }
 
-bool RendererOCL::SelectPoints_last_phase (const int x, const int y, Coords &pos, 
+bool RendererOCL::SelectPoints_last_phase (const int x, const int y, Coords &pos,
 										   const unsigned short *const clr_matrix) {
 	/* see original algorithm in "./renderer_OpenCL.ocl" */
 
@@ -644,8 +644,8 @@ bool RendererOCL::SelectPoints_last_phase (const int x, const int y, Coords &pos
 
 	float r_p_div_p_st_x,r_p_div_p_st_y,r_p_div_p_st_z;
 
-	if ((ray_pos_const_x>h_sizes_x) || (ray_pos_const_x<-h_sizes_x) || 
-		(ray_pos_const_y>h_sizes_y) || (ray_pos_const_y<-h_sizes_y) || 
+	if ((ray_pos_const_x>h_sizes_x) || (ray_pos_const_x<-h_sizes_x) ||
+		(ray_pos_const_y>h_sizes_y) || (ray_pos_const_y<-h_sizes_y) ||
 		(ray_pos_const_z>h_sizes_z) || (ray_pos_const_z<-h_sizes_z))
 	{
 		float ttime=FLT_MAX,t,coord;
@@ -837,8 +837,8 @@ void RendererOCL::BuildSelectionCube (const float ray_pos_x, const float ray_pos
 
 	/* determine visibility of 8 corner points of selection cube (5 big steps below) */
 
-	if ((to_centre_x<=data.sc+data.sc) && (data.sc<=to_centre_x) && 
-		(to_centre_y<=data.sc+data.sc) && (data.sc<=to_centre_y) && 
+	if ((to_centre_x<=data.sc+data.sc) && (data.sc<=to_centre_x) &&
+		(to_centre_y<=data.sc+data.sc) && (data.sc<=to_centre_y) &&
 		(to_centre_z<=data.sc+data.sc) && (data.sc<=to_centre_z))
 		// 'ray_pos' is inside the cube - assume the whole cube invisible
 		return;
@@ -848,7 +848,7 @@ void RendererOCL::BuildSelectionCube (const float ray_pos_x, const float ray_pos
 	float a,b,c,d,e,f=-1.5f*data.sc,mlt;
 	bool hit=false;
 
-	/* STEP 1: transform centre of selected "point" into screen coordinates 
+	/* STEP 1: transform centre of selected "point" into screen coordinates
 	           ('d' will be (j-img_w/2), 'e' will be (i-img_h/2)) */
 	a=(to_centre_x+f)*data.s7-(to_centre_z+f)*data.s1;
 	b=(to_centre_x+f)*data.s3-(to_centre_y+f)*data.s0;
@@ -994,15 +994,15 @@ void RendererOCL::BuildSelectionCube (const float ray_pos_x, const float ray_pos
 		to_centre_z+=data.sc;
 	}
 
-	/* one point belongs to 3 faces; 
-	   maximum of 3 faces are visible simultaneously in a cube from 'ray_pos'; 
-	   the nearest point found above must belong to all these faces (I don't know how to prove this); 
-	   but one of these faces can make another invisible. 
+	/* one point belongs to 3 faces;
+	   maximum of 3 faces are visible simultaneously in a cube from 'ray_pos';
+	   the nearest point found above must belong to all these faces (I don't know how to prove this);
+	   but one of these faces can make another invisible.
 	   STEP 4: Let's check it */
 	char faces[3]; // possibly visible faces
 	bool vis[3]={true,true,true}; // indicator of visibility
 
-	/* numbering of faces: 
+	/* numbering of faces:
 	   0 - all 4 points have "near" z-coordinate,
 	   1 - all 4 points have "bottom" y-coordinate,
 	   2 - all 4 points have "left" x-coordinate,
@@ -1116,7 +1116,7 @@ void RendererOCL::BuildSelectionCube (const float ray_pos_x, const float ray_pos
 		}
 	}
 
-	/* STEP 5: visible faces were found; so all other faces are invisible. 
+	/* STEP 5: visible faces were found; so all other faces are invisible.
 	   If a face is visible than all its 4 points are visible */
 	for (ind=0; ind<3; ++ind)
 	{
