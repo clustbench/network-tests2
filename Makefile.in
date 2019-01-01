@@ -19,6 +19,8 @@
 
 include ./config
 SHELL=/bin/bash
+.NOTPARALLEL:
+	install purge
 
 all: core $(GOALS)
 
