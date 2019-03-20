@@ -58,16 +58,20 @@
 #include "tests_common.h"
 #include "parse_arguments.h"
 
-extern int comm_size;
-extern int comm_rank;
-
-
+/*
+ * This variables is available as
+ * extern from tests_common.h
+ * Do not panic! 
+ *
+ * int comm_size;
+ * int comm_rank;
+ */
 
 int main(int argc,char **argv)
 {
     MPI_Status status;
 
-    Test_time_result_type *times=NULL; /* old px_my_time_type *times=NULL;*/
+    Test_time_result_type *times=NULL;
 
     /*
      * The structure with network_test parameters.
@@ -335,7 +339,7 @@ int main(int argc,char **argv)
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
-    
+
 
     /*
      * Circle by length of messages
@@ -361,9 +365,9 @@ int main(int argc,char **argv)
                 test_noise_blocking
 		(
 		 	times,
-		    	tmp_mes_size, 
-			test_parameters.num_repeats, 
-			test_parameters.num_noise_messages, 
+		    	tmp_mes_size,
+			test_parameters.num_repeats,
+			test_parameters.num_noise_messages,
 			test_parameters.noise_message_length,
 		       	test_parameters.num_noise_procs
 		);
@@ -374,9 +378,9 @@ int main(int argc,char **argv)
             		test_noise
 			(
 			 	times,
-				tmp_mes_size, 
-				test_parameters.num_repeats, 
-				test_parameters.num_noise_messages, 
+				tmp_mes_size,
+				test_parameters.num_repeats,
+				test_parameters.num_noise_messages,
 				test_parameters.noise_message_length,
 				test_parameters.num_noise_procs
 			);
@@ -475,13 +479,13 @@ int main(int argc,char **argv)
             MPI_Send(times,comm_size,MPI_My_time_struct,0,100,MPI_COMM_WORLD);
         }
 
-      
+
         /* end for cycle .
          * Now we  go to the next length of message that is used in
          * the test perfomed on multiprocessor.
          */
     }
-    
+
     /* TODO
      * Now free times array.
      * It should be changed in future for memory be allocated only once.
@@ -489,7 +493,7 @@ int main(int argc,char **argv)
      * Times array should be moved from return value to the input argument
      * for any network_test.
      */
-    
+
 	free(times);
 
 

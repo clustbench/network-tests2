@@ -4,7 +4,7 @@
   #include <omp.h>
 #endif
 
-void RendererOMP::Init (const unsigned int image_w, const unsigned int image_h, 
+void RendererOMP::Init (const unsigned int image_w, const unsigned int image_h,
 						const int num_x, const int num_y, const int num_z) {
 	img_w=image_w;
 	img_h=image_h;
@@ -174,8 +174,8 @@ void RendererOMP::RenderBox_cubes (unsigned int *pixels) const {
 			ray_pos_y=ray_pos_y_const+ttime*ray_dir_y;
 			ray_pos_z=ray_pos_z_const+ttime*ray_dir_z;
 
-			if ((ray_pos_x<-0.01f) || (ray_pos_x>x_size+0.01f) || 
-				(ray_pos_y<-0.01f) || (ray_pos_y>y_size+0.01f) || 
+			if ((ray_pos_x<-0.01f) || (ray_pos_x>x_size+0.01f) ||
+				(ray_pos_y<-0.01f) || (ray_pos_y>y_size+0.01f) ||
 				(ray_pos_z<-0.01f) || (ray_pos_z>z_size+0.01f))
 			{
 				// no hit - dark gray color
@@ -234,7 +234,7 @@ void RendererOMP::RenderBox_cubes (unsigned int *pixels) const {
 					if (t_max_x<=t_max_z)
 					{
 						ind_k+=ind_k_step;
-						if ((ind_k>=x_num) || (ind_k<0) || (ind_k_init>ind_k+depth_constraint) || 
+						if ((ind_k>=x_num) || (ind_k<0) || (ind_k_init>ind_k+depth_constraint) ||
 							(ind_k_init+depth_constraint<ind_k)) break;
 						t_max_x+=t_delta_x;
 						mtr_indx+=ind_k_step;
@@ -242,7 +242,7 @@ void RendererOMP::RenderBox_cubes (unsigned int *pixels) const {
 					else
 					{
 						ind_m+=ind_m_step;
-						if ((ind_m>=z_num) || (ind_m<0) || (ind_m_init>ind_m+depth_constraint) || 
+						if ((ind_m>=z_num) || (ind_m<0) || (ind_m_init>ind_m+depth_constraint) ||
 							(ind_m_init+depth_constraint<ind_m)) break;
 						t_max_z+=t_delta_z;
 						mtr_indx+=xy_num;
@@ -253,7 +253,7 @@ void RendererOMP::RenderBox_cubes (unsigned int *pixels) const {
 					if (t_max_y<=t_max_z)
 					{
 						ind_l+=ind_l_step;
-						if ((ind_l>=y_num) || (ind_l<0) || (ind_l_init>ind_l+depth_constraint) || 
+						if ((ind_l>=y_num) || (ind_l<0) || (ind_l_init>ind_l+depth_constraint) ||
 							(ind_l_init+depth_constraint<ind_l)) break;
 						t_max_y+=t_delta_y;
 						mtr_indx+=yl_num;
@@ -261,7 +261,7 @@ void RendererOMP::RenderBox_cubes (unsigned int *pixels) const {
 					else
 					{
 						ind_m+=ind_m_step;
-						if ((ind_m>=z_num) || (ind_m<0) || (ind_m_init>ind_m+depth_constraint) || 
+						if ((ind_m>=z_num) || (ind_m<0) || (ind_m_init>ind_m+depth_constraint) ||
 							(ind_m_init+depth_constraint<ind_m)) break;
 						t_max_z+=t_delta_z;
 						mtr_indx+=xy_num;
@@ -269,8 +269,8 @@ void RendererOMP::RenderBox_cubes (unsigned int *pixels) const {
 				}
 			}
 
-			pixels[i*img_w+j]=0xff000000 | 
-							((main_color_g>=255.0f)? 0x0000ff00 : (((unsigned int)floor(main_color_g+0.5f))<<8)) | 
+			pixels[i*img_w+j]=0xff000000 |
+							((main_color_g>=255.0f)? 0x0000ff00 : (((unsigned int)floor(main_color_g+0.5f))<<8)) |
 							((main_color_r>=255.0f)? 0x00ff0000 : (((unsigned int)floor(main_color_r+0.5f))<<16));
 		}
 	}
@@ -378,8 +378,8 @@ void RendererOMP::RenderBox_spheres (unsigned int *pixels) const {
 			ray_pos_y=ray_pos_y_const+ttime*ray_dir_y;
 			ray_pos_z=ray_pos_z_const+ttime*ray_dir_z;
 
-			if ((ray_pos_x<-0.01f) || (ray_pos_x>x_size+0.01f) || 
-				(ray_pos_y<-0.01f) || (ray_pos_y>y_size+0.01f) || 
+			if ((ray_pos_x<-0.01f) || (ray_pos_x>x_size+0.01f) ||
+				(ray_pos_y<-0.01f) || (ray_pos_y>y_size+0.01f) ||
 				(ray_pos_z<-0.01f) || (ray_pos_z>z_size+0.01f))
 			{
 				// no hit - dark gray color
@@ -445,7 +445,7 @@ void RendererOMP::RenderBox_spheres (unsigned int *pixels) const {
 					if (t_max_x<=t_max_z)
 					{
 						ind_k+=ind_k_step;
-						if ((ind_k>=x_num) || (ind_k<0) || (ind_k_init>ind_k+depth_constraint) || 
+						if ((ind_k>=x_num) || (ind_k<0) || (ind_k_init>ind_k+depth_constraint) ||
 							(ind_k_init+depth_constraint<ind_k)) break;
 						t_max_x+=t_delta_x;
 						mtr_indx+=ind_k_step;
@@ -454,7 +454,7 @@ void RendererOMP::RenderBox_spheres (unsigned int *pixels) const {
 					else
 					{
 						ind_m+=ind_m_step;
-						if ((ind_m>=z_num) || (ind_m<0) || (ind_m_init>ind_m+depth_constraint) || 
+						if ((ind_m>=z_num) || (ind_m<0) || (ind_m_init>ind_m+depth_constraint) ||
 							(ind_m_init+depth_constraint<ind_m)) break;
 						t_max_z+=t_delta_z;
 						mtr_indx+=xy_num;
@@ -466,7 +466,7 @@ void RendererOMP::RenderBox_spheres (unsigned int *pixels) const {
 					if (t_max_y<=t_max_z)
 					{
 						ind_l+=ind_l_step;
-						if ((ind_l>=y_num) || (ind_l<0) || (ind_l_init>ind_l+depth_constraint) || 
+						if ((ind_l>=y_num) || (ind_l<0) || (ind_l_init>ind_l+depth_constraint) ||
 							(ind_l_init+depth_constraint<ind_l)) break;
 						t_max_y+=t_delta_y;
 						mtr_indx+=yl_num;
@@ -475,7 +475,7 @@ void RendererOMP::RenderBox_spheres (unsigned int *pixels) const {
 					else
 					{
 						ind_m+=ind_m_step;
-						if ((ind_m>=z_num) || (ind_m<0) || (ind_m_init>ind_m+depth_constraint) || 
+						if ((ind_m>=z_num) || (ind_m<0) || (ind_m_init>ind_m+depth_constraint) ||
 							(ind_m_init+depth_constraint<ind_m)) break;
 						t_max_z+=t_delta_z;
 						mtr_indx+=xy_num;
@@ -484,8 +484,8 @@ void RendererOMP::RenderBox_spheres (unsigned int *pixels) const {
 				}
 			}
 
-			pixels[i*img_w+j]=0xff000000 | 
-							((main_color_g>=255.0f)? 0x0000ff00 : (((unsigned int)floor(main_color_g+0.5f))<<8)) | 
+			pixels[i*img_w+j]=0xff000000 |
+							((main_color_g>=255.0f)? 0x0000ff00 : (((unsigned int)floor(main_color_g+0.5f))<<8)) |
 							((main_color_r>=255.0f)? 0x00ff0000 : (((unsigned int)floor(main_color_r+0.5f))<<16));
 		}
 	}
@@ -593,8 +593,8 @@ void RendererOMP::RenderBox_lights (unsigned int *pixels) const {
 			ray_pos_y=ray_pos_y_const+ttime*ray_dir_y;
 			ray_pos_z=ray_pos_z_const+ttime*ray_dir_z;
 
-			if ((ray_pos_x<-0.01f) || (ray_pos_x>x_size+0.01f) || 
-				(ray_pos_y<-0.01f) || (ray_pos_y>y_size+0.01f) || 
+			if ((ray_pos_x<-0.01f) || (ray_pos_x>x_size+0.01f) ||
+				(ray_pos_y<-0.01f) || (ray_pos_y>y_size+0.01f) ||
 				(ray_pos_z<-0.01f) || (ray_pos_z>z_size+0.01f))
 			{
 				// no hit - dark gray color
@@ -662,7 +662,7 @@ void RendererOMP::RenderBox_lights (unsigned int *pixels) const {
 					if (t_max_x<=t_max_z)
 					{
 						ind_k+=ind_k_step;
-						if ((ind_k>=x_num) || (ind_k<0) || (ind_k_init>ind_k+depth_constraint) || 
+						if ((ind_k>=x_num) || (ind_k<0) || (ind_k_init>ind_k+depth_constraint) ||
 							(ind_k_init+depth_constraint<ind_k)) break;
 						t_max_x+=t_delta_x;
 						mtr_indx+=ind_k_step;
@@ -671,7 +671,7 @@ void RendererOMP::RenderBox_lights (unsigned int *pixels) const {
 					else
 					{
 						ind_m+=ind_m_step;
-						if ((ind_m>=z_num) || (ind_m<0) || (ind_m_init>ind_m+depth_constraint) || 
+						if ((ind_m>=z_num) || (ind_m<0) || (ind_m_init>ind_m+depth_constraint) ||
 							(ind_m_init+depth_constraint<ind_m)) break;
 						t_max_z+=t_delta_z;
 						mtr_indx+=xy_num;
@@ -683,7 +683,7 @@ void RendererOMP::RenderBox_lights (unsigned int *pixels) const {
 					if (t_max_y<=t_max_z)
 					{
 						ind_l+=ind_l_step;
-						if ((ind_l>=y_num) || (ind_l<0) || (ind_l_init>ind_l+depth_constraint) || 
+						if ((ind_l>=y_num) || (ind_l<0) || (ind_l_init>ind_l+depth_constraint) ||
 							(ind_l_init+depth_constraint<ind_l)) break;
 						t_max_y+=t_delta_y;
 						mtr_indx+=yl_num;
@@ -692,7 +692,7 @@ void RendererOMP::RenderBox_lights (unsigned int *pixels) const {
 					else
 					{
 						ind_m+=ind_m_step;
-						if ((ind_m>=z_num) || (ind_m<0) || (ind_m_init>ind_m+depth_constraint) || 
+						if ((ind_m>=z_num) || (ind_m<0) || (ind_m_init>ind_m+depth_constraint) ||
 							(ind_m_init+depth_constraint<ind_m)) break;
 						t_max_z+=t_delta_z;
 						mtr_indx+=xy_num;
@@ -701,8 +701,8 @@ void RendererOMP::RenderBox_lights (unsigned int *pixels) const {
 				}
 			}
 
-			pixels[i*img_w+j]=0xff000000 | 
-							((main_color_g<255.0f)? (((unsigned int)floor(main_color_g+0.5f))<<8u) : 0x0000ff00) | 
+			pixels[i*img_w+j]=0xff000000 |
+							((main_color_g<255.0f)? (((unsigned int)floor(main_color_g+0.5f))<<8u) : 0x0000ff00) |
 							((main_color_r<255.0f)? (((unsigned int)floor(main_color_r+0.5f))<<16u) : 0x00ff0000);
 		}
 	}
@@ -813,8 +813,8 @@ void RendererOMP::RenderBox_cubes_vol (unsigned int *pixels) const {
 			ray_pos_y=ray_pos_y_const+ttime*ray_dir_y;
 			ray_pos_z=ray_pos_z_const+ttime*ray_dir_z;
 
-			if ((ray_pos_x<-0.01f) || (ray_pos_x>x_size+0.01f) || 
-				(ray_pos_y<-0.01f) || (ray_pos_y>y_size+0.01f) || 
+			if ((ray_pos_x<-0.01f) || (ray_pos_x>x_size+0.01f) ||
+				(ray_pos_y<-0.01f) || (ray_pos_y>y_size+0.01f) ||
 				(ray_pos_z<-0.01f) || (ray_pos_z>z_size+0.01f))
 			{
 				// no hit - dark gray color
@@ -908,8 +908,8 @@ void RendererOMP::RenderBox_cubes_vol (unsigned int *pixels) const {
 			if ((main_color_g==0.0f) && (main_color_r==0.0f))
 				pixels[i*img_w+j]=0xff969696;
 			else
-				pixels[i*img_w+j]=0xff000000 | 
-							((main_color_g>=255.0f)? 0x0000ff00 : (((unsigned int)floor(main_color_g+0.5f))<<8)) | 
+				pixels[i*img_w+j]=0xff000000 |
+							((main_color_g>=255.0f)? 0x0000ff00 : (((unsigned int)floor(main_color_g+0.5f))<<8)) |
 							((main_color_r>=255.0f)? 0x00ff0000 : (((unsigned int)floor(main_color_r+0.5f))<<16));
 		}
 	}
@@ -1022,8 +1022,8 @@ void RendererOMP::RenderBox_spheres_vol (unsigned int *pixels) const {
 			ray_pos_y=ray_pos_y_const+ttime*ray_dir_y;
 			ray_pos_z=ray_pos_z_const+ttime*ray_dir_z;
 
-			if ((ray_pos_x<-0.01f) || (ray_pos_x>x_size+0.01f) || 
-				(ray_pos_y<-0.01f) || (ray_pos_y>y_size+0.01f) || 
+			if ((ray_pos_x<-0.01f) || (ray_pos_x>x_size+0.01f) ||
+				(ray_pos_y<-0.01f) || (ray_pos_y>y_size+0.01f) ||
 				(ray_pos_z<-0.01f) || (ray_pos_z>z_size+0.01f))
 			{
 				// no hit - dark gray color
@@ -1128,8 +1128,8 @@ void RendererOMP::RenderBox_spheres_vol (unsigned int *pixels) const {
 			if ((main_color_g==0.0f) && (main_color_r==0.0f))
 				pixels[i*img_w+j]=0xff969696;
 			else
-				pixels[i*img_w+j]=0xff000000 | 
-							((main_color_g>=255.0f)? 0x0000ff00 : (((unsigned int)floor(main_color_g+0.5f))<<8)) | 
+				pixels[i*img_w+j]=0xff000000 |
+							((main_color_g>=255.0f)? 0x0000ff00 : (((unsigned int)floor(main_color_g+0.5f))<<8)) |
 							((main_color_r>=255.0f)? 0x00ff0000 : (((unsigned int)floor(main_color_r+0.5f))<<16));
 		}
 	}
@@ -1177,7 +1177,7 @@ void RendererOMP::RenderBox_lights_vol (unsigned int *pixels) const {
 	for (i=0; i<img_h; ++i)
 	{
 		for (j=0; j<img_w; ++j)
-		{	    
+		{	
 			/* transform ray coordinates */
 			ttime=minus_img_w_2+j;
 			t=minus_img_h_2+i;
@@ -1242,8 +1242,8 @@ void RendererOMP::RenderBox_lights_vol (unsigned int *pixels) const {
 			ray_pos_y=ray_pos_y_const+ttime*ray_dir_y;
 			ray_pos_z=ray_pos_z_const+ttime*ray_dir_z;
 
-			if ((ray_pos_x<-0.01f) || (ray_pos_x>x_size+0.01f) || 
-				(ray_pos_y<-0.01f) || (ray_pos_y>y_size+0.01f) || 
+			if ((ray_pos_x<-0.01f) || (ray_pos_x>x_size+0.01f) ||
+				(ray_pos_y<-0.01f) || (ray_pos_y>y_size+0.01f) ||
 				(ray_pos_z<-0.01f) || (ray_pos_z>z_size+0.01f))
 			{
 				// no hit - dark gray color
@@ -1350,15 +1350,15 @@ void RendererOMP::RenderBox_lights_vol (unsigned int *pixels) const {
 			if ((main_color_g==0.0f) && (main_color_r==0.0f))
 				pixels[i*img_w+j]=0xff969696;
 			else
-				pixels[i*img_w+j]=0xff000000 | 
-							((main_color_g>=255.0f)? 0x0000ff00 : (((unsigned int)floor(main_color_g+0.5f))<<8)) | 
+				pixels[i*img_w+j]=0xff000000 |
+							((main_color_g>=255.0f)? 0x0000ff00 : (((unsigned int)floor(main_color_g+0.5f))<<8)) |
 							((main_color_r>=255.0f)? 0x00ff0000 : (((unsigned int)floor(main_color_r+0.5f))<<16));
 		}
 	}
 	}
 }
 
-void RendererOMP::SelectPoints_by_click (const int x, const int y, const unsigned short *const clr_matrix, 
+void RendererOMP::SelectPoints_by_click (const int x, const int y, const unsigned short *const clr_matrix,
 										 Coords* &pos, int &points_num) const {
 	/* see original algorithm in 6 functions above */
 
@@ -1383,8 +1383,8 @@ void RendererOMP::SelectPoints_by_click (const int x, const int y, const unsigne
 
 	float r_p_div_p_st_x,r_p_div_p_st_y,r_p_div_p_st_z;
 
-	if ((ray_pos_const_x>h_sizes_x) || (ray_pos_const_x<-h_sizes_x) || 
-		(ray_pos_const_y>h_sizes_y) || (ray_pos_const_y<-h_sizes_y) || 
+	if ((ray_pos_const_x>h_sizes_x) || (ray_pos_const_x<-h_sizes_x) ||
+		(ray_pos_const_y>h_sizes_y) || (ray_pos_const_y<-h_sizes_y) ||
 		(ray_pos_const_z>h_sizes_z) || (ray_pos_const_z<-h_sizes_z))
 	{
 		float ttime=FLT_MAX,t,coord;
@@ -1504,8 +1504,8 @@ void RendererOMP::SelectPoints_by_click (const int x, const int y, const unsigne
 	const int yl_num=x_num*ind_step_y;
 	int mtr_indx=(ind_z*y_num+ind_y)*x_num+ind_x;
 
-	if ((RendBox!=&RendererOMP::RenderBox_cubes_vol) && 
-		(RendBox!=&RendererOMP::RenderBox_spheres_vol) && 
+	if ((RendBox!=&RendererOMP::RenderBox_cubes_vol) &&
+		(RendBox!=&RendererOMP::RenderBox_spheres_vol) &&
 		(RendBox!=&RendererOMP::RenderBox_lights_vol))
 	{
 		// 'volume' mode is off
@@ -1531,7 +1531,7 @@ void RendererOMP::SelectPoints_by_click (const int x, const int y, const unsigne
 				if (t_max_x<=t_max_z)
 				{
 					ind_x+=ind_step_x;
-					if ((ind_x>=x_num) || (ind_x<0) || (ind_init_x>ind_x+depth_constraint) || 
+					if ((ind_x>=x_num) || (ind_x<0) || (ind_init_x>ind_x+depth_constraint) ||
 						(ind_init_x+depth_constraint<ind_x)) break;
 					t_max_x+=t_delta_x;
 					mtr_indx+=ind_step_x;
@@ -1539,7 +1539,7 @@ void RendererOMP::SelectPoints_by_click (const int x, const int y, const unsigne
 				else
 				{
 					ind_z+=ind_step_z;
-					if ((ind_z>=z_num) || (ind_z<0) || (ind_init_z>ind_z+depth_constraint) || 
+					if ((ind_z>=z_num) || (ind_z<0) || (ind_init_z>ind_z+depth_constraint) ||
 						(ind_init_z+depth_constraint<ind_z)) break;
 					t_max_z+=t_delta_z;
 					mtr_indx+=xy_num;
@@ -1550,7 +1550,7 @@ void RendererOMP::SelectPoints_by_click (const int x, const int y, const unsigne
 				if (t_max_y<=t_max_z)
 				{
 					ind_y+=ind_step_y;
-					if ((ind_y>=y_num) || (ind_y<0) || (ind_init_y>ind_y+depth_constraint) || 
+					if ((ind_y>=y_num) || (ind_y<0) || (ind_init_y>ind_y+depth_constraint) ||
 						(ind_init_y+depth_constraint<ind_y)) break;
 					t_max_y+=t_delta_y;
 					mtr_indx+=yl_num;
@@ -1558,7 +1558,7 @@ void RendererOMP::SelectPoints_by_click (const int x, const int y, const unsigne
 				else
 				{
 					ind_z+=ind_step_z;
-					if ((ind_z>=z_num) || (ind_z<0) || (ind_init_z>ind_z+depth_constraint) || 
+					if ((ind_z>=z_num) || (ind_z<0) || (ind_init_z>ind_z+depth_constraint) ||
 						(ind_init_z+depth_constraint<ind_z)) break;
 					t_max_z+=t_delta_z;
 					mtr_indx+=xy_num;
@@ -1622,7 +1622,7 @@ void RendererOMP::SelectPoints_by_click (const int x, const int y, const unsigne
 	}
 }
 
-bool RendererOMP::SelectPoints_last_phase (const int x, const int y, Coords &pos, 
+bool RendererOMP::SelectPoints_last_phase (const int x, const int y, Coords &pos,
 										   const unsigned short *const clr_matrix) {
 	/* see original algorithm in 6 functions above */
 
@@ -1645,8 +1645,8 @@ bool RendererOMP::SelectPoints_last_phase (const int x, const int y, Coords &pos
 
 	float r_p_div_p_st_x,r_p_div_p_st_y,r_p_div_p_st_z;
 
-	if ((ray_pos_const_x>h_sizes_x) || (ray_pos_const_x<-h_sizes_x) || 
-		(ray_pos_const_y>h_sizes_y) || (ray_pos_const_y<-h_sizes_y) || 
+	if ((ray_pos_const_x>h_sizes_x) || (ray_pos_const_x<-h_sizes_x) ||
+		(ray_pos_const_y>h_sizes_y) || (ray_pos_const_y<-h_sizes_y) ||
 		(ray_pos_const_z>h_sizes_z) || (ray_pos_const_z<-h_sizes_z))
 	{
 		float ttime=FLT_MAX,t,coord;
@@ -1840,8 +1840,8 @@ void RendererOMP::BuildSelectionCube (const float ray_pos_x, const float ray_pos
 
 	/* determine visibility of 8 corner points of selection cube (5 big steps below) */
 
-	if ((to_centre_x<=point_step+point_step) && (point_step<=to_centre_x) && 
-		(to_centre_y<=point_step+point_step) && (point_step<=to_centre_y) && 
+	if ((to_centre_x<=point_step+point_step) && (point_step<=to_centre_x) &&
+		(to_centre_y<=point_step+point_step) && (point_step<=to_centre_y) &&
 		(to_centre_z<=point_step+point_step) && (point_step<=to_centre_z))
 	// 'ray_pos' is inside the cube - assume the whole cube invisible
 	return;
@@ -1851,7 +1851,7 @@ void RendererOMP::BuildSelectionCube (const float ray_pos_x, const float ray_pos
 	float a,b,c,d,e,f=-1.5f*point_step,mlt;
 	bool hit=false;
 
-	/* STEP 1: transform centre of selected "point" into screen coordinates 
+	/* STEP 1: transform centre of selected "point" into screen coordinates
 	           ('d' will be (j-img_w/2), 'e' will be (i-img_h/2)) */
 	a=(to_centre_x+f)*oz_y-(to_centre_z+f)*ox_y;
 	b=(to_centre_x+f)*oy_x-(to_centre_y+f)*ox_x;
@@ -1997,15 +1997,15 @@ void RendererOMP::BuildSelectionCube (const float ray_pos_x, const float ray_pos
 		to_centre_z+=point_step;
 	}
 
-	/* one point belongs to 3 faces; 
-	   maximum of 3 faces are visible simultaneously in a cube from 'ray_pos'; 
-	   the nearest point found above must belong to all these faces (I don't know how to prove this); 
-	   but one of these faces can make another invisible. 
+	/* one point belongs to 3 faces;
+	   maximum of 3 faces are visible simultaneously in a cube from 'ray_pos';
+	   the nearest point found above must belong to all these faces (I don't know how to prove this);
+	   but one of these faces can make another invisible.
 	   STEP 4: Let's check it */
 	char faces[3]; // possibly visible faces
 	bool vis[3]={true,true,true}; // indicator of visibility
 
-	/* numbering of faces: 
+	/* numbering of faces:
 	   0 - all 4 points have "near" z-coordinate,
 	   1 - all 4 points have "bottom" y-coordinate,
 	   2 - all 4 points have "left" x-coordinate,
@@ -2119,7 +2119,7 @@ void RendererOMP::BuildSelectionCube (const float ray_pos_x, const float ray_pos
 		}
 	}
 
-	/* STEP 5: visible faces were found; so all other faces are invisible. 
+	/* STEP 5: visible faces were found; so all other faces are invisible.
 	           If a face is visible than all its 4 points are visible */
 	for (ind=0; ind<3; ++ind)
 	{

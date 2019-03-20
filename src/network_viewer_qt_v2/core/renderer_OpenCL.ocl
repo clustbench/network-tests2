@@ -27,7 +27,7 @@
    I haven't got any speedup yet by using images. */
 
 
-/* this function finds intersection between the ray and the bounding box and 
+/* this function finds intersection between the ray and the bounding box and
    returns 't' parameter of the ray; if there is no intersection then FLT_MAX is returned */
 inline float IntersectBB (const float3 ray_dir, const float3 ray_pos_const, const float3 h_sizes)
 {
@@ -71,8 +71,8 @@ inline float IntersectBB (const float3 ray_dir, const float3 ray_pos_const, cons
 
 
 /* main render function ("points" are represented as cubes) */
-__kernel void RenderBox_cubes (const float16 data, const int3 num, const uint depth_constraint, 
-							   __global const ushort *clr_matrix, 
+__kernel void RenderBox_cubes (const float16 data, const int3 num, const uint depth_constraint,
+							   __global const ushort *clr_matrix,
 							   __global uint *pixels/*__write_only image2d_t pixels*/)
 {
 	GET_SIZES_AND_INDICES
@@ -171,15 +171,15 @@ __kernel void RenderBox_cubes (const float16 data, const int3 num, const uint de
 		}
 	}
 
-	pixels[t_id.y*img_w+t_id.x]=0xff000000 | (((uint)trunc(main_color.x+0.5f))<<8u) | 
+	pixels[t_id.y*img_w+t_id.x]=0xff000000 | (((uint)trunc(main_color.x+0.5f))<<8u) |
 											 (((uint)trunc(main_color.y+0.5f))<<16u);
 	//write_imageui(pixels,t_id,(uint4)(0,(uint)trunc(main_color.x+0.5f),(uint)trunc(main_color.y+0.5f),0xff));
 }
 
 
 /* main render function ("points" are represented as spheres) */
-__kernel void RenderBox_spheres (const float16 data, const int3 num, const uint depth_constraint, 
-								 __global const ushort *clr_matrix, 
+__kernel void RenderBox_spheres (const float16 data, const int3 num, const uint depth_constraint,
+								 __global const ushort *clr_matrix,
 								 __global uint *pixels/*__write_only image2d_t pixels*/)
 {
 	GET_SIZES_AND_INDICES
@@ -293,16 +293,16 @@ __kernel void RenderBox_spheres (const float16 data, const int3 num, const uint 
 		}
 	}
 
-	pixels[t_id.y*img_w+t_id.x]=0xff000000 | (((uint)trunc(main_color.x+0.5f))<<8u) | 
+	pixels[t_id.y*img_w+t_id.x]=0xff000000 | (((uint)trunc(main_color.x+0.5f))<<8u) |
 											 (((uint)trunc(main_color.y+0.5f))<<16u);
 	//write_imageui(pixels,t_id,(uint4)(0,(uint)trunc(main_color.x+0.5f),(uint)trunc(main_color.y+0.5f),0xff));
 }
 
 
-/* main render function ("points" are represented as so called "lights" 
+/* main render function ("points" are represented as so called "lights"
    ("lights" are spheres but their intensity descends from centre to border)) */
-__kernel void RenderBox_lights (const float16 data, const int3 num, const uint depth_constraint, 
-								__global const ushort *clr_matrix, 
+__kernel void RenderBox_lights (const float16 data, const int3 num, const uint depth_constraint,
+								__global const ushort *clr_matrix,
 								__global uint *pixels/*__write_only image2d_t pixels*/)
 {
 	GET_SIZES_AND_INDICES
@@ -419,15 +419,15 @@ __kernel void RenderBox_lights (const float16 data, const int3 num, const uint d
 		}
 	}
 
-	pixels[t_id.y*img_w+t_id.x]=0xff000000 | (((uint)trunc(main_color.x+0.5f))<<8u) | 
+	pixels[t_id.y*img_w+t_id.x]=0xff000000 | (((uint)trunc(main_color.x+0.5f))<<8u) |
 											 (((uint)trunc(main_color.y+0.5f))<<16u);
 	//write_imageui(pixels,t_id,(uint4)(0,(uint)trunc(main_color.x+0.5f),(uint)trunc(main_color.y+0.5f),0xff));
 }
 
 
 /* main render function (builds a volume; "points" are represented as cubes) */
-__kernel void RenderBox_cubes_vol (const float16 data, const int3 num, const uchar4 clr_minmax, 
-								   __global const ushort *clr_matrix, 
+__kernel void RenderBox_cubes_vol (const float16 data, const int3 num, const uchar4 clr_minmax,
+								   __global const ushort *clr_matrix,
 								   __global uint *pixels/*__write_only image2d_t pixels*/)
 {
 	GET_SIZES_AND_INDICES
@@ -538,7 +538,7 @@ __kernel void RenderBox_cubes_vol (const float16 data, const int3 num, const uch
 	}
 	else
 	{
-		pixels[t_id.y*img_w+t_id.x]=0xff000000 | (((uint)trunc(main_color.x+0.5f))<<8u) | 
+		pixels[t_id.y*img_w+t_id.x]=0xff000000 | (((uint)trunc(main_color.x+0.5f))<<8u) |
 												 (((uint)trunc(main_color.y+0.5f))<<16u);
 		//write_imageui(pixels,t_id,(uint4)(0,(uint)trunc(main_color.x+0.5f),(uint)trunc(main_color.y+0.5f),0xff));
 	}
@@ -546,8 +546,8 @@ __kernel void RenderBox_cubes_vol (const float16 data, const int3 num, const uch
 
 
 /* main render function (builds a volume; "points" are represented as spheres) */
-__kernel void RenderBox_spheres_vol (const float16 data, const int3 num, const uchar4 clr_minmax, 
-									 __global const ushort *clr_matrix, 
+__kernel void RenderBox_spheres_vol (const float16 data, const int3 num, const uchar4 clr_minmax,
+									 __global const ushort *clr_matrix,
 									 __global uint *pixels/*__write_only image2d_t pixels*/)
 {
 	GET_SIZES_AND_INDICES
@@ -671,17 +671,17 @@ __kernel void RenderBox_spheres_vol (const float16 data, const int3 num, const u
 	}
 	else
 	{
-		pixels[t_id.y*img_w+t_id.x]=0xff000000 | (((uint)trunc(main_color.x+0.5f))<<8u) | 
+		pixels[t_id.y*img_w+t_id.x]=0xff000000 | (((uint)trunc(main_color.x+0.5f))<<8u) |
 												 (((uint)trunc(main_color.y+0.5f))<<16u);
 		//write_imageui(pixels,t_id,(uint4)(0,(uint)trunc(main_color.x+0.5f),(uint)trunc(main_color.y+0.5f),0xff));
 	}
 }
 
 
-/* main render function (builds a volume; "points" are represented as so called "lights" 
+/* main render function (builds a volume; "points" are represented as so called "lights"
    ("lights" are spheres but their intensity descends from centre to border)) */
-__kernel void RenderBox_lights_vol (const float16 data, const int3 num, const uchar4 clr_minmax, 
-									__global const ushort *clr_matrix, 
+__kernel void RenderBox_lights_vol (const float16 data, const int3 num, const uchar4 clr_minmax,
+									__global const ushort *clr_matrix,
 									__global uint *pixels/*__write_only image2d_t pixels*/)
 {
 	GET_SIZES_AND_INDICES
@@ -808,7 +808,7 @@ __kernel void RenderBox_lights_vol (const float16 data, const int3 num, const uc
 	}
 	else
 	{
-		pixels[t_id.y*img_w+t_id.x]=0xff000000 | (((uint)trunc(main_color.x+0.5f))<<8u) | 
+		pixels[t_id.y*img_w+t_id.x]=0xff000000 | (((uint)trunc(main_color.x+0.5f))<<8u) |
 												 (((uint)trunc(main_color.y+0.5f))<<16u);
 		//write_imageui(pixels,t_id,(uint4)(0,(uint)trunc(main_color.x+0.5f),(uint)trunc(main_color.y+0.5f),0xff));
 	}

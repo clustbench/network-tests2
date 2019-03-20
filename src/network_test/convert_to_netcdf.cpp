@@ -1,12 +1,12 @@
 /*
  *  This file is a part of the PARUS project.
  *  Copyright (C) 2006  Alexey N. Salnikov
- *  
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -15,15 +15,13 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Alexey N. Salnikov (salnikov@cmc.msu.ru)
  *
  */
 
 #include <stdlib.h>
 #include <string.h>
-
-//#include <netcdfcpp.h>
 
 #include "my_time.h"
 #include "string_id_converters.h"
@@ -41,12 +39,10 @@
 
 int main(int argc, char** argv)
 {
-   struct network_test_parameters_struct test_parameters;
-   
+    struct network_test_parameters_struct test_parameters;
+
     if (argc < 3)
-    {
         printf("Use: convert_to_netcdf <inputfile_path> <outputfile_path>");
-    }
 
     Network_speed test_data;
 
@@ -54,13 +50,13 @@ int main(int argc, char** argv)
     int netcdf_file;
     int netcdf_var;
 
-    
+
     test_data.fread(file_name);
 
     if ( test_data.is_no_file( ) || test_data.is_processor_info( ) )
     {
         printf( "Bad file. No test parameters info.\n" );
-	    return 1;
+        return 1;
     }
 
 
@@ -95,7 +91,7 @@ int main(int argc, char** argv)
 
         if(create_test_hosts_file(&test_parameters,test_data.get_host_names()))
         {
-             printf("Can not to create file with name \"%s_hosts.txt\"\n",test_parameters.file_name_prefix);                
+             printf("Can not to create file with name \"%s_hosts.txt\"\n",test_parameters.file_name_prefix);
              return 1;
         }
 
@@ -113,12 +109,11 @@ int main(int argc, char** argv)
              {
                 printf("Sorry. write matrix to netCDF filed\n");
                 return 1;
-             }             
+             }
         }
-    
+
         netcdf_close_file(netcdf_file);
         printf("Done\n");
 
         return 0;
 }
-
