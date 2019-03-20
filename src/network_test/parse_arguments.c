@@ -9,7 +9,7 @@
 #include <stdlib.h>
 
 #include "types.h"
-#include "parus_config.h"
+#include "../../parus_config.h"
 #include "string_id_converters.h"
 
 #define MESSAGE_BEGIN_LENGTH 0

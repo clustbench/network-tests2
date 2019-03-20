@@ -1,4 +1,4 @@
-/*
+/*f
  *  This file is a part of the PARUS project.
  *  Copyright (C) 2006  Alexey N. Salnikov
  *
@@ -8,7 +8,6 @@
  * version 2.1 of the License, or (at your option) any later version.
  *
  * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
@@ -38,7 +37,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdio.h>
-#include "dlfcn.h"
 
 
 #ifdef _GNU_SOURCE
@@ -59,20 +57,21 @@
 #include "tests_common.h"
 #include "parse_arguments.h"
 
-int comm_size;
-int comm_rank;
-
-
+/*
+ * This variables is available as
+ * extern from tests_common.h
+ * Do not panic! 
+ *
+ * int comm_size;
+ * int comm_rank;
+ */
 
 int main(int argc,char **argv)
 {
     MPI_Status status;
 
-    Test_time_result_type *times=NULL; /* old px_my_time_type *times=NULL;*/
+    Test_time_result_type *times=NULL;
 
-	void *handle;
-    void (*func_print_name)(Test_time_result_type*, int,int);
-	void (*func1)(Test_time_result_type*, int,int,int,int,int);
     /*
      * The structure with network_test parameters.
      */
@@ -138,7 +137,7 @@ int main(int argc,char **argv)
 
 
     int tmp_mes_size;
-
+	int c;
     /*Variables for MPI struct datatype creating*/
     MPI_Datatype struct_types[4]= {MPI_DOUBLE,MPI_DOUBLE,MPI_DOUBLE,MPI_DOUBLE};
     MPI_Datatype MPI_My_time_struct;
@@ -240,21 +239,21 @@ int main(int argc,char **argv)
             MPI_Abort(MPI_COMM_WORLD,-1);
             return -1;
         }
-
-        if(create_netcdf_header(AVERAGE_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_av,&netcdf_var_av))
+	
+        if((c=create_netcdf_header(AVERAGE_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_av,&netcdf_var_av))<0)
         {
-            printf("Can not to create file with name \"%s_average.nc\"\n",test_parameters.file_name_prefix);
+            printf("Can not to create file with name \"%s_average.nc\"\n %d\n",test_parameters.file_name_prefix,c);
             MPI_Abort(MPI_COMM_WORLD,-1);
             return -1;
         }
-
+	
         if(create_netcdf_header(MEDIAN_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_me,&netcdf_var_me))
         {
             printf("Can not to create file with name \"%s_median.nc\"\n",test_parameters.file_name_prefix);
             MPI_Abort(MPI_COMM_WORLD,-1);
             return -1;
         }
-
+	
         if(create_netcdf_header(DEVIATION_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_di,&netcdf_var_di))
         {
             printf("Can not to create file with name \"%s_deviation.nc\"\n",test_parameters.file_name_prefix);
@@ -353,55 +352,16 @@ int main(int argc,char **argv)
     {
         if(test_parameters.test_type==ALL_TO_ALL_TEST_TYPE)
         {
-		handle = dlopen("./liball.so", RTLD_LAZY);
-		if (!handle) {
-			fprintf(stderr, "Error: %s\n", dlerror());
-        		return EXIT_FAILURE;
-    		}
-		*(void**)(&func_print_name) = dlsym(handle, "all_to_all");
-		if (!func_print_name) {
-        		/* no such symbol */
-        		fprintf(stderr, "Error: %s\n", dlerror());
-        		dlclose(handle);
-        		return EXIT_FAILURE;
-    		}
-		func_print_name(times,tmp_mes_size,test_parameters.num_repeats);
-            //all_to_all(times,tmp_mes_size,test_parameters.num_repeats);
+            all_to_all(times,tmp_mes_size,test_parameters.num_repeats);
         }
         if(test_parameters.test_type==BCAST_TEST_TYPE)
         {
-		handle = dlopen("./libcast2.so", RTLD_LAZY);
-		if (!handle) {
-			fprintf(stderr, "Error: %s\n", dlerror());
-        		return EXIT_FAILURE;
-    		}
-		*(void**)(&func_print_name) = dlsym(handle, "bcast");
-		if (!func_print_name) {
-        		/* no such symbol */
-        		fprintf(stderr, "Error: %s\n", dlerror());
-        		dlclose(handle);
-        		return EXIT_FAILURE;
-    		}
-		func_print_name(times,tmp_mes_size,test_parameters.num_repeats);
-            //bcast(times,tmp_mes_size,test_parameters.num_repeats);
+            bcast(times,tmp_mes_size,test_parameters.num_repeats);
         }
 
         if(test_parameters.test_type==NOISE_BLOCKING_TEST_TYPE)
         {
-		handle = dlopen("./libnoisecommon.so", RTLD_LAZY);
-		if (!handle) {
-			fprintf(stderr, "Error: %s\n", dlerror());
-        		return EXIT_FAILURE;
-    		}
-		*(void**)(&func1) = dlsym(handle, "test_noise_blocking");
-		if (!func_print_name) {
-        		/* no such symbol */
-        		fprintf(stderr, "Error: %s\n", dlerror());
-        		dlclose(handle);
-        		return EXIT_FAILURE;
-    		}
-                //test_noise_blocking
-		func1
+                test_noise_blocking
 		(
 		 	times,
 		    	tmp_mes_size,
@@ -414,20 +374,7 @@ int main(int argc,char **argv)
 
         if(test_parameters.test_type==NOISE_TEST_TYPE)
         {
-		handle = dlopen("./libnoise.so", RTLD_LAZY);
-		if (!handle) {
-			fprintf(stderr, "Error: %s\n", dlerror());
-        		return EXIT_FAILURE;
-    		}
-		*(void**)(&func1) = dlsym(handle, "test_noise");
-		if (!func_print_name) {
-        		/* no such symbol */
-        		fprintf(stderr, "Error: %s\n", dlerror());
-        		dlclose(handle);
-        		return EXIT_FAILURE;
-    		}
-            		//test_noise
-			func1
+            		test_noise
 			(
 			 	times,
 				tmp_mes_size,
@@ -440,56 +387,17 @@ int main(int argc,char **argv)
 
         if(test_parameters.test_type==ONE_TO_ONE_TEST_TYPE)
         {
-		handle = dlopen("./libone.so", RTLD_LAZY);
-		if (!handle) {
-			fprintf(stderr, "Error: %s\n", dlerror());
-        		return EXIT_FAILURE;
-    		}
-		*(void**)(&func_print_name) = dlsym(handle, "one_to_one");
-		if (!func_print_name) {
-        		fprintf(stderr, "Error: %s\n", dlerror());
-        		dlclose(handle);
-        		return EXIT_FAILURE;
-    		}
-		func_print_name(times,tmp_mes_size,test_parameters.num_repeats);
-		//one_to_one(times,tmp_mes_size, test_parameters.num_repeats);
-            //one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
+            one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
         } /* end one_to_one */
 
         if(test_parameters.test_type==ASYNC_ONE_TO_ONE_TEST_TYPE)
         {
-		handle = dlopen("./libasync.so", RTLD_LAZY);
-		if (!handle) {
-			fprintf(stderr, "Error: %s\n", dlerror());
-        		return EXIT_FAILURE;
-    		}
-		*(void**)(&func_print_name) = dlsym(handle, "async_one_to_one");
-		if (!func_print_name) {
-        		/* no such symbol */
-        		fprintf(stderr, "Error: %s\n", dlerror());
-        		dlclose(handle);
-        		return EXIT_FAILURE;
-    		}
-		func_print_name(times,tmp_mes_size,test_parameters.num_repeats);
-            //async_one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
+            async_one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
         } /* end async_one_to_one */
 
         if(test_parameters.test_type==SEND_RECV_AND_RECV_SEND_TEST_TYPE)
         {
-		handle = dlopen("./libsend.so", RTLD_LAZY);
-		if (!handle) {
-			fprintf(stderr, "Error: %s\n", dlerror());
-        		return EXIT_FAILURE;
-    		}
-		*(void**)(&func_print_name) = dlsym(handle, "send_recv_and_recv_send");
-		if (!func_print_name) {
-        		/* no such symbol */
-        		fprintf(stderr, "Error: %s\n", dlerror());
-        		dlclose(handle);
-        		return EXIT_FAILURE;
-    		}
-		func_print_name(times,tmp_mes_size,test_parameters.num_repeats);
-            //send_recv_and_recv_send(times,tmp_mes_size,test_parameters.num_repeats);
+            send_recv_and_recv_send(times,tmp_mes_size,test_parameters.num_repeats);
         } /* end send_recv_and_recv_send */
 
 
@@ -497,38 +405,12 @@ int main(int argc,char **argv)
 
         if(test_parameters.test_type==PUT_ONE_TO_ONE_TEST_TYPE)
         {
-		handle = dlopen("./libput.so", RTLD_LAZY);
-		if (!handle) {
-			fprintf(stderr, "Error: %s\n", dlerror());
-        		return EXIT_FAILURE;
-    		}
-		*(void**)(&func_print_name) = dlsym(handle, "put_one_to_one");
-		if (!func_print_name) {
-        		/* no such symbol */
-        		fprintf(stderr, "Error: %s\n", dlerror());
-        		dlclose(handle);
-        		return EXIT_FAILURE;
-    		}
-		func_print_name(times,tmp_mes_size,test_parameters.num_repeats);
-		//put_one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
+		put_one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
         } /* end put_one_to_one */
 
         if(test_parameters.test_type==GET_ONE_TO_ONE_TEST_TYPE)
         {
-		handle = dlopen("./libget.so", RTLD_LAZY);
-		if (!handle) {
-			fprintf(stderr, "Error: %s\n", dlerror());
-        		return EXIT_FAILURE;
-    		}
-		*(void**)(&func_print_name) = dlsym(handle, "get_one_to_one");
-		if (!func_print_name) {
-        		/* no such symbol */
-        		fprintf(stderr, "Error: %s\n", dlerror());
-        		dlclose(handle);
-        		return EXIT_FAILURE;
-    		}
-		func_print_name(times,tmp_mes_size,test_parameters.num_repeats);
-		//get_one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
+		get_one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
         } /* end get_one_to_one */
 
 
@@ -639,4 +521,8 @@ int main(int argc,char **argv)
     MPI_Finalize();
     return 0;
 } /* main finished */
+
+
+
+
 
