@@ -239,9 +239,9 @@ int random_choice( int proc1, int proc2, int num_processors, int* processors )
 	
 	Line_dynamic_array<ID> free_processors;
 
-	/*
-	 * Check for boundaries
-	 * /
+	
+	 //* Check for boundaries
+	 
 	if(
 		( comm_size <= 2 ) ||
 		( num_processors <= 0 ) ||
@@ -272,9 +272,9 @@ int random_choice( int proc1, int proc2, int num_processors, int* processors )
 		free_processors.delete_element(number_in_dynamic_array);
 	}
 
-	/*
-	 r = (int)( rand( ) * double( comm_size - 2 - i ) / ( RAND_MAX + 1. ) );
-	 * /
+	
+	 //r = (int)( rand( ) * double( comm_size - 2 - i ) / ( RAND_MAX + 1. ) );
+	 
 	return 1;
 }
 */
@@ -329,9 +329,9 @@ int init_mode_array(int proc1,int proc2,int num_noise_procs,int num_all_procs,in
 	mode_array[proc1]=MODE_GOAL_MESSAGES;
 	mode_array[proc2]=MODE_GOAL_MESSAGES;
 
-	/*
+	
 
-	if(!random_choice(proc1,proc2, num_noise_procs,noise_procs))
+/*	if(!random_choice(proc1,proc2, num_noise_procs,noise_procs))
 	{
 		return -2;
 	}
@@ -339,8 +339,8 @@ int init_mode_array(int proc1,int proc2,int num_noise_procs,int num_all_procs,in
 	for(i=0;i<num_noise_procs;i++)
 	{
 		mode_array[noise_procs[i]]=MODE_NOISE_MESSAGES;
-	}
-	*/
+	}*/
+	
 	
 	if(
 		( num_all_procs <= 2 ) ||

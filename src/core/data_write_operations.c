@@ -30,7 +30,7 @@ int create_netcdf_header(
     int d;
     
     int retval;
-	char str[20];
+	char str[25];
 	char *file_name = NULL;
 	size_t tx_start[TDIMS];
      	size_t tx_count[TDIMS];

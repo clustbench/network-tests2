@@ -388,7 +388,7 @@ int main(int argc,char **argv)
 
         if(test_parameters.test_type==NOISE_BLOCKING_TEST_TYPE)
         {
-		handle = dlopen("./libnoisecommon.so", RTLD_LAZY);
+		handle = dlopen("./libnoiseblocking.so", RTLD_LAZY);
 		if (!handle) {
 			fprintf(stderr, "Error: %s\n", dlerror());
         		return EXIT_FAILURE;

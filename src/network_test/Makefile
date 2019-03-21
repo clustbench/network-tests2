@@ -34,7 +34,7 @@ FILES_PRINT_FROM_TO=\
 
 #-lall -lasync -lput -lget -lcast2 -lnoiseblocking -lnoise -lnoisecommon -lsend -lone
 
-all: liball.so libasync.so libput.so libget.so libcast2.so libnoiseblocking.so libnoise.so libnoisecommon.so libsend.so libone.so network_test2 print_from_to convert_to_netcdf
+all: liball.so libasync.so libput.so libget.so libcast2.so libnoiseblocking.so libnoise.so libsend.so libone.so network_test2 print_from_to convert_to_netcdf
 
 libput.so:  put2.o parse_arguments.o tests_common.o 
 	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -shared -L ../core/*.o put2.o tests_common.o -o libput.so
@@ -56,21 +56,19 @@ bcast2.o: bcast2.c
 	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -I ../core -c -fPIC bcast2.c -o bcast2.o
 
 
-libnoiseblocking.so:  test_noise_blocking2.o parse_arguments.o tests_common.o 
-	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -shared -L ../core/*.o test_noise_blocking2.o tests_common.o -o libnoiseblocking.so
+libnoiseblocking.so:  test_noise_blocking2.o parse_arguments.o tests_common.o noisecommon.o
+	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -shared -L ../core/*.o noisecommon.o test_noise_blocking2.o tests_common.o -o libnoiseblocking.so
 
 test_noise_blocking2.o: test_noise_blocking2.c
 	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -I ../core -c -fPIC test_noise_blocking2.c -o test_noise_blocking2.o
 
 
-libnoise.so:  test_noise2.o parse_arguments.o tests_common.o 
-	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -shared -L ../core/*.o test_noise2.o tests_common.o -o libnoise.so
+libnoise.so:  test_noise2.o parse_arguments.o tests_common.o noisecommon.o
+	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -shared -L ../core/*.o noisecommon.o test_noise2.o tests_common.o -o libnoise.so
 
 test_noise2.o: test_noise2.c
 	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -I ../core -c -fPIC test_noise2.c -o test_noise2.o
 
-libnoisecommon.so:  noisecommon.o parse_arguments.o tests_common.o 
-	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -shared -L ../core/*.o noisecommon.o tests_common.o -o libnoisecommon.so
 
 noisecommon.o: test_noise_common.c
 	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -I ../core -c -fPIC test_noise_common.c -o noisecommon.o
@@ -101,7 +99,7 @@ libasync.so:  async.o parse_arguments.o tests_common.o
 async.o: async_one_to_one2.c
 	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -I ../core -c -fPIC async_one_to_one2.c -o async.o
 
-network_test2: parse_arguments.o tests_common.o network_test2.o liball.so libasync.so libput.so libget.so libcast2.so libnoiseblocking.so libnoise.so libnoisecommon.so libsend.so libone.so
+network_test2: parse_arguments.o tests_common.o network_test2.o liball.so libasync.so libput.so libget.so libcast2.so libnoiseblocking.so libnoise.so libsend.so libone.so
 	$(MPI_CXX) $(MPI_CXX_FLAGS) $(MPI_CXX_INCLUDE) $(MPI_LIB_PATH) $(NETCDF_INCLUDE) -rdynamic -o network_test2 network_test2.o parse_arguments.o tests_common.o ../core/*.o -ldl $(MPI_LIBS) -lm
 
 network_test.o: network_test2.c

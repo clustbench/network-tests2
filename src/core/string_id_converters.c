@@ -62,7 +62,7 @@ int get_test_type_name(int test_type,char *str)
         strcpy(str,"all_to_all");
         break;
     case SEND_RECV_AND_RECV_SEND_TEST_TYPE:
-        strcpy(str,"send_recv_end_recv_send");
+        strcpy(str,"send_recv_and_recv_send");
         break;
     case NOISE_TEST_TYPE:
         strcpy(str,"noise");
