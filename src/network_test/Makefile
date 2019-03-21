@@ -81,7 +81,7 @@ send.o: send_recv_and_recv_send2.c
 
 
 libone.so:  one.o parse_arguments.o tests_common.o 
-	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -shared ../core/*.o one.o tests_common.o -o libone.so
+	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -shared -L ../core/*.o one.o tests_common.o -o libone.so
 
 one.o: one_to_one2.c
 	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -I ../core -c -fPIC one_to_one2.c -o one.o
