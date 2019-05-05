@@ -43,6 +43,10 @@ int get_test_type(const char *str)
         return PUT_ONE_TO_ONE_TEST_TYPE;
     if(!strcmp(str,"get"))
         return GET_ONE_TO_ONE_TEST_TYPE;
+    if(!strcmp(str,"one_to_one_cuda"))
+        return ONE_TO_ONE_CUDA_TEST_TYPE;
+    if(!strcmp(str,"all_to_all_cuda"))
+        return ALL_TO_ALL_CUDA_TEST_TYPE;
     return UNKNOWN_TEST_TYPE;
 }
 
@@ -77,6 +81,12 @@ int get_test_type_name(int test_type,char *str)
         break;
     case PUT_ONE_TO_ONE_TEST_TYPE:
         strcpy(str,"put");
+        break;
+    case ONE_TO_ONE_CUDA_TEST_TYPE:
+        strcpy(str,"one_to_one_cuda");
+        break;
+    case ALL_TO_ALL_CUDA_TEST_TYPE:
+        strcpy(str,"all_to_all_cuda");
         break;
     default:
         strcpy(str,"unknown");

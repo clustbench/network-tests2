@@ -40,6 +40,8 @@ FILES_TEST2=\
 	bcast2.o\
 	get2.o\
 	put2.o\
+    one_to_one_cuda_normal.o\
+    all_to_all_cuda_normal.o\
 	parse_arguments.o
 
 FILES_PRINT_FROM_TO=\

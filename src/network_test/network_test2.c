@@ -119,8 +119,6 @@ int main(int argc,char **argv)
 
     int* gpu_count;
 
-
-
     int flag;
 	
 	/*
@@ -182,8 +180,7 @@ int main(int argc,char **argv)
         }
     } /* End if(rank==0) */
 
-    int cur_gpu_count;
-
+    int cur_gpu_count = 0;
 
     if ( test_parameters.test_type == ONE_TO_ONE_CUDA_TEST_TYPE || test_parameters.test_type == ALL_TO_ALL_CUDA_TEST_TYPE ) 
     {
@@ -197,8 +194,17 @@ int main(int argc,char **argv)
             for ( i = 1; i < comm_size; i++ )
                 MPI_Recv( ( gpu_count + i ), 1, MPI_INT, i, 0, MPI_COMM_WORLD, &status);
             gpu_count[0] = cur_gpu_count;
+            int total_gpu = 0;
             for ( i = 0; i < comm_size; i++ )
-                printf("%d has %d GPUs", i, gpu_count[i])
+            {
+                total_gpu += gpu_count[i];
+                printf( "%d has %d GPUs", i, gpu_count[i] );
+            }
+            host_names = ( char** )malloc( sizeof( char* ) * total_gpu );
+            for ( i = 0; i < comm_size; i++ )
+            {
+                host_names[i] = ( char* )malloc( sizeof( char ) * 256 );
+            }
         }
         else
         {
@@ -211,15 +217,58 @@ int main(int argc,char **argv)
      */
     gethostname( host_name, 255 );
 
+    char** gpu_names;
+
+    gpu_names = ( char** )malloc( sizeof( char* ) * cur_gpu_count );
+    for ( i = 0 ; i < cur_gpu_count; i++ )
+        gpu_names[i] = ( char* )malloc( sizeof( char* ) * 256 );
+
     if ( comm_rank == 0 )
     {
-        for ( i = 1; i < comm_size; i++ )
-            MPI_Recv( host_names[i], 256, MPI_CHAR, i, 200, MPI_COMM_WORLD, &status );
-        strcpy(host_names[0],host_name);
+        if ( test_parameters.test_type == ONE_TO_ONE_CUDA_TEST_TYPE || test_parameters.test_type == ALL_TO_ALL_CUDA_TEST_TYPE ) 
+        { 
+            int stride = cur_gpu_count;
+            for ( i = 1; i < comm_size; i++ )
+            {
+                for ( j = 0; j < gpu_count[i]; j++ )
+                    MPI_Recv( host_names[stride + j], 256, MPI_CHAR, i, 200, MPI_COMM_WORLD, &status );
+                stride += gpu_count[i];
+            }
+            for ( i = 0; i < cur_gpu_count; i++ )
+            {
+                struct cudaDeviceProp props;
+                cudaGetDeviceProperties( &props, i );
+                strcpy(gpu_names[i], host_name);
+                strcat(gpu_names[i], props.name);
+                strcpy(host_names[0], gpu_names[i]);
+            }
+        }
+
+        else 
+        {
+            for ( i = 1; i < comm_size; i++ )
+                MPI_Recv( host_names[i], 256, MPI_CHAR, i, 200, MPI_COMM_WORLD, &status );
+            strcpy(host_names[0],host_name);
+        }
     }
     else
     {
-        MPI_Send( host_name, 256, MPI_CHAR, 0, 200, MPI_COMM_WORLD );
+        if ( test_parameters.test_type == ONE_TO_ONE_CUDA_TEST_TYPE || test_parameters.test_type == ALL_TO_ALL_CUDA_TEST_TYPE ) 
+        { 
+            for ( i = 0; i < cur_gpu_count; i++ )
+            {
+                struct cudaDeviceProp props;
+                cudaGetDeviceProperties( &props, i );
+                strcpy(gpu_names[i], host_name);
+                strcat(gpu_names[i], props.name);
+            }
+            for ( i = 0; i < cur_gpu_count; i++ )
+            {
+                MPI_Send(gpu_names[i], 256, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
+            }
+        }
+        else 
+            MPI_Send( host_name, 256, MPI_CHAR, 0, 200, MPI_COMM_WORLD );
     }
 
     /*
@@ -435,6 +484,16 @@ int main(int argc,char **argv)
         {
 		get_one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
         } /* end get_one_to_one */
+
+        if( test_parameters.test_type==ALL_TO_ALL_CUDA_TEST_TYPE )
+        {
+            all_to_all_cuda(times, tmp_mes_size, test_parameters.num_repeats);
+        }
+        
+        if( test_parameters.test_type==ONE_TO_ONE_CUDA_TEST_TYPE )
+        {
+            one_to_one_cuda(times, tmp_mes_size, test_parameters.num_repeats);
+        }
 
 
         MPI_Barrier(MPI_COMM_WORLD);
