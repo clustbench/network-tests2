@@ -45,19 +45,22 @@ FILES_TEST2=\
 FILES_PRINT_FROM_TO=\
 	print_from_to.o
 
+CUDACFLAGS=-I${CUDA_INSTALL_PATH}/include
+CUDALDFLAGS=-L${CUDA_INSTALL_PATH}/lib64 -lcudart
+
 EXECS= print_from_to convert_to_netcdf network_test2
 
 all: $(EXECS)
 
 network_test2: $(FILES_TEST2) $(FILES_COMMON)
-	$(MPI_CCLINKER) $(MPI_CCLINKER_FLAGS) $(MPI_LIB_PATH) $(NETCDF_INCLUDE) -L ../core -o network_test2 $(FILES_COMMON) $(FILES_TEST2) $(MPI_LIBS) -lparus_network  -lnetcdf -lm
+	$(MPI_CCLINKER) $(MPI_CCLINKER_FLAGS) $(MPI_LIB_PATH) $(NETCDF_INCLUDE) -L ../core -o network_test2 $(FILES_COMMON) $(FILES_TEST2) $(MPI_LIBS) $(CUDALDFLAGS) -lparus_network  -lnetcdf -lm
 
 
 print_from_to: $(FILES_PRINT_FROM_TO)
 	$(CXXLINKER) $(CXXLINKER_FLAGS) $(MPI_LIB_PATH) $(NETCDF_INCLUDE) -L ../core -o print_from_to $(FILES_PRINT_FROM_TO) $(MPI_LIBS) -lnetcdf
 
 convert_to_netcdf: convert_to_netcdf.o $(FILES_COMMON)
-	$(MPI_CXXLINKER) $(MPI_CXXLINKER_FLAGS) $(MPI_LIB_PATH) -L ../core -o  convert_to_netcdf convert_to_netcdf.o ../core/string_id_converters.o  $(FILES_COMMON) $(MPI_LIBS) -lparus_network -lnetcdf
+	$(MPI_CXXLINKER) $(MPI_CXXLINKER_FLAGS) $(MPI_LIB_PATH) -L ../core -o  convert_to_netcdf convert_to_netcdf.o ../core/string_id_converters.o  $(FILES_COMMON) $(MPI_LIBS) $(CUDALDFLAGS) -lparus_network -lnetcdf
 
 
 clean:
@@ -68,7 +71,7 @@ install: all
 	cp -rf $(EXECS) $(INSTALL_DIR)/bin/
 
 %.o: %.c
-	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -I ../core -I ../.. -c $^ -o $@
+	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) $(CUDACFLAGS) -I ../core -I ../.. -c $^ -o $@
 
 %.o: %.cpp
 	$(MPI_CXX) $(MPI_CXX_FLAGS) $(MPI_CXX_INCLUDE) -I ../core -I ../.. -c $^ -o $@

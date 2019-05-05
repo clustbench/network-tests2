@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <mpi.h>
+#include <cuda_runtime.h>
 
 extern int comm_rank;
 extern int comm_size;

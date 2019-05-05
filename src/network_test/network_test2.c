@@ -38,7 +38,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdio.h>
-
+#include <cuda_runtime.h>
 
 #ifdef _GNU_SOURCE
 #include <getopt.h>
@@ -60,7 +60,6 @@
 
 int comm_size;
 int comm_rank;
-
 
 
 int main(int argc,char **argv)
@@ -117,6 +116,9 @@ int main(int argc,char **argv)
 
     char** host_names=NULL;
     char host_name[256];
+
+    int* gpu_count;
+
 
 
     int flag;
@@ -180,6 +182,30 @@ int main(int argc,char **argv)
         }
     } /* End if(rank==0) */
 
+    int cur_gpu_count;
+
+
+    if ( test_parameters.test_type == ONE_TO_ONE_CUDA_TEST_TYPE || test_parameters.test_type == ALL_TO_ALL_CUDA_TEST_TYPE ) 
+    {
+        if ( comm_rank == 0 ) 
+        {
+            gpu_count = ( int* )malloc( sizeof( int ) * comm_size );
+            cudaGetDeviceCount( &cur_gpu_count );
+            for ( i = 0; i < comm_size; i++ )
+                free(host_names[i]);
+            free(host_names);
+            for ( i = 1; i < comm_size; i++ )
+                MPI_Recv( ( gpu_count + i ), 1, MPI_INT, i, 0, MPI_COMM_WORLD, &status);
+            gpu_count[0] = cur_gpu_count;
+            for ( i = 0; i < comm_size; i++ )
+                printf("%d has %d GPUs", i, gpu_count[i])
+        }
+        else
+        {
+            MPI_Send( &cur_gpu_count, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+        }
+        
+    }
     /*
      * Going to get and write all processors' hostnames
      */
