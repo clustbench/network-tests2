@@ -40,8 +40,8 @@ FILES_TEST2=\
 	bcast2.o\
 	get2.o\
 	put2.o\
-    one_to_one_cuda_normal.o\
-    all_to_all_cuda_normal.o\
+        one_to_one_cuda_normal.o\
+        all_to_all_cuda_normal.o\
 	parse_arguments.o
 
 FILES_PRINT_FROM_TO=\
@@ -73,7 +73,7 @@ install: all
 	cp -rf $(EXECS) $(INSTALL_DIR)/bin/
 
 %.o: %.c
-	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) $(CUDACFLAGS) -I ../core -I ../.. -c $^ -o $@
+	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) $(NETCDF_INCLUDE) $(CUDACFLAGS) -I ../core -I ../.. -c $^ -o $@
 
 %.o: %.cpp
 	$(MPI_CXX) $(MPI_CXX_FLAGS) $(MPI_CXX_INCLUDE) -I ../core -I ../.. -c $^ -o $@

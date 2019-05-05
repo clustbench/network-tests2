@@ -181,6 +181,7 @@ int main(int argc,char **argv)
     } /* End if(rank==0) */
 
     int cur_gpu_count = 0;
+    int total_gpu = 0;
 
     if ( test_parameters.test_type == ONE_TO_ONE_CUDA_TEST_TYPE || test_parameters.test_type == ALL_TO_ALL_CUDA_TEST_TYPE ) 
     {
@@ -194,12 +195,15 @@ int main(int argc,char **argv)
             for ( i = 1; i < comm_size; i++ )
                 MPI_Recv( ( gpu_count + i ), 1, MPI_INT, i, 0, MPI_COMM_WORLD, &status);
             gpu_count[0] = cur_gpu_count;
-            int total_gpu = 0;
             for ( i = 0; i < comm_size; i++ )
             {
                 total_gpu += gpu_count[i];
                 printf( "%d has %d GPUs", i, gpu_count[i] );
             }
+	    for ( i = 1; i < comm_size; i++ )
+	    {
+  		MPI_Send( &total_gpu, 1, MPI_INT, i, 0, MPI_COMM_WORLD );
+  	    } 
             host_names = ( char** )malloc( sizeof( char* ) * total_gpu );
             for ( i = 0; i < comm_size; i++ )
             {
@@ -208,7 +212,8 @@ int main(int argc,char **argv)
         }
         else
         {
-            MPI_Send( &cur_gpu_count, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+            MPI_Send( &cur_gpu_count, 1, MPI_INT, 0, 0, MPI_COMM_WORLD );
+            MPI_Recv( &total_gpu, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status );
         }
         
     }
@@ -274,7 +279,15 @@ int main(int argc,char **argv)
     /*
      * Initializing num_procs parameter
      */
-    test_parameters.num_procs=comm_size;
+    
+    if ( test_parameters.test_type == ONE_TO_ONE_CUDA_TEST_TYPE || test_parameters.test_type == ALL_TO_ALL_CUDA_TEST_TYPE ) 
+    {
+        test_parameters.num_procs=total_gpu;
+    } 
+    else
+    { 
+        test_parameters.num_procs=comm_size;
+    }
 
     if( comm_rank == 0)
     {
