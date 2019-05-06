@@ -212,7 +212,7 @@ int main(int argc,char **argv)
             for ( i = 0; i < comm_size; i++ )
             {
                 total_gpu += gpu_count[i];
-		printf("%d has %d gpus\n", i, gpu_count[i]);
+                printf("%d has %d gpus\n", i, gpu_count[i]);
             }
             //total_gpu = 2;
             for ( i = 1; i < comm_size; i++ )
@@ -243,7 +243,7 @@ int main(int argc,char **argv)
 
     gpu_names = ( char** )malloc( sizeof( char* ) * cur_gpu_count );
     for ( i = 0 ; i < cur_gpu_count; i++ )
-        gpu_names[i] = ( char* )malloc( sizeof( char* ) * 256 );
+        gpu_names[i] = ( char* )malloc( sizeof( char ) * 256 );
 
     if ( comm_rank == 0 )
     {
