@@ -26,10 +26,15 @@ int one_to_one_cuda( Test_time_result_type * times, int mes_length, int num_repe
     int gpu_sr[4];
 
     int conf = 1;
+    int* one_rank_calc;
     int send_proc, recv_proc;
     int send_gpu, recv_gpu;
     MPI_Status status;
-
+    one_rank_calc = ( int* )malloc( sizeof( int ) * comm_size);
+    for ( i = 0; i < comm_size; i++)
+    {
+        one_rank_calc = 0;
+    }
     if ( comm_rank == 0 )
     {
         for ( n = 0; n < comm_size; n++ )
@@ -41,26 +46,50 @@ int one_to_one_cuda( Test_time_result_type * times, int mes_length, int num_repe
 
                 gpu_sr[0] = send_proc;
                 gpu_sr[2] = recv_proc;
-    //!TODO: add adequate treat to 0 comm_rank
-                if ( send_proc == 0 || recv_proc == 0)
-                {
-                    continue;
-                }
 
-                for ( j = 0; j < gpu_count[send_proc]; j++ )
-                    for ( k = 0; k < gpu_count[recv_proc]; k++ )
+
+                int measured_gpus = 0;
+                for ( i = 0; i < gpu_count[send_proc]; i++ )
+                    for ( j = 0; j < gpu_count[recv_proc]; j++ )
                 {
-                    gpu_sr[1] = j;
-                    gpu_sr[3] = k;
+                    gpu_sr[1] = i;
+                    gpu_sr[3] = j;
                     printf("Test between %d, GPU %d and %d, GPU %d began\n", send_proc,
-                    j, recv_proc, k);
-                    MPI_Send( gpu_sr, 4, MPI_INT, send_proc, 1, MPI_COMM_WORLD );
-                    MPI_Send( gpu_sr, 4, MPI_INT, recv_proc, 1, MPI_COMM_WORLD );
+                    i, recv_proc, j);
+                    if ( send_proc == recv_proc ) 
+                    {
+                        if ( send_proc != 0 ) 
+                        {
+                            MPI_Send( gpu_sr, 4, MPI_INT, send_proc, 1, MPI_COMM_WORLD );
 
-                    MPI_Recv( &conf, 1, MPI_INT, send_proc, 2, MPI_COMM_WORLD, &status );
-                    MPI_Recv( &conf, 1, MPI_INT, recv_proc, 2, MPI_COMM_WORLD, &status );
-            printf("Test between %d, GPU %d and %d, GPU %d finished", send_proc,
-                j, recv_proc, k);
+                            MPI_Recv( &conf, 1, MPI_INT, send_proc, 2, MPI_COMM_WORLD, &status );
+                            printf("Test between %d, GPU %d and %d, GPU %d finished\n", send_proc,
+                            i, recv_proc, j);
+                        
+                        }
+                        else
+                        {
+                            real_one_to_one_cuda( times, mes_length, num_repeats, send_proc, recv_proc,
+                                                  send_gpu, recv_gpu );
+                        }
+                        continue;
+                    }
+
+                    if ( send_proc )
+                        MPI_Send( gpu_sr, 4, MPI_INT, send_proc, 1, MPI_COMM_WORLD );
+                    if ( recv_proc )
+                        MPI_Send( gpu_sr, 4, MPI_INT, recv_proc, 1, MPI_COMM_WORLD );
+                    
+                    if ( recv_proc == 0 || send_proc == 0)
+                        real_one_to_one_cuda( times, mes_length, num_repeats, send_proc, recv_proc,
+                                              send_gpu, recv_gpu );
+
+                    if ( send_proc )
+                        MPI_Recv( &conf, 1, MPI_INT, send_proc, 2, MPI_COMM_WORLD, &status );
+                    if ( recv_proc )
+                        MPI_Recv( &conf, 1, MPI_INT, recv_proc, 2, MPI_COMM_WORLD, &status );
+                    printf("Test between %d, GPU %d and %d, GPU %d finished\n", send_proc,
+                    i, recv_proc, j);
                 }
 
             }
@@ -81,6 +110,14 @@ int one_to_one_cuda( Test_time_result_type * times, int mes_length, int num_repe
 
             if ( send_proc == -1 )
                 break;
+
+            if (send_proc == comm_rank && recv_proc == comm_rank) {
+                real_one_to_one_cuda( times, mes_length, num_repeats, send_proc, recv_proc,
+                                      send_gpu, recv_gpu );
+                MPI_Send( &conf, 1, MPI_INT, 0, 2, MPI_COMM_WORLD );
+                continue;
+            }
+
             if ( send_proc == comm_rank )
                 real_one_to_one_cuda( times, mes_length, num_repeats, send_proc, recv_proc,
                                       send_gpu, recv_gpu );
