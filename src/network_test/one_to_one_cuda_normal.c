@@ -164,6 +164,7 @@ void real_one_to_one_cuda( Test_time_result_type *times, int mes_length, int num
         cudaSetDevice( dest_gpu );
 
     cudaMalloc( ( void** ) &dataGPU, mes_length );
+    data = ( char* )malloc( sizeof( char ) * mes_length );
 
     for ( i = 0; i < num_repeats; i++ )
     {
