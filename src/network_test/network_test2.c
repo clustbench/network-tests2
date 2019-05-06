@@ -538,10 +538,14 @@ int main(int argc,char **argv)
         if( test_parameters.test_type==ONE_TO_ONE_CUDA_TEST_TYPE )
         {
             one_to_one_cuda( times, tmp_mes_size, test_parameters.num_repeats );
+        
         }
 
 
         MPI_Barrier(MPI_COMM_WORLD);
+
+        if( test_parameters.test_type==ONE_TO_ONE_CUDA_TEST_TYPE || test_parameters.test_type == ALL_TO_ALL_CUDA_TEST_TYPE )
+            continue;
 
         if(comm_rank==0)
         {
