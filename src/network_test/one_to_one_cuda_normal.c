@@ -50,11 +50,15 @@ int one_to_one_cuda( Test_time_result_type * times, int mes_length, int num_repe
             {
                 gpu_sr[1] = j;
                 gpu_sr[3] = k;
+		printf("Test between %d, GPU %d and %d, GPU %d began\n", send_proc,
+			j, recv_proc, k);
                 MPI_Send( gpu_sr, 4, MPI_INT, send_proc, 1, MPI_COMM_WORLD );
                 MPI_Send( gpu_sr, 4, MPI_INT, recv_proc, 1, MPI_COMM_WORLD );
 
                 MPI_Recv( &conf, 1, MPI_INT, send_proc, 2, MPI_COMM_WORLD, &status );
                 MPI_Recv( &conf, 1, MPI_INT, recv_proc, 2, MPI_COMM_WORLD, &status );
+		printf("Test between %d, GPU %d and %d, GPU %d finished", send_proc,
+			j, recv_proc, k);
             }
 
 
@@ -110,6 +114,7 @@ void real_one_to_one_cuda( Test_time_result_type *times, int mes_length, int num
             times[stride + source_gpu].average = 0;
             times[stride + source_gpu].deviation = 0;
             times[stride + source_gpu].median = 0;
+            return;
         }
         else
         {
