@@ -21,7 +21,7 @@ void real_one_to_one_cuda( Test_time_result_type *times, int mes_length, int num
 int one_to_one_cuda( Test_time_result_type * times, int mes_length, int num_repeats )
 {
 
-    int i, j, k;
+    int i, j, k, n, m;
 
     int gpu_sr[4];
 
@@ -32,36 +32,38 @@ int one_to_one_cuda( Test_time_result_type * times, int mes_length, int num_repe
 
     if ( comm_rank == 0 )
     {
-        for ( i = 0; i < comm_size * comm_size; i++ )
+        for ( n = 0; n < comm_size; n++ )
         {
-            send_proc = get_send_processor( i, comm_size );
-            recv_proc = get_send_processor( i, comm_size );
-
-            gpu_sr[0] = send_proc;
-            gpu_sr[2] = recv_proc;
-//!TODO: add adequate treat to 0 comm_rank
-            if ( send_proc == 0 || recv_proc == 0)
+            for ( m = 0; m < comm_size; m++ )
             {
-                continue;
+                send_proc = n;
+                recv_proc = m;
+
+                gpu_sr[0] = send_proc;
+                gpu_sr[2] = recv_proc;
+    //!TODO: add adequate treat to 0 comm_rank
+                if ( send_proc == 0 || recv_proc == 0)
+                {
+                    continue;
+                }
+
+                for ( j = 0; j < gpu_count[send_proc]; j++ )
+                    for ( k = 0; k < gpu_count[recv_proc]; k++ )
+                {
+                    gpu_sr[1] = j;
+                    gpu_sr[3] = k;
+                    printf("Test between %d, GPU %d and %d, GPU %d began\n", send_proc,
+                    j, recv_proc, k);
+                    MPI_Send( gpu_sr, 4, MPI_INT, send_proc, 1, MPI_COMM_WORLD );
+                    MPI_Send( gpu_sr, 4, MPI_INT, recv_proc, 1, MPI_COMM_WORLD );
+
+                    MPI_Recv( &conf, 1, MPI_INT, send_proc, 2, MPI_COMM_WORLD, &status );
+                    MPI_Recv( &conf, 1, MPI_INT, recv_proc, 2, MPI_COMM_WORLD, &status );
+            printf("Test between %d, GPU %d and %d, GPU %d finished", send_proc,
+                j, recv_proc, k);
+                }
+
             }
-
-            for ( j = 0; j < gpu_count[send_proc]; j++ )
-                for ( k = 0; k < gpu_count[recv_proc]; k++ )
-            {
-                gpu_sr[1] = j;
-                gpu_sr[3] = k;
-		printf("Test between %d, GPU %d and %d, GPU %d began\n", send_proc,
-			j, recv_proc, k);
-                MPI_Send( gpu_sr, 4, MPI_INT, send_proc, 1, MPI_COMM_WORLD );
-                MPI_Send( gpu_sr, 4, MPI_INT, recv_proc, 1, MPI_COMM_WORLD );
-
-                MPI_Recv( &conf, 1, MPI_INT, send_proc, 2, MPI_COMM_WORLD, &status );
-                MPI_Recv( &conf, 1, MPI_INT, recv_proc, 2, MPI_COMM_WORLD, &status );
-		printf("Test between %d, GPU %d and %d, GPU %d finished", send_proc,
-			j, recv_proc, k);
-            }
-
-
         }
         gpu_sr[0] = -1;
         for ( i = 1; i < comm_size; i++ )
@@ -146,6 +148,9 @@ void real_one_to_one_cuda( Test_time_result_type *times, int mes_length, int num
             cudaFree ( ( void** ) &dataGPU);
             cudaDeviceReset();
             times[stride + source_gpu] = calc_stats( tmp_results, num_repeats );
+            printf("Test between %d:%d and %d:%d finished with %lf med, %lf dev and %lf avg\n",
+                    source_proc, source_gpu, dest_proc, dest_gpu, times[stride + source_gpu].median,
+                    times[stride + source_gpu].deviation, times[stride + source_gpu].average);
             free ( tmp_results );
             return;
         }
@@ -193,7 +198,9 @@ void real_one_to_one_cuda( Test_time_result_type *times, int mes_length, int num
         return;
     }
     times[stride + source_gpu] = calc_stats( tmp_results, num_repeats );
-            
+    printf("Test between %d:%d and %d:%d finished with %lf med, %lf dev and %lf avg\n",
+                    source_proc, source_gpu, dest_proc, dest_gpu, times[stride + source_gpu].median,
+                    times[stride + source_gpu].deviation, times[stride + source_gpu].average);
 }
 
 Test_time_result_type calc_stats( px_my_time_type* all_times, int num_repeats )
