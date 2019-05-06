@@ -11,6 +11,7 @@
 extern int comm_rank;
 extern int comm_size;
 extern int* gpu_count;
+extern int total_gpu;
 
 Test_time_result_type calc_stats( px_my_time_type* all_times, int num_repeats );
 
@@ -151,9 +152,9 @@ void real_one_to_one_cuda( Test_time_result_type *times, int mes_length, int num
     {
         if ( source_gpu == dest_gpu )
         {
-            times[stride + source_gpu].average = 0;
-            times[stride + source_gpu].deviation = 0;
-            times[stride + source_gpu].median = 0;
+            times[dest_gpu * total_gpu + stride + source_gpu].average = 0;
+            times[dest_gpu * total_gpu + stride + source_gpu].deviation = 0;
+            times[dest_gpu * total_gpu + stride + source_gpu].median = 0;
             return;
         }
         else
@@ -185,10 +186,10 @@ void real_one_to_one_cuda( Test_time_result_type *times, int mes_length, int num
             cudaSetDevice( dest_gpu );
             cudaFree ( ( void** ) &dataGPU);
             cudaDeviceReset();
-            times[stride + source_gpu] = calc_stats( tmp_results, num_repeats );
+            times[dest_gpu * total_gpu + stride + source_gpu] = calc_stats( tmp_results, num_repeats );
             printf("Test between %d:%d and %d:%d finished with %lf med, %lf dev and %lf avg\n",
                     source_proc, source_gpu, dest_proc, dest_gpu, times[stride + source_gpu].median,
-                    times[stride + source_gpu].deviation, times[stride + source_gpu].average);
+                    times[dest_gpu * total_gpu + stride + source_gpu].deviation, times[stride + source_gpu].average);
             fflush(stdout);
             free ( tmp_results );
             return;
@@ -237,10 +238,10 @@ void real_one_to_one_cuda( Test_time_result_type *times, int mes_length, int num
         free( tmp_results );
         return;
     }
-    times[stride + source_gpu] = calc_stats( tmp_results, num_repeats );
+    times[dest_gpu * total_gpu + stride + source_gpu] = calc_stats( tmp_results, num_repeats );
     printf("Test between %d:%d and %d:%d finished with %lf med, %lf dev and %lf avg\n",
                     source_proc, source_gpu, dest_proc, dest_gpu, times[stride + source_gpu].median,
-                    times[stride + source_gpu].deviation, times[stride + source_gpu].average);
+                    times[dest_gpu * total_gpu + stride + source_gpu].deviation, times[stride + source_gpu].average);
     fflush(stdout);
 }
 
