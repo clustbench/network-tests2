@@ -553,28 +553,53 @@ int main(int argc,char **argv)
 
         if(comm_rank==0)
         {
-            for(j=0; j<comm_size; j++)
+            if( test_parameters.test_type==ONE_TO_ONE_CUDA_TEST_TYPE || test_parameters.test_type == ALL_TO_ALL_CUDA_TEST_TYPE )
             {
-                MATRIX_FILL_ELEMENT(mtr_av,0,j,times[j].average);
-                MATRIX_FILL_ELEMENT(mtr_me,0,j,times[j].median);
-                MATRIX_FILL_ELEMENT(mtr_di,0,j,times[j].deviation);
-                MATRIX_FILL_ELEMENT(mtr_mi,0,j,times[j].min);
-            }
-            for(i=1; i<comm_size; i++)
-            {
-
-                MPI_Recv(times,comm_size,MPI_My_time_struct,i,100,MPI_COMM_WORLD,&status);
-                for(j=0; j<comm_size; j++)
+                for(j=0; j<total_gpu; j++)
                 {
-                    MATRIX_FILL_ELEMENT(mtr_av,i,j,times[j].average);
-                    MATRIX_FILL_ELEMENT(mtr_me,i,j,times[j].median);
-                    MATRIX_FILL_ELEMENT(mtr_di,i,j,times[j].deviation);
-                    MATRIX_FILL_ELEMENT(mtr_mi,i,j,times[j].min);
+                    MATRIX_FILL_ELEMENT(mtr_av,0,j,times[j].average);
+                    MATRIX_FILL_ELEMENT(mtr_me,0,j,times[j].median);
+                    MATRIX_FILL_ELEMENT(mtr_di,0,j,times[j].deviation);
+                    MATRIX_FILL_ELEMENT(mtr_mi,0,j,times[j].min);
+                }
+                for(i=1; i<comm_size; i++)
+                {
 
+                    MPI_Recv(times,total_gpu,MPI_My_time_struct,i,100,MPI_COMM_WORLD,&status);
+                    for(j=0; j<total_gpu; j++)
+                    {
+                        MATRIX_FILL_ELEMENT(mtr_av,i,j,times[j].average);
+                        MATRIX_FILL_ELEMENT(mtr_me,i,j,times[j].median);
+                        MATRIX_FILL_ELEMENT(mtr_di,i,j,times[j].deviation);
+                        MATRIX_FILL_ELEMENT(mtr_mi,i,j,times[j].min);
+
+                    }
                 }
             }
+            else
+            {
+                for(j=0; j<comm_size; j++)
+                {
+                    MATRIX_FILL_ELEMENT(mtr_av,0,j,times[j].average);
+                    MATRIX_FILL_ELEMENT(mtr_me,0,j,times[j].median);
+                    MATRIX_FILL_ELEMENT(mtr_di,0,j,times[j].deviation);
+                    MATRIX_FILL_ELEMENT(mtr_mi,0,j,times[j].min);
+                }
+                for(i=1; i<comm_size; i++)
+                {
 
+                    MPI_Recv(times,comm_size,MPI_My_time_struct,i,100,MPI_COMM_WORLD,&status);
+                    for(j=0; j<comm_size; j++)
+                    {
+                        MATRIX_FILL_ELEMENT(mtr_av,i,j,times[j].average);
+                        MATRIX_FILL_ELEMENT(mtr_me,i,j,times[j].median);
+                        MATRIX_FILL_ELEMENT(mtr_di,i,j,times[j].deviation);
+                        MATRIX_FILL_ELEMENT(mtr_mi,i,j,times[j].min);
 
+                    }
+                }
+
+            }
             if(netcdf_write_matrix(netcdf_file_av,netcdf_var_av,step_num,mtr_av.sizex,mtr_av.sizey,mtr_av.body))
             {
                 printf("Can't write average matrix to file.\n");
@@ -610,7 +635,16 @@ int main(int argc,char **argv)
         } /* end comm rank 0 */
         else
         {
-            MPI_Send(times,comm_size,MPI_My_time_struct,0,100,MPI_COMM_WORLD);
+            if( test_parameters.test_type==ONE_TO_ONE_CUDA_TEST_TYPE || test_parameters.test_type == ALL_TO_ALL_CUDA_TEST_TYPE )
+            {
+                MPI_Send(times,total_gpu,MPI_My_time_struct,0,100,MPI_COMM_WORLD);
+            }
+            else
+            {
+                MPI_Send(times,comm_size,MPI_My_time_struct,0,100,MPI_COMM_WORLD);
+            }
+            
+            
         }
 
 

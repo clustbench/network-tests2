@@ -11,7 +11,6 @@
 extern int comm_rank;
 extern int comm_size;
 extern int* gpu_count;
-extern int total_gpu;
 
 Test_time_result_type calc_stats( px_my_time_type* all_times, int num_repeats );
 
@@ -52,6 +51,8 @@ int one_to_one_cuda( Test_time_result_type * times, int mes_length, int num_repe
                 for ( i = 0; i < gpu_count[send_proc]; i++ )
                     for ( j = 0; j < gpu_count[recv_proc]; j++ )
                 {
+                    send_gpu = i;
+                    recv_gpu = j;
                     gpu_sr[1] = i;
                     gpu_sr[3] = j;
                     printf("Test between %d, GPU %d and %d, GPU %d began\n", send_proc,
@@ -188,6 +189,7 @@ void real_one_to_one_cuda( Test_time_result_type *times, int mes_length, int num
             printf("Test between %d:%d and %d:%d finished with %lf med, %lf dev and %lf avg\n",
                     source_proc, source_gpu, dest_proc, dest_gpu, times[stride + source_gpu].median,
                     times[stride + source_gpu].deviation, times[stride + source_gpu].average);
+            fflush(stdout);
             free ( tmp_results );
             return;
         }
@@ -239,6 +241,7 @@ void real_one_to_one_cuda( Test_time_result_type *times, int mes_length, int num
     printf("Test between %d:%d and %d:%d finished with %lf med, %lf dev and %lf avg\n",
                     source_proc, source_gpu, dest_proc, dest_gpu, times[stride + source_gpu].median,
                     times[stride + source_gpu].deviation, times[stride + source_gpu].average);
+    fflush(stdout);
 }
 
 Test_time_result_type calc_stats( px_my_time_type* all_times, int num_repeats )
