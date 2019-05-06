@@ -202,7 +202,6 @@ int main(int argc,char **argv)
     {
         int errged = cudaGetDeviceCount( &cur_gpu_count );
         printf("CUDA Get Device Count exited with %d\n", errged);
-        cur_gpu_count = 1;
         if ( comm_rank == 0 ) 
         {
             gpu_count = ( int* )malloc( sizeof( int ) * comm_size );
@@ -213,6 +212,7 @@ int main(int argc,char **argv)
             for ( i = 0; i < comm_size; i++ )
             {
                 total_gpu += gpu_count[i];
+		printf("%d has %d gpus\n", i, gpu_count[i]);
             }
             //total_gpu = 2;
             for ( i = 1; i < comm_size; i++ )
