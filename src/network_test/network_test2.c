@@ -222,7 +222,7 @@ int main(int argc,char **argv)
                 MPI_Send( gpu_count, comm_size, MPI_INT, i, 201, MPI_COMM_WORLD );   
             }
             host_names = ( char** )malloc( sizeof( char* ) * total_gpu );
-            for ( i = 0; i < comm_size; i++ )
+            for ( i = 0; i < total_gpu; i++ )
             {
                 host_names[i] = ( char* )malloc( sizeof( char ) * 256 );
             }
