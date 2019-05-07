@@ -560,21 +560,24 @@ int main(int argc,char **argv)
                 for(i=1; i<comm_size; i++)
                 {
                     Test_time_result_type *times_recv = ( Test_time_result_type *)malloc( sizeof( Test_time_result_type ) * gpu_count[i] * total_gpu );
-                    MPI_Recv(times,gpu_count[i] * total_gpu,MPI_My_time_struct,i,100,MPI_COMM_WORLD,&status);
+                    MPI_Recv(times_recv,gpu_count[i] * total_gpu,MPI_My_time_struct,i,100,MPI_COMM_WORLD,&status);
                     int stride = cur_gpu_count;
-                    for ( j = i; j <= i; j++ )
+                    for ( j = 0; j < i; j++ )
                     {
                         stride += gpu_count[j];
                     } 
-
+		    for ( j = 0; j < gpu_count[i] * total_gpu; j++ )
+			printf("%lf ", times_recv[j].median);
+		    printf("\n=======================\n");
+	            fflush(stdout);
                     for( j = 0; j < gpu_count[i]; j++ )
                     {
                         for( k = 0; k < total_gpu; k++ )
                         {
-                            MATRIX_FILL_ELEMENT(mtr_av,j + stride,k,times[j * total_gpu + k].average);
-                            MATRIX_FILL_ELEMENT(mtr_me,j + stride,k,times[j * total_gpu + k].median);
-                            MATRIX_FILL_ELEMENT(mtr_di,j + stride,k,times[j * total_gpu + k].deviation);
-                            MATRIX_FILL_ELEMENT(mtr_mi,j + stride,k,times[j * total_gpu + k].min);
+                            MATRIX_FILL_ELEMENT(mtr_av,j + stride,k,times_recv[j * total_gpu + k].average);
+                            MATRIX_FILL_ELEMENT(mtr_me,j + stride,k,times_recv[j * total_gpu + k].median);
+                            MATRIX_FILL_ELEMENT(mtr_di,j + stride,k,times_recv[j * total_gpu + k].deviation);
+                            MATRIX_FILL_ELEMENT(mtr_mi,j + stride,k,times_recv[j * total_gpu + k].min);
                         }
                     }
                     free( times_recv );

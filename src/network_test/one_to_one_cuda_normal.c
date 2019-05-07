@@ -123,10 +123,15 @@ int one_to_one_cuda( Test_time_result_type * times, int mes_length, int num_repe
             if ( send_proc == comm_rank )
                 real_one_to_one_cuda( times, mes_length, num_repeats, send_proc, recv_proc,
                                       send_gpu, recv_gpu );
-            if ( recv_proc == comm_rank )
+            if ( recv_proc == comm_rank ) {
                 real_one_to_one_cuda( times, mes_length, num_repeats, send_proc, recv_proc,
                                       send_gpu, recv_gpu );
-            
+	            int stride = 0;
+		    for ( i = 0; i < send_proc; i++ )
+			stride += gpu_count[i];
+        	    printf("++++++%lf++++++\n", times[stride + recv_gpu * total_gpu + send_gpu].median); 
+		    printf("%d, %d", stride, stride + recv_gpu * total_gpu + send_gpu);
+		}
             MPI_Send( &conf, 1, MPI_INT, 0, 2, MPI_COMM_WORLD );
         }
     }
