@@ -561,15 +561,21 @@ int main(int argc,char **argv)
                 {
                     Test_time_result_type *times_recv = ( Test_time_result_type *)malloc( sizeof( Test_time_result_type ) * gpu_count[i] * total_gpu );
                     MPI_Recv(times_recv,gpu_count[i] * total_gpu,MPI_My_time_struct,i,100,MPI_COMM_WORLD,&status);
-                    int stride = cur_gpu_count;
+                    int stride = 0;
                     for ( j = 0; j < i; j++ )
                     {
                         stride += gpu_count[j];
                     } 
-		    for ( j = 0; j < gpu_count[i] * total_gpu; j++ )
-			printf("%lf ", times_recv[j].median);
-		    printf("\n=======================\n");
-	            fflush(stdout);
+		    for ( j = 0; j < gpu_count[i]; j++ )
+			{
+				printf("\n===for GPU %d===\n", j + stride);
+				for ( k = 0; k < total_gpu; k++) 
+					printf("%lf ", times_recv[j * total_gpu + k].median);
+
+				    printf("\n=======================\n");
+
+				    fflush(stdout);
+			}
                     for( j = 0; j < gpu_count[i]; j++ )
                     {
                         for( k = 0; k < total_gpu; k++ )
@@ -669,8 +675,12 @@ int main(int argc,char **argv)
      * for any network_test.
      */
 
-	free(times);
+    free(times);
     free( gpu_count );
+
+    for ( i = 0; i < cur_gpu_count; i++ )
+	free ( gpu_names[i] );
+    free ( gpu_names );
 
 	if(comm_rank==0)
     {
@@ -679,11 +689,20 @@ int main(int argc,char **argv)
         netcdf_close_file(netcdf_file_me);
         netcdf_close_file(netcdf_file_di);
         netcdf_close_file(netcdf_file_mi);
-
-        for(i=0; i<comm_size; i++)
+	
+	if( test_parameters.test_type==ONE_TO_ONE_CUDA_TEST_TYPE || test_parameters.test_type == ALL_TO_ALL_CUDA_TEST_TYPE )
         {
-            free(host_names[i]);
-        }
+		for ( i = 0; i < total_gpu; i++)
+			free( host_names[i] );
+	}
+	else 
+	{
+		for(i=0; i<comm_size; i++)
+		{
+		    free(host_names[i]);
+		}
+
+	}
         free(host_names);
 
         free(mtr_av.body);

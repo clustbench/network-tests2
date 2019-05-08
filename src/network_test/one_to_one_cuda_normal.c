@@ -24,7 +24,6 @@ int one_to_one_cuda( Test_time_result_type * times, int mes_length, int num_repe
     int i, j, k, n, m;
 
     int gpu_sr[4];
-
     int conf = 1;
     int* one_rank_calc;
     int send_proc, recv_proc;
@@ -123,15 +122,9 @@ int one_to_one_cuda( Test_time_result_type * times, int mes_length, int num_repe
             if ( send_proc == comm_rank )
                 real_one_to_one_cuda( times, mes_length, num_repeats, send_proc, recv_proc,
                                       send_gpu, recv_gpu );
-            if ( recv_proc == comm_rank ) {
+            if ( recv_proc == comm_rank ) 
                 real_one_to_one_cuda( times, mes_length, num_repeats, send_proc, recv_proc,
                                       send_gpu, recv_gpu );
-	            int stride = 0;
-		    for ( i = 0; i < send_proc; i++ )
-			stride += gpu_count[i];
-        	    printf("++++++%lf++++++\n", times[stride + recv_gpu * total_gpu + send_gpu].median); 
-		    printf("%d, %d", stride, stride + recv_gpu * total_gpu + send_gpu);
-		}
             MPI_Send( &conf, 1, MPI_INT, 0, 2, MPI_COMM_WORLD );
         }
     }
@@ -157,7 +150,7 @@ void real_one_to_one_cuda( Test_time_result_type *times, int mes_length, int num
     {
         if ( source_gpu == dest_gpu )
         {
-            times[dest_gpu * total_gpu + stride + source_gpu].average = 0;
+	    times[dest_gpu * total_gpu + stride + source_gpu].average = 0;
             times[dest_gpu * total_gpu + stride + source_gpu].deviation = 0;
             times[dest_gpu * total_gpu + stride + source_gpu].median = 0;
             return;
@@ -192,9 +185,9 @@ void real_one_to_one_cuda( Test_time_result_type *times, int mes_length, int num
             cudaFree ( ( void** ) &dataGPU);
             cudaDeviceReset();
             times[dest_gpu * total_gpu + stride + source_gpu] = calc_stats( tmp_results, num_repeats );
-            printf("Test between %d:%d and %d:%d finished with %lf med, %lf dev and %lf avg\n",
-                    source_proc, source_gpu, dest_proc, dest_gpu, times[stride + source_gpu].median,
-                    times[dest_gpu * total_gpu + stride + source_gpu].deviation, times[stride + source_gpu].average);
+            printf("Test between %d:%d and %d:%d finished with %.10lf med, %.10lf dev and %.10lf avg\n",
+                    source_proc, source_gpu, dest_proc, dest_gpu, times[dest_gpu * total_gpu + stride + source_gpu].median,
+                    times[dest_gpu * total_gpu + stride + source_gpu].deviation, times[dest_gpu * total_gpu + stride + source_gpu].average);
             fflush(stdout);
             free ( tmp_results );
             return;
@@ -245,34 +238,35 @@ void real_one_to_one_cuda( Test_time_result_type *times, int mes_length, int num
     }
     times[dest_gpu * total_gpu + stride + source_gpu] = calc_stats( tmp_results, num_repeats );
     printf("Test between %d:%d and %d:%d finished with %lf med, %lf dev and %lf avg\n",
-                    source_proc, source_gpu, dest_proc, dest_gpu, times[stride + source_gpu].median,
-                    times[dest_gpu * total_gpu + stride + source_gpu].deviation, times[stride + source_gpu].average);
+                    source_proc, source_gpu, dest_proc, dest_gpu, times[dest_gpu * total_gpu + stride + source_gpu].median,
+                    times[dest_gpu * total_gpu + stride + source_gpu].deviation, times[dest_gpu * total_gpu + stride + source_gpu].average);
     fflush(stdout);
 }
 
 Test_time_result_type calc_stats( px_my_time_type* all_times, int num_repeats )
 {
     int i;
-    Test_time_result_type  times;
+    Test_time_result_type res_times;
     px_my_time_type sum = 0;
     for(i=0; i<num_repeats; i++)
     {
         sum+=all_times[i];
     }
-    times.average=(sum/(double)num_repeats);
+	
+    res_times.average=(sum/(double)num_repeats);
 
     px_my_time_type st_deviation = 0;
     for(i=0; i<num_repeats; i++)
     {
-        st_deviation+=(all_times[i]-times.average)*(all_times[i]-times.average);
+        st_deviation+=(all_times[i]-res_times.average)*(all_times[i]-res_times.average);
     }
     st_deviation/=(double)(num_repeats);
-    times.deviation=sqrt(st_deviation);
+    res_times.deviation=sqrt(st_deviation);
 
     qsort(all_times, num_repeats, sizeof(px_my_time_type), my_time_cmp );
-    times.median=all_times[num_repeats/2];
+    res_times.median=all_times[num_repeats/2];
 
-    times.min=all_times[0];
+    res_times.min=all_times[0];
 
-    return times;
+    return res_times;
 }
