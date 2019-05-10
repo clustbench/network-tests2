@@ -150,7 +150,7 @@ void real_one_to_one_cuda( Test_time_result_type *times, int mes_length, int num
     {
         if ( source_gpu == dest_gpu )
         {
-	    times[dest_gpu * total_gpu + stride + source_gpu].average = 0;
+	        times[dest_gpu * total_gpu + stride + source_gpu].average = 0;
             times[dest_gpu * total_gpu + stride + source_gpu].deviation = 0;
             times[dest_gpu * total_gpu + stride + source_gpu].median = 0;
             return;
@@ -172,9 +172,9 @@ void real_one_to_one_cuda( Test_time_result_type *times, int mes_length, int num
             cudaSetDevice( source_gpu );
             for ( i = 0; i < num_repeats; i++ )
             {
-                cudaEventRecord ( start, 0 );
+                cudaEventRecord ( start, src_dst_stream );
                 cudaMemcpyPeerAsync( dataGPU, dest_gpu, data, source_gpu, mes_length, src_dst_stream );
-                cudaEventRecord ( stop, 0 );
+                cudaEventRecord ( stop, src_dst_stream );
                 cudaDeviceSynchronize();
                 cudaEventElapsedTime ( &timing, start, stop );
                 tmp_results[i] = (double)timing * 0.0001;
