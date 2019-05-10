@@ -76,7 +76,7 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
     stop_events = ( cudaEvent_t* )malloc( sizeof( cudaEvent_t ) * total_gpu * gpu_count[comm_rank] );
 
     send_request = ( MPI_Request* )malloc( sizeof( MPI_Request ) *  total_gpu * gpu_count[comm_rank] );
-    send_request = ( MPI_Request* )malloc( sizeof( MPI_Request ) *  total_gpu * gpu_count[comm_rank] );
+    recv_request = ( MPI_Request* )malloc( sizeof( MPI_Request ) *  total_gpu * gpu_count[comm_rank] );
     /*cudaEvent_t start, stop;
     cudaStream_t src_dst_stream; //gpu_count[comm_rank] * gpu_count[comm_rank]
 
@@ -169,7 +169,7 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
         for ( j = 0; j < (total_gpu - gpu_count[comm_rank] ) * gpu_count[comm_rank]; j++ ) 
         {
                 
-                MPI_Waitany( comm_size, recv_request, &finished, &status );
+                MPI_Waitany( total_gpu * gpu_count[comm_rank], recv_request, &finished, &status );
                 int gpu_recv = ( status.MPI_TAG >> 24 );
                 int gpu_send = ( ( status.MPI_TAG & 0xFF0000000 ) >> 16 );
                 cudaSetDevice( gpu_recv );

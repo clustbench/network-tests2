@@ -50,7 +50,7 @@ FILES_PRINT_FROM_TO=\
 CUDACFLAGS=-I${CUDA_INSTALL_PATH}/include
 CUDALDFLAGS=-L${CUDA_INSTALL_PATH}/lib64 -lcudart
 
-EXECS= print_from_to convert_to_netcdf network_test2
+EXECS= network_test2#print_from_to convert_to_netcdf network_test2
 
 all: $(EXECS)
 
