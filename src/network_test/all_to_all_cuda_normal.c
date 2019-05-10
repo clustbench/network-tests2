@@ -49,6 +49,10 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
         }
     }
 
+    for ( i = 0; i < total_gpu; i++ )
+        printf( "%d ", gpu_mpi_rank[i] );
+
+    printf("\n");
 
     int stride = 0;
     for ( i = 0 ; i < comm_rank; i++)
@@ -136,6 +140,8 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
             {
                 if ( comm_rank == gpu_mpi_rank[k] ) 
                 {
+                    printf("Processing transmission on single host\n");
+                    fflush(stdout);
                     cudaEventRecord( start_events[j * total_gpu + k], send_streams[j * total_gpu + k] );
                     cudaMemcpyPeerAsync( recv_data[k - r_bound], k - r_bound, send_data[j], j, mes_length, send_streams[j * total_gpu + k] );
                     cudaEventRecord( stop_events[j * total_gpu + k], send_streams[j * total_gpu + k]);
@@ -144,8 +150,8 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
                 }
                 else
                 {
-                
-                   cudaMemcpyAsync( send_data_host[j * total_gpu + k], send_data[j * total_gpu + k], mes_length, cudaMemcpyDeviceToHost, send_streams[j * total_gpu + k] );
+                    printf("Processing transmission to CPU\n");
+                    cudaMemcpyAsync( send_data_host[j * total_gpu + k], send_data[j * total_gpu + k], mes_length, cudaMemcpyDeviceToHost, send_streams[j * total_gpu + k] );
                    //cudaDeviceSynchronize();
                    //MPI_Isend(send_data[j], gpu_mpi_rank[j], mes_length, MPI_BYTE, );
                    //MPI_Irecv();
@@ -163,6 +169,7 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
                 cudaStreamSynchronize( send_streams[j * total_gpu + k] );
                 tag = (k << 24) | (k << 16);
                 printf("%d %d %d\n", j, k, tag);
+                printf("Processing transmission to another host\n");
                 MPI_Isend( send_data_host[j * total_gpu + k], mes_length, MPI_BYTE, gpu_mpi_rank[j], tag, MPI_COMM_WORLD, &send_request[j * total_gpu + k] );
                 MPI_Isend( recv_data_host[j * total_gpu + k], mes_length, MPI_BYTE, gpu_mpi_rank[j], tag, MPI_COMM_WORLD, &recv_request[j * total_gpu + k] );
             }
@@ -170,6 +177,7 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
         {
                 
                 MPI_Waitany( total_gpu * gpu_count[comm_rank], recv_request, &finished, &status );
+                printf("Something was recieved from host: %d\n", finished);
                 int gpu_recv = ( status.MPI_TAG >> 24 );
                 int gpu_send = ( ( status.MPI_TAG & 0xFF0000000 ) >> 16 );
                 cudaSetDevice( gpu_recv );
