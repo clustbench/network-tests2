@@ -29,6 +29,7 @@ int one_to_one_cuda( Test_time_result_type * times, int mes_length, int num_repe
     int send_proc, recv_proc;
     int send_gpu, recv_gpu;
     MPI_Status status;
+    cudaError_t cuda_error;
     one_rank_calc = ( int* )malloc( sizeof( int ) * comm_size);
     for ( i = 0; i < comm_size; i++)
     {
@@ -142,7 +143,7 @@ void real_one_to_one_cuda( Test_time_result_type *times, int mes_length, int num
     int i;
     int tmp;
     int stride = 0;
-
+    cudaError_t cuda_error;
     for ( i = 0; i < source_proc; i++) 
         stride += gpu_count[i];
 
@@ -173,7 +174,11 @@ void real_one_to_one_cuda( Test_time_result_type *times, int mes_length, int num
             for ( i = 0; i < num_repeats; i++ )
             {
                 cudaEventRecord ( start, src_dst_stream );
-                cudaMemcpyPeerAsync( dataGPU, dest_gpu, data, source_gpu, mes_length, src_dst_stream );
+                cuda_error = cudaMemcpyPeerAsync( dataGPU, dest_gpu, data, source_gpu, mes_length, src_dst_stream );
+                if ( cuda_error )
+                {
+                    printf("Assync error\n");
+                }
                 cudaEventRecord ( stop, src_dst_stream );
                 cudaDeviceSynchronize();
                 cudaEventElapsedTime ( &timing, start, stop );
@@ -210,7 +215,9 @@ void real_one_to_one_cuda( Test_time_result_type *times, int mes_length, int num
         {
             // cudaMemcpy to host
             time_beg = px_my_cpu_time();
-            cudaMemcpy( dataGPU, data, mes_length, cudaMemcpyDeviceToHost );
+            cuda_error = cudaMemcpy( dataGPU, data, mes_length, cudaMemcpyDeviceToHost );
+            if ( cuda_error )
+                printf("Src copy error\n");
             MPI_Send( data, mes_length, MPI_BYTE, dest_proc, 0, MPI_COMM_WORLD);
             time_end = px_my_cpu_time();
             tmp_results[i] = ( time_end - time_beg );
@@ -220,6 +227,8 @@ void real_one_to_one_cuda( Test_time_result_type *times, int mes_length, int num
         {
             time_beg = px_my_cpu_time();
             MPI_Recv( data, mes_length, MPI_BYTE, source_proc, 0, MPI_COMM_WORLD, &status);
+            if ( cuda_error )
+                printf("dst copy error\n");
             cudaMemcpy( data, dataGPU, mes_length, cudaMemcpyHostToDevice );
             time_end = px_my_cpu_time();
             tmp_results[i] = ( time_end - time_beg );
