@@ -199,8 +199,8 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
                 //MPI_Isend( send_data_host[j * total_gpu + k], mes_length, MPI_BYTE, gpu_mpi_rank[k], 0, MPI_COMM_WORLD, &send_request[j * total_gpu + k] );
                 //MPI_Irecv( recv_data_host[j * total_gpu + k], mes_length, MPI_BYTE, gpu_mpi_rank[k], 0, MPI_COMM_WORLD, &recv_request[j * total_gpu + k] );
                 printf("lll:%d\n", gpu_global_rank[j] * total_gpu + k);
-                MPI_Isend( send_data_host[j * total_gpu + k], mes_length, MPI_BYTE, gpu_mpi_host_rank[k], tag_s, MPI_COMM_WORLD, &send_request[global_gpu_rank[j] * total_gpu + k] );
-                MPI_Irecv( recv_data_host[j * total_gpu + k], mes_length, MPI_BYTE, gpu_mpi_host_rank[k], tag_r, MPI_COMM_WORLD, &recv_request[global_gpu_rank[j] * total_gpu + k] );
+                MPI_Isend( send_data_host[j * total_gpu + k], mes_length, MPI_BYTE, gpu_mpi_host_rank[k], tag_s, MPI_COMM_WORLD, &send_request[gpu_global_rank[j] * total_gpu + k] );
+                MPI_Irecv( recv_data_host[j * total_gpu + k], mes_length, MPI_BYTE, gpu_mpi_host_rank[k], tag_r, MPI_COMM_WORLD, &recv_request[gpu_global_rank[j] * total_gpu + k] );
                 printf("2.Processing transmission to another host %d\n", gpu_mpi_host_rank[k]);
             }
 
