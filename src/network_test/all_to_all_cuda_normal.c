@@ -23,7 +23,7 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
 
 
     px_my_time_type **tmp_results=NULL;
-    px_my_time_type *time_beg, *time_end;
+    px_my_time_type time_beg, time_end;
     
     MPI_Status status;
     MPI_Request *send_request=NULL;
@@ -36,7 +36,7 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
     int tag_s = 0, tag_r = 0;
     int recv = 0;
     double sum;
-
+    cudaError_t cuda_error;
     int *gpu_mpi_host_rank;
     int *gpu_global_rank;
 
@@ -54,8 +54,8 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
 
     gpu_mpi_host_rank = ( int* )malloc( sizeof( int ) * total_gpu );
     gpu_global_rank = ( int* )malloc( sizeof( int ) * gpu_count[comm_rank] );
-    time_beg =  ( px_my_time_type* )malloc( sizeof( int ) ) * gpu_count[comm_rank] );
-    time_end =  ( px_my_time_type* )malloc( sizeof( int ) ) * gpu_count[comm_rank] );
+    //time_beg =  ( px_my_time_type* )malloc( sizeof( int ) ) * gpu_count[comm_rank] );
+    //time_end =  ( px_my_time_type* )malloc( sizeof( int ) ) * gpu_count[comm_rank] );
 
     int k = 0;
     int stride = 0;
@@ -128,7 +128,9 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
     for ( i = 0; i < total_gpu * gpu_count[comm_rank]; i++ )
         tmp_results[i] = ( px_my_time_type* )malloc( sizeof( px_my_cpu_time ) * num_repeats );
 
-
+    for ( i = 0; i < gpu_count[comm_rank] * total_gpu; i++ )
+	for ( j = 0; j < num_repeats; j++ )
+		tmp_results[i][j] = 0.0;
     for ( i = 0; i < gpu_count[comm_rank]; i++ ) 
     {
         cudaSetDevice( i );
@@ -173,7 +175,9 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
                     cudaEventRecord( start_events[j * total_gpu + k], send_streams[j * total_gpu + k] );
                     cudaMemcpyPeerAsync( recv_data[k - r_bound], k - r_bound, send_data[j], j, mes_length, send_streams[j * total_gpu + k] );
                     cudaEventRecord( stop_events[j * total_gpu + k], send_streams[j * total_gpu + k] );
-                    cudaEventElapsedTime(&tmp_results[j * total_gpu + k][i], stop_events[j * total_gpu + k], start_events[j * total_gpu + k] ) 
+	            float tmp_time = 0.0;
+                    cudaEventElapsedTime(&tmp_time, stop_events[j * total_gpu + k], start_events[j * total_gpu + k] ); 
+		    tmp_results[(k - r_bound) * total_gpu + j][i] = (double)tmp_time * 0.0001;
                     continue;
                    //part with memcpypeerasync on one board
                 }
@@ -231,20 +235,29 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
                 int gpu_recv = ( ( status.MPI_TAG >> 24 ) & 0x000000FF );
                 int gpu_send = ( ( status.MPI_TAG >> 16 ) & 0x000000FF );
                 int local_gpu_rank =  gpu_recv - l_bound;
-                cudaSetDevice( local_gpu_rank );
-                cudaMemcpyAsync( recv_data_host[local_gpu_rank * total_gpu + gpu_send], recv_data[local_gpu_rank], mes_length, cudaMemcpyHostToDevice, recv_streams[local_gpu_rank * total_gpu + gpu_send] );
-                cudaStreamSynchronize( recv_streams[local_gpu_rank * total_gpu + gpu_send] );
-                tmp_results[local_gpu_rank * total_gpu + gpu_send][i] = tmp_results[local_gpu_rank* total_gpu + gpu_send][i] - px_my_cpu_time();
-                printf("GPURECV:%d , GPUSEND:%d, Finished:%d\n", gpu_recv, gpu_send, tmp_results[( gpu_recv - l_bound ) * total_gpu + gpu_send][i]);
+		cuda_error = cudaSetDevice( local_gpu_rank );
+		if ( cuda_error )
+		   printf("ERR\n");
+                cuda_error = cudaMemcpyAsync( recv_data_host[local_gpu_rank * total_gpu + gpu_send], recv_data[local_gpu_rank], mes_length, cudaMemcpyHostToDevice, recv_streams[local_gpu_rank * total_gpu + gpu_send] );
+		if ( cuda_error )
+		   printf("ERR\n");
+                cuda_error = cudaStreamSynchronize( recv_streams[local_gpu_rank * total_gpu + gpu_send] );
+		if ( cuda_error )
+		   printf("ERR\n");
+		double time_end = px_my_cpu_time();
+                tmp_results[local_gpu_rank * total_gpu + gpu_send][i] = time_end - tmp_results[local_gpu_rank * total_gpu + gpu_send][i]; 
+		printf("local_gpu_rank:%d\n", local_gpu_rank);
+                printf("GPURECV:%d , GPUSEND:%d, Finished:%lf\n", gpu_recv, gpu_send, tmp_results[( gpu_recv - l_bound ) * total_gpu + gpu_send][i]);
 
         }
     
     }
+    for ( i = 0; i < gpu_count[comm_rank]; i++ )
+	for ( j = 0; j < total_gpu; j++ ) {
+	
+	     printf("@@@@TMPRES: 0:%lf, 1:%lf, 2:%lf", tmp_results[i*total_gpu + j][0], tmp_results[i * total_gpu + j][1], tmp_results[i * total_gpu + j][2] );
+ 	     times[i * total_gpu + j] = calc_stats( tmp_results[i * total_gpu + j], num_repeats); 
+	}
     return 0;
-}
-
-void real_all_to_all_cuda ( Test_time_result_type * times, int mes_length, int num_repeats)
-{
-    return;
 }
 
