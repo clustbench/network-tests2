@@ -40,6 +40,17 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
     int *gpu_mpi_host_rank;
     int *gpu_global_rank;
 
+    char **send_data=NULL;
+    char **recv_data=NULL;
+
+    char **send_data_host = NULL;
+    char **recv_data_host = NULL;
+
+    cudaStream_t *send_streams;
+    cudaStream_t *recv_streams;
+
+    cudaEvent_t *start_events;
+    cudaEvent_t *stop_events;
     gpu_mpi_host_rank = ( int* )malloc( sizeof( int ) * total_gpu );
     gpu_global_rank = ( int* )malloc( sizeof( int ) * gpu_count[comm_rank] );
 
@@ -81,26 +92,16 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
 	printf("SS:%d, ", gpu_global_rank[i]);
     printf("\n");
 
-    char **send_data=NULL;
-    char **recv_data=NULL;
-
-    char **send_data_host = NULL;
-    char **recv_data_host = NULL;
-
-    cudaStream_t *send_streams;
-    cudaStream_t *recv_streams;
-
-    cudaEvent_t *start_events;
-    cudaEvent_t *stop_events;
     
+	int another_gpus = ( total_gpu - gpu_count[comm_rank] )* gpu_count[comm_rank] ;
     send_streams = ( cudaStream_t* )malloc( sizeof( cudaStream_t ) * total_gpu * gpu_count[comm_rank] );
     recv_streams = ( cudaStream_t* )malloc( sizeof( cudaStream_t ) * total_gpu * gpu_count[comm_rank] );
     
     start_events = ( cudaEvent_t* )malloc( sizeof( cudaEvent_t ) * total_gpu * gpu_count[comm_rank] );
     stop_events = ( cudaEvent_t* )malloc( sizeof( cudaEvent_t ) * total_gpu * gpu_count[comm_rank] );
 
-    send_request = ( MPI_Request* )malloc( sizeof( MPI_Request ) *  total_gpu * total_gpu );
-    recv_request = ( MPI_Request* )malloc( sizeof( MPI_Request ) *  total_gpu * total_gpu );
+    send_request = ( MPI_Request* )malloc( sizeof( MPI_Request ) *  another_gpus );
+    recv_request = ( MPI_Request* )malloc( sizeof( MPI_Request ) *  another_gpus );
     /*cudaEvent_t start, stop;
     cudaStream_t src_dst_stream; //gpu_count[comm_rank] * gpu_count[comm_rank]
 
@@ -111,10 +112,10 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
     send_data = ( char** ) malloc ( sizeof( char* ) * total_gpu * gpu_count[comm_rank] );
     recv_data = ( char** ) malloc ( sizeof( char* ) * total_gpu * gpu_count[comm_rank] );
 
-    send_data_host = ( char** ) malloc ( sizeof( char* ) * total_gpu * gpu_count[comm_rank] );
-    recv_data_host = ( char** ) malloc ( sizeof( char* ) * total_gpu * gpu_count[comm_rank] );
+    send_data_host = ( char** ) malloc ( sizeof( char* ) * total_gpu * total_gpu );
+    recv_data_host = ( char** ) malloc ( sizeof( char* ) * total_gpu * total_gpu );
 
-    for ( i = 0; i < total_gpu * gpu_count[comm_rank]; i++ )
+    for ( i = 0; i < total_gpu * total_gpu; i++ )
     {
         send_data_host[i] = ( char* )malloc( sizeof ( char ) * mes_length );
         recv_data_host[i] = ( char* )malloc( sizeof ( char ) * mes_length );
@@ -193,7 +194,7 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
                     continue;
                 
                 cudaStreamSynchronize( send_streams[j * total_gpu + k] );
-                cudaDeviceSynchronize();
+                //cudaDeviceSynchronize();
                 tag_r = ( gpu_global_rank[j] << 24 ) | ( k << 16 );
                 tag_s = ( k << 24 ) | ( gpu_global_rank[j] << 16 );
                 printf( "%d:%d to %d:%d\n", comm_rank, gpu_global_rank[j], gpu_mpi_host_rank[k], k );
@@ -201,8 +202,14 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
                 //MPI_Isend( send_data_host[j * total_gpu + k], mes_length, MPI_BYTE, gpu_mpi_rank[k], 0, MPI_COMM_WORLD, &send_request[j * total_gpu + k] );
                 //MPI_Irecv( recv_data_host[j * total_gpu + k], mes_length, MPI_BYTE, gpu_mpi_rank[k], 0, MPI_COMM_WORLD, &recv_request[j * total_gpu + k] );
                 printf("lll:%d\n", gpu_global_rank[j] * total_gpu + k);
-                MPI_Isend( send_data_host[j * total_gpu + k], mes_length, MPI_BYTE, gpu_mpi_host_rank[k], tag_s, MPI_COMM_WORLD, &send_request[gpu_global_rank[j] * total_gpu + k] );
-                MPI_Irecv( recv_data_host[j * total_gpu + k], mes_length, MPI_BYTE, gpu_mpi_host_rank[k], tag_r, MPI_COMM_WORLD, &recv_request[k * total_gpu + gpu_global_rank[j]] );
+ //               MPI_Isend( send_data_host[j * total_gpu + k], mes_length, MPI_BYTE, gpu_mpi_host_rank[k], 0, MPI_COMM_WORLD, &send_request[gpu_mpi_host_rank[j]] );
+  //              MPI_Irecv( recv_data_host[j * total_gpu + k], mes_length, MPI_BYTE, gpu_mpi_host_rank[k], 0, MPI_COMM_WORLD, &recv_request[gpu_mpi_host_rank[k]] );
+  		int offset = 0;
+		if (comm_rank < gpu_mpi_host_rank[k])
+			offset = gpu_count[comm_rank]; 
+  		MPI_Isend( send_data_host[j * total_gpu + k], mes_length, MPI_BYTE, gpu_mpi_host_rank[k], tag_s, MPI_COMM_WORLD, &send_request[j * (total_gpu - gpu_count[comm_rank] ) + k - offset ] );
+		MPI_Irecv( recv_data_host[j * total_gpu + k], mes_length, MPI_BYTE, gpu_mpi_host_rank[k], tag_r, MPI_COMM_WORLD, &recv_request[j * (total_gpu - gpu_count[comm_rank] ) + k - offset ] );
+		printf("sss:%d\n", k * total_gpu + gpu_global_rank[j] );
                 printf("2.Processing transmission to another host %d\n", gpu_mpi_host_rank[k]);
             }
         }
@@ -213,11 +220,11 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
         while ( k < ( total_gpu - gpu_count[comm_rank] ) * gpu_count[comm_rank])
             {
                 k++;
-                MPI_Waitany( total_gpu * total_gpu, recv_request, &finished, &status );
+                MPI_Waitany( another_gpus, recv_request, &finished, &status );
                 printf("Something was recieved from host: %d\n", finished);
-                printf("KK::%d\n", k)
-                int gpu_recv = ( ( recv >> 24 ) & 0x000000FF );
-                int gpu_send = ( ( recv >> 16 ) & 0x000000FF );
+                printf("KK::%d\n", k);
+                int gpu_recv = ( ( status.MPI_TAG >> 24 ) & 0x000000FF );
+                int gpu_send = ( ( status.MPI_TAG >> 16 ) & 0x000000FF );
                 printf("GPURECV:%d , GPUSEND:%d, Finished:%d\n", gpu_recv, gpu_send, finished);
             //    cudaSetDevice( gpu_recv );
              //  cudaMemcpyAsync( recv_data_host[gpu_recv * total_gpu + gpu_send], recv_data[gpu_recv], mes_length, cudaMemcpyHostToDevice, recv_streams[gpu_recv * total_gpu + gpu_send] );
