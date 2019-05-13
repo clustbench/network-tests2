@@ -26,8 +26,6 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
     px_my_time_type time_beg, time_end;
     
     MPI_Status status;
-    MPI_Request *send_request=NULL;
-    MPI_Request *recv_request=NULL;
     int finished;
     px_my_time_type st_deviation;
     int i,j;
@@ -37,11 +35,14 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
     int recv = 0;
     double sum;
     cudaError_t cuda_error;
-    int *gpu_mpi_host_rank;
-    int *gpu_global_rank;
+    int *gpu_mpi_host_rank=NULL;
+    int *gpu_global_rank=NULL;
 
-    char **send_data=NULL;
-    char **recv_data=NULL;
+    MPI_Request *send_request=NULL;
+    MPI_Request *recv_request=NULL;
+
+    char **send_data;
+    char **recv_data;
 
     char **send_data_host = NULL;
     char **recv_data_host = NULL;
@@ -56,7 +57,7 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
     gpu_global_rank = ( int* )malloc( sizeof( int ) * gpu_count[comm_rank] );
     //time_beg =  ( px_my_time_type* )malloc( sizeof( int ) ) * gpu_count[comm_rank] );
     //time_end =  ( px_my_time_type* )malloc( sizeof( int ) ) * gpu_count[comm_rank] );
-
+   
     int k = 0;
     int stride = 0;
     for ( i = 0; i < comm_size; i++ ) 
@@ -96,7 +97,7 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
     printf("\n");
 
     
-	int another_gpus = ( total_gpu - gpu_count[comm_rank] )* gpu_count[comm_rank] ;
+    int another_gpus = ( total_gpu - gpu_count[comm_rank] )* gpu_count[comm_rank] ;
     send_streams = ( cudaStream_t* )malloc( sizeof( cudaStream_t ) * total_gpu * gpu_count[comm_rank] );
     recv_streams = ( cudaStream_t* )malloc( sizeof( cudaStream_t ) * total_gpu * gpu_count[comm_rank] );
     
@@ -105,16 +106,15 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
 
     send_request = ( MPI_Request* )malloc( sizeof( MPI_Request ) *  another_gpus );
     recv_request = ( MPI_Request* )malloc( sizeof( MPI_Request ) *  another_gpus );
-    /*cudaEvent_t start, stop;
+    cudaEvent_t start, stop;
     cudaStream_t src_dst_stream; //gpu_count[comm_rank] * gpu_count[comm_rank]
 
     cudaEventCreate( &start );
-    cudaEventCreate( &stop ); */
+    cudaEventCreate( &stop ); 
 
 
-    send_data = ( char** ) malloc ( sizeof( char* ) * total_gpu * gpu_count[comm_rank] );
-    recv_data = ( char** ) malloc ( sizeof( char* ) * total_gpu * gpu_count[comm_rank] );
-
+    send_data = ( char** ) malloc ( sizeof( char* ) *  gpu_count[comm_rank] );
+    recv_data = ( char** ) malloc ( sizeof( char* ) *  gpu_count[comm_rank]  );
     send_data_host = ( char** ) malloc ( sizeof( char* ) * total_gpu * total_gpu );
     recv_data_host = ( char** ) malloc ( sizeof( char* ) * total_gpu * total_gpu );
 
@@ -126,22 +126,30 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
 
     tmp_results = ( px_my_time_type** )malloc( sizeof( px_my_time_type* ) * total_gpu * gpu_count[comm_rank] );
     for ( i = 0; i < total_gpu * gpu_count[comm_rank]; i++ )
-        tmp_results[i] = ( px_my_time_type* )malloc( sizeof( px_my_cpu_time ) * num_repeats );
+        tmp_results[i] = ( px_my_time_type* )malloc( sizeof( px_my_time_type ) * num_repeats );
 
     for ( i = 0; i < gpu_count[comm_rank] * total_gpu; i++ )
 	for ( j = 0; j < num_repeats; j++ )
 		tmp_results[i][j] = 0.0;
+	printf("%d rank %d\n", gpu_count[comm_rank], comm_rank);
     for ( i = 0; i < gpu_count[comm_rank]; i++ ) 
     {
         cudaSetDevice( i );
+//	cuda_error = cudaMalloc ( ( void** ) &send_data[i], total_gpu * mes_length );
+//	if ( cuda_error)
+//		printf("mallocsend error\n");
+//	cuda_error = cudaMalloc ( ( void** ) &recv_data[i], total_gpu * mes_length );
+//	if ( cuda_error)
+//		printf("mallocrecv error\n");
         for ( j = 0; j < total_gpu; j++ ) 
         {
-            cuda_error = cudaMalloc( ( void** ) &send_data[i * total_gpu + j], mes_length );
-            if (cuda_error)
-                printf("send malloc error\n");
-            cuda_error = cudaMalloc( ( void** ) &recv_data[i * total_gpu + j], mes_length );
-        if (cuda_error)
-                printf("recv malloc error\n");
+	   printf("%d   %d\n", i, j);
+	   cuda_error = cudaMalloc ( ( void** ) &send_data[i * total_gpu + j], mes_length );
+	if (cuda_error)
+		printf( "cudamalloc error%s\n", cudaGetErrorString( cuda_error ) );
+	cuda_error = cudaMalloc ( ( void** ) &recv_data[i * total_gpu + j], mes_length );
+	if (cuda_error)
+		printf( "cudamalloc error%s\n", cudaGetErrorString( cuda_error ) );
             cuda_error = cudaStreamCreate ( &send_streams[i * total_gpu + j] );
             if (cuda_error)
                 printf("send stream malloc error\n");
@@ -152,7 +160,7 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
             cuda_error = cudaEventCreate ( &start_events[i * total_gpu + j] );
             if (cuda_error)
                 printf("start event malloc error\n");
-            cuda_error = cudaEventCreate ( &stop_events[i * total_gpu + j] );
+           cuda_error = cudaEventCreate ( &stop_events[i * total_gpu + j] );
             if (cuda_error)
                 printf("stop event malloc error\n");
             //cudaMalloc( ( void** ) &data, mes_length );
@@ -166,8 +174,9 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
         }
     } //preparations
 
-
+printf("BBBBBBBBBBBBBBBb%d\n", comm_rank);
     //time_beg?
+   
     for ( i = 0; i < num_repeats; i++ )
     {
 	printf( "it:%d\n", i);
@@ -184,9 +193,9 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
                     printf("Processing transmission on single host\n");
                     fflush(stdout);
                     cudaEventRecord( start_events[j * total_gpu + k], send_streams[j * total_gpu + k] );
-                    cuda_error = cudaMemcpyPeerAsync( recv_data[k - l_bound], k - l_bound, send_data[j], j, mes_length, send_streams[j * total_gpu + k] );
+                    cuda_error = cudaMemcpyPeerAsync( recv_data[k - l_bound + gpu_global_rank[j]], k - l_bound, send_data[j * total_gpu + k], j, mes_length, send_streams[j * total_gpu + k] );
                     if (cuda_error)
-                        printf("device peer memcpyasync error\n");
+                        printf("device peer memcpyasync error%s\n", cudaGetErrorString( cuda_error ) );
                     cudaEventRecord( stop_events[j * total_gpu + k], send_streams[j * total_gpu + k] );
                     continue;
                    //part with memcpypeerasync on one board
@@ -197,7 +206,7 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
                     tmp_results[j * total_gpu + k][i] = px_my_cpu_time();
                     cuda_error = cudaMemcpyAsync( send_data_host[j * total_gpu + k], send_data[j * total_gpu + k], mes_length, cudaMemcpyDeviceToHost, send_streams[j * total_gpu + k] );
                     if (cuda_error)
-                        printf("host memcpyasync error\n");
+                        printf("host memcpyasync error%s\n", cudaGetErrorString(cuda_error) );
                    //cudaDeviceSynchronize();
                    //MPI_Isend(send_data[j], gpu_mpi_rank[j], mes_length, MPI_BYTE, );
                    //MPI_Irecv();
@@ -215,12 +224,12 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
                 if ( comm_rank == gpu_mpi_host_rank[k] ) {
                     if ( gpu_global_rank[j] == k ) 
                     {
-                        tmp_results[j * total_gpu + k] = 0.0;
+                        tmp_results[j * total_gpu + k][i] = 0.0;
                     }
                     else
                     {
                         float tmp_time = 0.0;
-                        cudaEventElapsedTime(&tmp_time, stop_events[j * total_gpu + k], start_events[j * total_gpu + k] ); 
+                        cudaEventElapsedTime(&tmp_time, start_events[j * total_gpu + k], stop_events[j * total_gpu + k] ); 
                         tmp_results[(k - l_bound) * total_gpu + gpu_global_rank[j]][i] = (double)tmp_time * 0.0001;
                         printf("Local copy finished via %lf time\n", tmp_time * 0.0001);
                         continue;
@@ -259,13 +268,13 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
             int local_gpu_rank =  gpu_recv - l_bound;
             cuda_error = cudaSetDevice( local_gpu_rank );
             if ( cuda_error )
-            printf("ERR\n");
+	    printf("ERR%s\n", cudaGetErrorString( cuda_error ) );
                     cuda_error = cudaMemcpyAsync( recv_data_host[local_gpu_rank * total_gpu + gpu_send], recv_data[local_gpu_rank], mes_length, cudaMemcpyHostToDevice, recv_streams[local_gpu_rank * total_gpu + gpu_send] );
             if ( cuda_error )
-            printf("ERR\n");
+            printf("memcpyasync dst%s\n", cudaGetErrorString( cuda_error ) );
                     cuda_error = cudaStreamSynchronize( recv_streams[local_gpu_rank * total_gpu + gpu_send] );
             if ( cuda_error )
-            printf("ERR\n");
+            printf("strsynch%s\n", cudaGetErrorString( cuda_error ));
             double time_end = px_my_cpu_time();
                     tmp_results[local_gpu_rank * total_gpu + gpu_send][i] = time_end - tmp_results[local_gpu_rank * total_gpu + gpu_send][i]; 
             printf("local_gpu_rank:%d\n", local_gpu_rank);
@@ -281,6 +290,46 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
 	     printf("@@@@TMPRES: 0:%lf, 1:%lf, 2:%lf", tmp_results[i*total_gpu + j][0], tmp_results[i * total_gpu + j][1], tmp_results[i * total_gpu + j][2] );
  	     times[i * total_gpu + j] = calc_stats( tmp_results[i * total_gpu + j], num_repeats); 
 	    }
+
+    printf("BBBB%d\n", comm_rank);
+    for ( i = 0 ; i < gpu_count[comm_rank]; i++ ) 
+    {
+	cudaSetDevice( i );
+
+	for ( j = 0; j < total_gpu; j++ ) 
+	{
+		cudaFree( ( void** ) recv_data[i * total_gpu + j] );
+		cudaFree( ( void** ) send_data[i * total_gpu + j] );
+	}
+
+//	cudaDeviceReset();	
+    }
+    printf("DDDD%d\n", comm_rank);
+    free (gpu_mpi_host_rank);
+    free (gpu_global_rank);
+    printf("FFFF%d\n", comm_rank);
+    printf("QQQQ%d\n", comm_rank);
+    printf("EEEE%d\n", comm_rank);
+//    free (send_data);
+//    free (recv_data);
+    printf("GGGG%d\n", comm_rank);
+    free (send_streams);
+    free (recv_streams);
+    printf("HHHH%d\n", comm_rank);
+    free (start_events);
+    free (stop_events);
+    printf("JJJJ%d\n", comm_rank);
+    for ( i = 0; i < total_gpu * total_gpu; i++ )
+    {
+       free( send_data_host[i] );
+       free( recv_data_host[i] );
+    }
+    free( send_data_host );
+    free( recv_data_host );
+    for ( i = 0; i < total_gpu * gpu_count[comm_rank]; i++ )
+        free( tmp_results[i] );
+    free( tmp_results );
+    printf("CCCC%d\n", comm_rank);
     return 0;
 }
 
