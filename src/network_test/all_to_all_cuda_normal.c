@@ -187,7 +187,7 @@ printf("BBBBBBBBBBBBBBBb%d\n", comm_rank);
             {
                 if ( comm_rank == gpu_mpi_host_rank[k] ) 
                 {
-                    if ( k - r_bound == j )
+                    if ( k - l_bound == j )
                         continue;
 
                     printf("Processing transmission on single host\n");
@@ -232,8 +232,8 @@ printf("BBBBBBBBBBBBBBBb%d\n", comm_rank);
                         cudaEventElapsedTime(&tmp_time, start_events[j * total_gpu + k], stop_events[j * total_gpu + k] ); 
                         tmp_results[(k - l_bound) * total_gpu + gpu_global_rank[j]][i] = (double)tmp_time * 0.0001;
                         printf("Local copy finished via %lf time\n", tmp_time * 0.0001);
-                        continue;
                     }
+                    continue;
                 }
                 tag_r = ( gpu_global_rank[j] << 24 ) | ( k << 16 );
                 tag_s = ( k << 24 ) | ( gpu_global_rank[j] << 16 );
