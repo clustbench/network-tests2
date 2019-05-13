@@ -113,8 +113,8 @@ int all_to_all_cuda( Test_time_result_type * times, int mes_length, int num_repe
     cudaEventCreate( &stop ); 
 
 
-    send_data = ( char** ) malloc ( sizeof( char* ) *  gpu_count[comm_rank] );
-    recv_data = ( char** ) malloc ( sizeof( char* ) *  gpu_count[comm_rank]  );
+    send_data = ( char** ) malloc ( sizeof( char* ) * total_gpu * gpu_count[comm_rank] );
+    recv_data = ( char** ) malloc ( sizeof( char* ) * total_gpu * gpu_count[comm_rank]  );
     send_data_host = ( char** ) malloc ( sizeof( char* ) * total_gpu * total_gpu );
     recv_data_host = ( char** ) malloc ( sizeof( char* ) * total_gpu * total_gpu );
 
@@ -182,7 +182,7 @@ printf("BBBBBBBBBBBBBBBb%d\n", comm_rank);
 	printf( "it:%d\n", i);
         for ( j = 0; j < gpu_count[comm_rank]; j++ )
         {
-            cudaSetDevice( j );
+            cuda_error = cudaSetDevice( j );
             for ( k = 0; k < total_gpu; k++ )
             {
                 if ( comm_rank == gpu_mpi_host_rank[k] ) 
@@ -220,7 +220,9 @@ printf("BBBBBBBBBBBBBBBb%d\n", comm_rank);
             cudaSetDevice( j );
             for ( k = 0; k < total_gpu; k++ )
             {
-                cudaDeviceSynchronize();
+		cuda_error = cudaStreamSynchronize( send_streams[j * total_gpu + k] );
+		if ( cuda_error )
+			printf("StreamSynchError%s\n", cudaGetErrorString( cuda_error ) );
                 if ( comm_rank == gpu_mpi_host_rank[k] ) {
                     if ( gpu_global_rank[j] == k ) 
                     {
@@ -268,8 +270,8 @@ printf("BBBBBBBBBBBBBBBb%d\n", comm_rank);
             int local_gpu_rank =  gpu_recv - l_bound;
             cuda_error = cudaSetDevice( local_gpu_rank );
             if ( cuda_error )
-	    printf("ERR%s\n", cudaGetErrorString( cuda_error ) );
-                    cuda_error = cudaMemcpyAsync( recv_data_host[local_gpu_rank * total_gpu + gpu_send], recv_data[local_gpu_rank], mes_length, cudaMemcpyHostToDevice, recv_streams[local_gpu_rank * total_gpu + gpu_send] );
+		    printf("ERR%s\n", cudaGetErrorString( cuda_error ) );
+	    cuda_error = cudaMemcpyAsync( recv_data[local_gpu_rank * total_gpu + gpu_send], recv_data_host[local_gpu_rank * total_gpu + gpu_send], mes_length, cudaMemcpyHostToDevice, recv_streams[local_gpu_rank * total_gpu + gpu_send] );
             if ( cuda_error )
             printf("memcpyasync dst%s\n", cudaGetErrorString( cuda_error ) );
                     cuda_error = cudaStreamSynchronize( recv_streams[local_gpu_rank * total_gpu + gpu_send] );
@@ -302,7 +304,7 @@ printf("BBBBBBBBBBBBBBBb%d\n", comm_rank);
 		cudaFree( ( void** ) send_data[i * total_gpu + j] );
 	}
 
-//	cudaDeviceReset();	
+	cudaDeviceReset();	
     }
     printf("DDDD%d\n", comm_rank);
     free (gpu_mpi_host_rank);
@@ -310,8 +312,8 @@ printf("BBBBBBBBBBBBBBBb%d\n", comm_rank);
     printf("FFFF%d\n", comm_rank);
     printf("QQQQ%d\n", comm_rank);
     printf("EEEE%d\n", comm_rank);
-//    free (send_data);
-//    free (recv_data);
+    free (send_data);
+    free (recv_data);
     printf("GGGG%d\n", comm_rank);
     free (send_streams);
     free (recv_streams);
