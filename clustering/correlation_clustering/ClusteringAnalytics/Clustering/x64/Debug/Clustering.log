@@ -1,3 +1,0 @@
-﻿  KMeans.cpp
-c:\users\akagitsune\documents\diplom\clusteringanalytics\clustering\kmeans.cpp(30): warning C4244: аргумент: преобразование "time_t" в "unsigned int", возможна потеря данных
-  Clustering.vcxproj -> C:\Users\akagitsune\Documents\diplom\ClusteringAnalytics\x64\Debug\Clustering.exe
