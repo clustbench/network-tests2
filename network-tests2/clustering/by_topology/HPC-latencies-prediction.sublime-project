@@ -1,0 +1,45 @@
+{
+	"build_systems":
+	[
+		{
+			"file_regex": "^[ ]*File \"(...*?)\", line ([0-9]*)",
+			"name": "Anaconda Python Builder",
+			"selector": "source.python",
+			"shell_cmd": "\"python\" -u \"$file\""
+		}
+	],
+	"folders":
+	[
+		{
+			"folder_exclude_patterns":
+			[
+				".ipynb_checkpoints",
+				"__pycache__"
+			],
+			"path": "."
+		}
+	],
+	"settings":
+	{
+		"anaconda_linting_behaviour": "load-save",
+		"complete_all_parameters": true,
+		"complete_parameters": true,
+		"pep8_ignore":
+		[
+			"E309",
+			"E501",
+			"E122",
+			"E265",
+			"E266",
+			"W391",
+			"W293",
+			"E303",
+			"E126"
+		],
+		"pep8_max_line_length": 100,
+		"pyflakes_explicit_ignore":
+		[
+		],
+		"trim_trailing_white_space_on_save": false
+	}
+}
