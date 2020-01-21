@@ -25,6 +25,7 @@
 
 #include "my_time.h"
 #include "string_id_converters.h"
+#include "mpi.h"
 
 #include "network_speed.h"
 
@@ -94,7 +95,7 @@ int main(int argc, char** argv)
              printf("Can not to create file with name \"%s_hosts.txt\"\n",test_parameters.file_name_prefix);
              return 1;
         }
-
+/*
         for(int i=0;i<test_data.get_num_messages();i++)
         {
              if(netcdf_write_matrix(
@@ -103,16 +104,17 @@ int main(int argc, char** argv)
                                         i,
                                         test_parameters.num_procs,
                                         test_parameters.num_procs,
-                                        test_data.get_certain_matix(i).get_body()
+                                        test_data.get_certain_matix(i).get_body(),
+                                        0
                                     )
                 ) /* End condition */
-             {
+        /*     {
                 printf("Sorry. write matrix to netCDF filed\n");
                 return 1;
              }
-        }
+        }*/
 
-        netcdf_close_file(netcdf_file);
+        //netcdf_close_file(netcdf_file);
         printf("Done\n");
 
         return 0;
