@@ -29,9 +29,9 @@
 #include <math.h>
 #include <mpi.h>
 #include <time.h>
-#include "../../comm_proc.h"
+
 #include "test_noise_common.h"
-#include "../tests_common.h"
+#include "tests_common.h"
 
 
 extern test_data td;
@@ -39,7 +39,7 @@ extern test_data td;
 /*
  * Test main function
  */
-int noise(Test_time_result_type *times, int mes_length, int num_repeats, int num_noise_repeats, int loading, int num_noise_procs, char **hosts_names, COMM_PROC comm_proc[])
+int test_noise(Test_time_result_type *times, int mes_length, int num_repeats, int num_noise_repeats, int loading, int num_noise_procs )
 {
 	int* mode_array=NULL;
 	init_test_data( &td );
@@ -52,21 +52,20 @@ int noise(Test_time_result_type *times, int mes_length, int num_repeats, int num
 	MPI_Request* requests_noise=NULL;
 	MPI_Status*  statuses_noise=NULL;
 	
-    
 	int sync_sum;
+
 	int i, j, k, l;
 	px_my_time_type time_beg,time_end;
 	px_my_time_type sum;
 	px_my_time_type st_deviation;
 	
-    
 	int flag;
 	int work_flag=1;
 
 	int command[2];
 				
 	int remote_proc;
-    
+
 	/*
 	 * Try get enough memory. If didn't, return -1. In send_request we got memory for both send and receive request
 	 */
@@ -75,7 +74,7 @@ int noise(Test_time_result_type *times, int mes_length, int num_repeats, int num
 	{
 		return -1;
 	}
-    
+
 	statuses_noise=(MPI_Status *)malloc(2*num_noise_procs*sizeof(MPI_Status));
 	if(statuses_noise == NULL )
 	{
@@ -106,31 +105,23 @@ int noise(Test_time_result_type *times, int mes_length, int num_repeats, int num
 
 	if(comm_rank==0)
 	{
-        
 		/* Uncomment to debug
 		printf("HELLO! I'm 0, press any key\n");
 		getchar();
 		*/
-        /*flag = init_mode_array1(num_noise_procs,comm_size,mode_array, hosts_names, comm_proc);
-        if(flag)
-        {
-				return -1;
-        }*/
 
 		for(proc1=0;proc1<comm_size; proc1++)
 		for(proc2=0;proc2<comm_size; proc2++)
 		{
-            //flag = init_mode_array1(proc1,proc2,num_noise_procs,comm_size,mode_array, hosts_names, comm_proc);
-            
 			flag=init_mode_array(proc1,proc2,num_noise_procs,comm_size,mode_array);
 			if(flag)
 			{
 				return -1;
 			}
-
+			
 			for(i=0;i<num_repeats;i++)
 			{
-            
+
 				MPI_Bcast( mode_array, comm_size, MPI_INT, 0, MPI_COMM_WORLD );
 				
 				command[0]=i; /* Iteration number */

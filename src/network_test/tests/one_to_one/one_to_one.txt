@@ -1,4 +1,0 @@
-Name: one_to_one
-options:
-	num_repeats
-	num_procs

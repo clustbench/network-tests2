@@ -49,10 +49,10 @@ extern int async_one_to_one(Test_time_result_type *times,int mes_length,int num_
 extern int bcast(Test_time_result_type *times,int mes_length,int num_repeats);
 extern int one_to_one(Test_time_result_type *times,int mes_length,int num_repeats);
 extern int send_recv_and_recv_send(Test_time_result_type *times,int mes_length,int num_repeats);
-extern int noise(Test_time_result_type *times,int mes_length, int num_repeats, int num_noise_repeats, int noise_message_length, int num_noise_procs);
-extern int noise_blocking(Test_time_result_type *times,int mes_length, int num_repeats, int num_noise_repeats, int noise_message_length, int num_noise_procs);
-extern int get(Test_time_result_type *times,int mes_length,int num_repeats);
-extern int put(Test_time_result_type *times,int mes_length,int num_repeats);
+extern int test_noise(Test_time_result_type *times,int mes_length, int num_repeats, int num_noise_repeats, int noise_message_length, int num_noise_procs);
+extern int test_noise_blocking(Test_time_result_type *times,int mes_length, int num_repeats, int num_noise_repeats, int noise_message_length, int num_noise_procs);
+extern int get_one_to_one(Test_time_result_type *times,int mes_length,int num_repeats);
+extern int put_one_to_one(Test_time_result_type *times,int mes_length,int num_repeats);
 
 
 #ifdef __cplusplus

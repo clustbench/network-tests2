@@ -30,9 +30,8 @@
 #include <mpi.h>
 #include <time.h>
 
-#include "../../comm_proc.h"
 #include "test_noise_common.h"
-#include "../tests_common.h"
+#include "tests_common.h"
 
 
 extern test_data td;
@@ -40,7 +39,7 @@ extern test_data td;
 /*
  * Test main function
  */
-int noise_blocking(Test_time_result_type *times, int mes_length, int num_repeats, int num_noise_repeats, int loading, int num_noise_procs, char **hosts_names, COMM_PROC comm_proc[] )
+int test_noise_blocking(Test_time_result_type *times, int mes_length, int num_repeats, int num_noise_repeats, int loading, int num_noise_procs )
 {
 	int* mode_array=NULL;
 	init_test_data( &td );
@@ -108,12 +107,7 @@ int noise_blocking(Test_time_result_type *times, int mes_length, int num_repeats
 		printf("HELLO! I'm 0, press any key\n");
 		getchar();
 		*/
-        /*flag = init_mode_array1(num_noise_procs,comm_size,mode_array, hosts_names, comm_proc);
-        if(flag)
-        {
-				return -1;
-        }*/
-        
+
 		for(proc1=0;proc1<comm_size; proc1++)
 		for(proc2=0;proc2<comm_size; proc2++)
 		{
@@ -121,9 +115,7 @@ int noise_blocking(Test_time_result_type *times, int mes_length, int num_repeats
 			{
 				continue;
 			}
-            
-            //flag = init_mode_array1(proc1,proc2,num_noise_procs,comm_size,mode_array, hosts_names, comm_proc);
-            
+
 			flag=init_mode_array(proc1,proc2,num_noise_procs,comm_size,mode_array);
 			if(flag)
 			{

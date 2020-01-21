@@ -1,8 +1,8 @@
 #ifndef __TEST_NOISE_COMMON_H__
 #define __TEST_NOISE_COMMON_H__
 
-#include "../../../core/my_time.h"
-#include "../tests_common.h"
+#include "my_time.h"
+#include "tests_common.h"
 
 
 extern int comm_rank;
@@ -17,8 +17,6 @@ extern int comm_size;
 /*
  * Structure to keep most of test data together
  */
-
-
 typedef struct tag_test_data
 {
 	px_my_time_type **tmp_results;
