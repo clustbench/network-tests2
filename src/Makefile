@@ -1,3 +1,29 @@
+#
+# This file is a part of the PARUS project and  makes the core of the parus system
+# Copyright (C) 2006  Alexey N. Salnikov
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
+# Alexey N. Salnikov (salnikov@cmc.msu.ru)
+#
+
+#
+# This file makes the nework_test of the parus system
+#
+
+
 include ../../config
 
 FILE_TESTS = \
@@ -32,8 +58,10 @@ FILES_TEST2=\
 FILES_PRINT_FROM_TO=\
 	print_from_to.o
 
+EXECS= print_from_to convert_to_netcdf network_test2
+#-lall -lasync -lput -lget -lcast2 -lnoiseblocking -lnoise -lnoisecommon -lsend -lone
 
-all: liball.so libasync.so libput.so libget.so libcast2.so libnoiseblocking.so libnoise.so libnoisecommon.so libsend.so libone.so network_test print_from_to convert_to_netcdf
+all: liball_to_all.so libasync_one_to_one.so libput.so libget.so libbcast.so libnoise_blocking.so libnoise.so libsend_recv_and_recv_send.so libone_to_one.so network_test2 print_from_to convert_to_netcdf
 
 libput.so:  put2.o parse_arguments.o tests_common.o 
 	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -shared -L ../core/*.o put2.o tests_common.o -o libput.so
@@ -48,60 +76,58 @@ get2.o: get2.c
 	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -I ../core -c -fPIC get2.c -o get2.o
 
 
-libcast2.so:  bcast2.o parse_arguments.o tests_common.o 
-	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -shared -L ../core/*.o bcast2.o tests_common.o -o libcast2.so
+libbcast.so:  bcast2.o parse_arguments.o tests_common.o 
+	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -shared -L ../core/*.o bcast2.o tests_common.o -o libbcast.so
 
 bcast2.o: bcast2.c
 	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -I ../core -c -fPIC bcast2.c -o bcast2.o
 
 
-libnoiseblocking.so:  test_noise_blocking2.o parse_arguments.o tests_common.o 
-	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -shared -L ../core/*.o test_noise_blocking2.o tests_common.o -o libnoiseblocking.so
+libnoise_blocking.so:  test_noise_blocking2.o parse_arguments.o tests_common.o noisecommon.o
+	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -shared -L ../core/*.o noisecommon.o test_noise_blocking2.o tests_common.o -o libnoise_blocking.so
 
 test_noise_blocking2.o: test_noise_blocking2.c
 	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -I ../core -c -fPIC test_noise_blocking2.c -o test_noise_blocking2.o
 
 
-libnoise.so:  test_noise2.o parse_arguments.o tests_common.o 
-	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -shared -L ../core/*.o test_noise2.o tests_common.o -o libnoise.so
+libnoise.so:  test_noise2.o parse_arguments.o tests_common.o noisecommon.o
+	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -shared -L ../core/*.o noisecommon.o test_noise2.o tests_common.o -o libnoise.so
 
 test_noise2.o: test_noise2.c
-	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -I ../core/*.o -c -fPIC test_noise2.c -o test_noise2.o
+	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -I ../core -c -fPIC test_noise2.c -o test_noise2.o
 
-libnoisecommon.so:  noisecommon.o parse_arguments.o tests_common.o 
-	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -shared -L ../core/*.o noisecommon.o tests_common.o -o libnoisecommon.so
 
 noisecommon.o: test_noise_common.c
 	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -I ../core -c -fPIC test_noise_common.c -o noisecommon.o
 
-libsend.so:  send.o parse_arguments.o tests_common.o 
-	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -shared -L ../core/*.o send.o tests_common.o -o libsend.so
+libsend_recv_and_recv_send.so:  send.o parse_arguments.o tests_common.o 
+	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -shared -L ../core/*.o send.o tests_common.o -o libsend_recv_and_recv_send.so
 
 send.o: send_recv_and_recv_send2.c
 	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -I ../core -c -fPIC send_recv_and_recv_send2.c -o send.o
 
 
-libone.so:  one.o parse_arguments.o tests_common.o 
-	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -shared ../core/*.o one.o tests_common.o -o libone.so
+libone_to_one.so:  one.o parse_arguments.o tests_common.o 
+	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -shared ../core/*.o one.o tests_common.o -o libone_to_one.so
 
 one.o: one_to_one2.c
 	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -I ../core -c -fPIC one_to_one2.c -o one.o
 
-liball.so:  all.o parse_arguments.o tests_common.o 
+liball_to_all.so:  all.o parse_arguments.o tests_common.o 
 	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -shared -L ../core/*.o all.o tests_common.o -o liball.so
 
 all.o: all_to_all2.c
 	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -I ../core -c -fPIC all_to_all2.c -o all.o
 
 
-libasync.so:  async.o parse_arguments.o tests_common.o 
-	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -shared -L ../core/*.o async.o tests_common.o -o libasync.so
+libasync_one_to_one.so:  async.o parse_arguments.o tests_common.o 
+	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -shared -L ../core/*.o async.o tests_common.o -o libasync_one_to_one.so
 
 async.o: async_one_to_one2.c
 	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -I ../core -c -fPIC async_one_to_one2.c -o async.o
 
-network_test: parse_arguments.o tests_common.o network_test2.o liball.so libasync.so libput.so libget.so libcast2.so libnoiseblocking.so libnoise.so libnoisecommon.so libsend.so libone.so
-	$(MPI_CXX) $(MPI_CXX_FLAGS) $(MPI_CXX_INCLUDE) $(MPI_LIB_PATH) $(NETCDF_INCLUDE) -o network_test2 network_test2.o parse_arguments.o tests_common.o ../core/*.o -L. -lall -lasync -lput -lget -lcast2 -lnoiseblocking -lnoise -lnoisecommon -lsend -lone  -ldl -Wl,-rpath,. $(MPI_LIBS) -lnetcdf -lm
+network_test2: parse_arguments.o tests_common.o network_test2.o 
+	$(MPI_CXX) $(MPI_CXX_FLAGS) $(MPI_CXX_INCLUDE) $(MPI_LIB_PATH) $(NETCDF_INCLUDE) -rdynamic -o network_test2 network_test2.o parse_arguments.o tests_common.o ../core/*.o -ldl $(MPI_LIBS) -lm -lnetcdf
 
 network_test.o: network_test2.c
 	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) $(NETCDF_INCLUDE) -I ../core -c network_test2.c -ldl -o network_test2.o
@@ -120,7 +146,13 @@ tests_common.o: tests_common.c
 parse_arguments.o: parse_arguments.c
 	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -I ../core -c parse_arguments.c -o parse_arguments.o
 
+all:
+	echo "OK"
 
+clean:
+	rm  -f ./*.o
+	rm -f ./*.so
+	rm  -f $(EXECS) 
 
 %.o: %.c
 	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -I ../core -I ../.. -c $^ -o $@
@@ -128,5 +160,4 @@ parse_arguments.o: parse_arguments.c
 %.o: %.cpp
 	$(MPI_CXX) $(MPI_CXX_FLAGS) $(MPI_CXX_INCLUDE) -I ../core -I ../.. -c $^ -o $@
 
-all: 
-	echo "Okay"
+

@@ -9,6 +9,83 @@
 #define DIM_GET_ERR_STR	"ArcNetCDFFileWriter :: ArcNetCDFFileWriter : Error achieving dimensions"
 #define DIM_CREATE_ERR_STR	"ArcNetCDFFileWriter :: ArcNetCDFFileWriter : Error creating dimensions"
 
+int get_test_type(const char *str)
+{
+    string kek = "one_to_one";
+    if(str==NULL) return -1;
+    if(!strcmp((const char*)str,"one_to_one"))
+        return ONE_TO_ONE_TEST_TYPE;
+    if(!strcmp((const char*)str,"all_to_all"))
+        return ALL_TO_ALL_TEST_TYPE;
+    if(!strcmp((const char*)str,"async_one_to_one"))
+        return ASYNC_ONE_TO_ONE_TEST_TYPE;
+    if(!strcmp((const char*)str,"send_recv_and_recv_send"))
+        return SEND_RECV_AND_RECV_SEND_TEST_TYPE;
+    if(!strcmp((const char*)str,"noise"))
+        return NOISE_TEST_TYPE;
+    if(!strcmp((const char*)str,"noise_blocking"))
+        return NOISE_BLOCKING_TEST_TYPE;
+    if(!strcmp((const char*)str,"bcast"))
+        return BCAST_TEST_TYPE;
+    if(!strcmp((const char*)str,"put"))
+        return PUT_ONE_TO_ONE_TEST_TYPE;
+    if(!strcmp((const char*)str,"get"))
+        return GET_ONE_TO_ONE_TEST_TYPE;
+    return UNKNOWN_TEST_TYPE;
+}
+
+int get_data_type(const char *str)
+{
+    if (str==NULL) return -1;
+    if (!strcmp(str, "average"))
+        return AVERAGE_NETWORK_TEST_DATATYPE;
+    if (!strcmp(str, "median"))
+        return MEDIAN_NETWORK_TEST_DATATYPE;
+    if (!strcmp(str, "deviation"))
+        return DEVIATION_NETWORK_TEST_DATATYPE;
+    if (!strcmp(str, "min"))
+        return MIN_NETWORK_TEST_DATATYPE;
+}
+
+int get_test_type_name(int test_type,char *str)
+{
+    if(str==NULL) return -1;
+    switch(test_type)
+    {
+    case ONE_TO_ONE_TEST_TYPE:
+        strcpy(str,"one_to_one");
+        break;
+    case ASYNC_ONE_TO_ONE_TEST_TYPE:
+        strcpy(str,"async_one_to_one");
+        break;
+    case ALL_TO_ALL_TEST_TYPE:
+        strcpy(str,"all_to_all");
+        break;
+    case SEND_RECV_AND_RECV_SEND_TEST_TYPE:
+        strcpy(str,"send_recv_and_recv_send");
+        break;
+    case NOISE_TEST_TYPE:
+        strcpy(str,"noise");
+        break;
+    case NOISE_BLOCKING_TEST_TYPE:
+        strcpy(str,"noise_blocking");
+        break;
+    case BCAST_TEST_TYPE:
+        strcpy(str,"bcast");
+        break;
+    case GET_ONE_TO_ONE_TEST_TYPE:
+        strcpy(str,"get");
+        break;
+    case PUT_ONE_TO_ONE_TEST_TYPE:
+        strcpy(str,"put");
+        break;
+    default:
+        strcpy(str,"unknown");
+        break;
+    }
+    return 0;
+}
+
 ArcNetCDFFileWriter :: ArcNetCDFFileWriter (const char *output_file_name, const char *input_netcdf_name):
 input_ (NULL),
 output_ (NULL),
@@ -51,7 +128,9 @@ partition_number_ (0)
 	
 	NcVar *proc_num, *test_type, *data_type, *begin_mes_length, *end_mes_length;
 	NcVar *step_length, *noise_mes_length, *num_noise_mes, *num_noise_proc, *num_repeates;
-	
+	char *data_typv;
+    char *test_typv;
+
 	int proc_num_v,	test_type_v, data_type_v, begin_mes_length_v, end_mes_length_v, step_length_v,
 	noise_mes_length_v, num_noise_mes_v, num_noise_proc_v, num_repeates_v;
 	//int err_count = 0;
@@ -59,9 +138,11 @@ partition_number_ (0)
 	//printf ("?");
 	
 	CHECK_THROW (proc_num_v			= input_->get_var ("proc_num")->as_int (0), VAR_GET_ERR_STR);
-	CHECK_THROW (test_type_v		= input_->get_var ("test_type")->as_int (0), VAR_GET_ERR_STR);
-	CHECK_THROW (data_type_v		= input_->get_var ("data_type")->as_int (0), VAR_GET_ERR_STR);
-	CHECK_THROW (begin_mes_length_v	= input_->get_var ("begin_mes_length")->as_int (0), VAR_GET_ERR_STR);
+
+    CHECK_THROW (get_test_type(test_typv = (input_->get_var ("test_type")->as_string(0))), VAR_GET_ERR_STR);
+	CHECK_THROW (get_data_type(data_typv= (input_->get_var ("data_type")->as_string(0))), VAR_GET_ERR_STR);
+
+    CHECK_THROW (begin_mes_length_v	= input_->get_var ("begin_mes_length")->as_int (0), VAR_GET_ERR_STR);
 	CHECK_THROW (end_mes_length_v	= input_->get_var ("end_mes_length")->as_int (0), VAR_GET_ERR_STR);
 	CHECK_THROW (step_length_v		= input_->get_var ("step_length")->as_int (0), VAR_GET_ERR_STR);
 	CHECK_THROW (noise_mes_length_v	= input_->get_var ("noise_mes_length")->as_int (0), VAR_GET_ERR_STR);
@@ -78,8 +159,8 @@ partition_number_ (0)
 	CHECK_THROW (d_dim = temp_out_->add_dim ("ad"), DIM_CREATE_ERR_STR);
 	
 	CHECK_THROW (proc_num			= output_->add_var ("aproc_num", ncInt), VAR_CREATE_ERR_STR);
-	CHECK_THROW (test_type			= output_->add_var ("atest_type", ncInt), VAR_CREATE_ERR_STR);
-	CHECK_THROW (data_type			= output_->add_var ("adata_type", ncInt), VAR_CREATE_ERR_STR);
+	CHECK_THROW (test_type			= output_->add_var ("atest_type", ncChar, n_dim), VAR_CREATE_ERR_STR);
+	CHECK_THROW (data_type			= output_->add_var ("adata_type", ncChar,n_dim), VAR_CREATE_ERR_STR);
 	CHECK_THROW (begin_mes_length	= output_->add_var ("abegin_mes_length", ncInt), VAR_CREATE_ERR_STR);
 	CHECK_THROW (end_mes_length		= output_->add_var ("aend_mes_length", ncInt), VAR_CREATE_ERR_STR);
 	CHECK_THROW (step_length		= output_->add_var ("astep_length", ncInt), VAR_CREATE_ERR_STR);
@@ -92,8 +173,8 @@ partition_number_ (0)
 	CHECK_THROW (data_var_			= temp_out_->add_var ("data", ncDouble, d_dim), VAR_CREATE_ERR_STR);
 	
 	proc_num->put (&proc_num_v);
-	test_type->put (&test_type_v);
-	data_type->put (&data_type_v);
+	test_type->put(test_typv,strlen(test_typv));
+	data_type->put(data_typv,strlen(data_typv));
 	begin_mes_length->put (&begin_mes_length_v);
 	end_mes_length->put (&end_mes_length_v);
 	step_length->put (&step_length_v);
