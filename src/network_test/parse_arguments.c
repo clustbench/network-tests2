@@ -7,6 +7,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "string.h"
+#include "libconfig.h"
 
 #include "types.h"
 #include "../../parus_config.h"
@@ -20,6 +22,7 @@
 #define NOISE_MESSAGE_NUM 1
 #define NUM_NOISE_PROCS 0
 
+#define INFO_FLAG   5
 #define VERSION_FLAG 1
 #define ERROR_FLAG   -1
 #define HELP_FLAG    2
@@ -41,7 +44,11 @@ int print_network_test_help_message(void)
            "\t\t\t[{ -p | --procs_noise } <number of noise MPI processes> ]\n"
            "\t\t\t[{ -n | --num_iterations } <number of iterations> ]\n"
            "\t\t\t[{ -h | --help }]\n"
+           "\t\t\t[{ --info      }]\n"
+           "\t\t\t[{ --fullinfo  }]\n"
            "\t\t\t[{ -v | --version }]\n","network_test2");
+
+
 #else
 
     printf("\nCommand line format for this program is:\n"
@@ -55,6 +62,8 @@ int print_network_test_help_message(void)
            "\t\t\t[ -p <number of noise processes> ]\n"
            "\t\t\t[ -n <number of iterations> ]\n"
            "\t\t\t[ -h ] - print help\n"
+           "\t\t\t[ --info] - print short information\n"
+           "\t\t\t[ --fullinfo] - print full information\n"
            "\t\t\t[ -v ] - print version\n","network_test2");
 #endif
     printf("\n\nValues of parametrs:\n"
@@ -99,10 +108,54 @@ int print_network_test_help_message(void)
 
     printf("num_repeats\t\t - sets number iteration in send process, '%d' by default\n",(int)NUM_REPEATS);
     printf("\n"
+           "info\t\t - print short information about test\n"
+           "fullinfo\t - print full information about test\n"
            "help\t\t - this text\n"
            "version\t\t - types parus version\n\n\n"
            "Parus version: %s\n\n\n",PARUS_VERSION);
 
+    return 0;
+}
+
+int print_info_test(struct network_test_parameters_struct *parameters ,int d)
+{
+    char test[30];
+    char library[100] = "\0";
+    char tests[10] = "tests/";
+    char libso[5] = ".so";
+    char liblib[5] ="/lib";
+    char info[12] = "/config.cfg";
+    config_t cfg;
+    const char *info_str;
+    const char *info_parameters;
+    if (get_test_type_name(parameters->test_type, test) == -1)
+        return -1;
+    strcat(library, tests);
+    strcat(library, test);
+    library[strlen(library)] = '//';
+    strcat(library, info);
+    
+    config_init(&cfg);
+    if (! config_read_file(&cfg, library))
+    {
+        return -1;
+    }
+    if (d==0)
+    {
+        if (config_lookup_string(&cfg, "info", &info_str))
+            printf("%s\n", info_str);
+        if (config_lookup_string(&cfg, "parameters", &info_parameters))
+            printf("%s\n", info_parameters);
+    }
+    else 
+    {
+        if (config_lookup_string(&cfg, "full_info", &info_str))
+            printf("%s\n", info_str);
+        if (config_lookup_string(&cfg, "full_parameters", &info_parameters))
+            printf("%s\n", info_parameters);
+    }
+    
+    config_destroy(&cfg);
     return 0;
 }
 
@@ -116,6 +169,7 @@ int parse_network_test_arguments(int argc,char **argv,struct network_test_parame
     parameters->end_message_length   =  MESSAGE_END_LENGTH;
     parameters->step_length          =  MESSAGE_STEP;
     parameters->num_repeats          =  NUM_REPEATS;
+    
     parameters->noise_message_length  =  NOISE_MESSAGE_LENGTH;
     parameters->num_noise_messages   =  NOISE_MESSAGE_NUM;
     parameters->num_noise_procs      =  NUM_NOISE_PROCS;
@@ -123,7 +177,7 @@ int parse_network_test_arguments(int argc,char **argv,struct network_test_parame
 
 #ifdef _GNU_SOURCE
 
-    struct option options[14]=
+    struct option options[15]=
     {
         {"type",required_argument,NULL,'t'},
         {"file",required_argument,NULL,'f'},
@@ -142,15 +196,49 @@ int parse_network_test_arguments(int argc,char **argv,struct network_test_parame
     };
 #endif
 
+    int j;
+    int k =0;
+    int test_param_type = ONE_TO_ONE_TEST_TYPE;
+    for (j=1;j<argc;j++)
+    {
+
+        if (strcmp(argv[j], "-t")==0)
+        {
+            if ((j+1) != argc)
+            {
+                if ((test_param_type = get_test_type(argv[j+1])) == UNKNOWN_TEST_TYPE)
+                    test_param_type = ONE_TO_ONE_TEST_TYPE;
+                k=1;
+                break;
+            }
+        }
+    }
+    
+    char params[40];
+
+#ifdef _GNU_SOURCE
+    if ((test_param_type  == NOISE_TEST_TYPE) || (test_param_type == NOISE_BLOCKING_TEST_TYPE))
+        strcat(params,"t:f:n:b:e:s:l:m:p:h:v:r:-");
+    else
+        strcat(params,"t:f:n:b:e:s:h:v:r:-");
+#else
+    if ((test_param_type  == NOISE_TEST_TYPE) || (test_param_type == NOISE_BLOCKING_TEST_TYPE))
+        strcat(params,"t:f:n:b:e:s:l:m:p:h:v:r:-");
+    else
+        strcat(params,"t:f:n:b:e:s:h:v:r:-");
+#endif
+
+    
     for ( ; ; )
     {
 #ifdef _GNU_SOURCE
-        arg_val = getopt_long(argc,argv,"t:f:n:b:e:s:l:m:p:h:v:r:i",options,NULL);
+        arg_val = getopt_long(argc,argv,params,options,NULL);
 #else
 
-        arg_val = getopt(argc,argv,"t:f:n:b:e:s:l:m:p:h:v:r:i");
+        arg_val = getopt(argc,argv,params);
 #endif
-
+        
+    int i;
         if ( arg_val== -1 )
             break;
 
@@ -196,6 +284,27 @@ int parse_network_test_arguments(int argc,char **argv,struct network_test_parame
             print_network_test_help_message();
             return ERROR_FLAG;
            break;
+        case '-':
+            for(i=1;i<argc;i++)
+            {
+                if (strcmp(argv[i], "--info") == 0)
+                {       
+                        if (print_info_test(parameters, 0) == -1)
+                            return ERROR_FLAG;
+                        else
+                            return INFO_FLAG;
+                        continue;
+                }
+                if (strcmp(argv[i], "--fullinfo")== 0)
+                {       
+                        if (print_info_test(parameters, 1) == -1)
+                            return ERROR_FLAG;
+                        else
+                            return INFO_FLAG;
+                        continue;
+                }
+                
+            }
         }
 
     }

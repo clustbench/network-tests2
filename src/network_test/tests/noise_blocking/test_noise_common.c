@@ -21,7 +21,8 @@
  *
  */
 
-#include "my_time.h"
+#include "../../../core/my_time.h"
+#include "../../comm_proc.h"
 /*#include "line_dynamic_array.h"
 #include "id.h"
 */
@@ -239,9 +240,9 @@ int random_choice( int proc1, int proc2, int num_processors, int* processors )
 	
 	Line_dynamic_array<ID> free_processors;
 
-	/*
-	 * Check for boundaries
-	 * /
+	
+	 //* Check for boundaries
+	 
 	if(
 		( comm_size <= 2 ) ||
 		( num_processors <= 0 ) ||
@@ -272,14 +273,14 @@ int random_choice( int proc1, int proc2, int num_processors, int* processors )
 		free_processors.delete_element(number_in_dynamic_array);
 	}
 
-	/*
-	 r = (int)( rand( ) * double( comm_size - 2 - i ) / ( RAND_MAX + 1. ) );
-	 * /
+	
+	 //r = (int)( rand( ) * double( comm_size - 2 - i ) / ( RAND_MAX + 1. ) );
+	 
 	return 1;
 }
 */
 /*
-int init_mode_array(int proc1,int proc2,int num_noise_procs,int num_all_procs,int *mode_array)
+int init_mode_array(int num_noise_procs,int num_all_procs,int *mode_array)
 {
 	int i;
 	int *noise_procs=NULL;
@@ -316,6 +317,46 @@ int init_mode_array(int proc1,int proc2,int num_noise_procs,int num_all_procs,in
 }
 */
 
+/*int init_mode_array1(int proc1, int proc2 , int num_noise_procs, int num_all_procs, int *mode_array, char **noise_hosts, COMM_PROC *comm_proc)
+{
+    char host_name[HOST_NAME_MAX];
+    
+    int i, j;
+    int *noise_procs=NULL;
+    
+    for(i=0;i<num_all_procs;i++)
+	{
+		mode_array[i]=MODE_GOAL_MESSAGES;
+	}
+	
+    //* Check for boundaries
+	/* 
+	if(
+		( comm_size <= 2 ) ||
+		( num_processors <= 0 ) ||
+		( num_processors > comm_size - 2 )
+	  )
+	{
+		return 0;
+	}*/
+    
+    /*for (i=0;i<num_all_procs;i++)
+    {
+        for (j=0;j<num_noise_procs;j++)
+        {
+            if (strcmp(comm_proc[i].host_name, noise_hosts[j])==0)
+            {
+                mode_array[i] = MODE_NOISE_MESSAGES;
+            }
+        }
+    }
+    
+    
+
+    return 0;
+}*/
+
+
 int init_mode_array(int proc1,int proc2,int num_noise_procs,int num_all_procs,int *mode_array)
 {	
 	// is num_all_procs==comm_size???? WTF??
@@ -329,9 +370,9 @@ int init_mode_array(int proc1,int proc2,int num_noise_procs,int num_all_procs,in
 	mode_array[proc1]=MODE_GOAL_MESSAGES;
 	mode_array[proc2]=MODE_GOAL_MESSAGES;
 
-	/*
+	
 
-	if(!random_choice(proc1,proc2, num_noise_procs,noise_procs))
+/*	if(!random_choice(proc1,proc2, num_noise_procs,noise_procs))
 	{
 		return -2;
 	}
@@ -339,8 +380,8 @@ int init_mode_array(int proc1,int proc2,int num_noise_procs,int num_all_procs,in
 	for(i=0;i<num_noise_procs;i++)
 	{
 		mode_array[noise_procs[i]]=MODE_NOISE_MESSAGES;
-	}
-	*/
+	}*/
+	
 	
 	if(
 		( num_all_procs <= 2 ) ||

@@ -19,6 +19,7 @@
  * Alexey N. Salnikov (salnikov@cmc.msu.ru)
  *
  */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -26,15 +27,15 @@
 
 #include "my_time.h"
 #include "my_malloc.h"
-#include "tests_common.h"
+#include "../tests_common.h"
+
 
 extern int comm_rank;
 extern int comm_size;
 
-Test_time_result_type real_put_one_to_one(int mes_length,int num_repeats,int source_proc,int dest_proc, MPI_Win *win);
+Test_time_result_type real_one_to_one(int mes_length,int num_repeats,int source_proc,int dest_proc);
 
-
-int put_one_to_one(Test_time_result_type *times,int mes_length,int num_repeats)
+int one_to_one(Test_time_result_type *times,int mes_length,int num_repeats)
 {
     int i;
     int pair[2];
@@ -43,25 +44,8 @@ int put_one_to_one(Test_time_result_type *times,int mes_length,int num_repeats)
 
     int send_proc,recv_proc;
 
-    char *data_window=NULL;
-
-    MPI_Win win;
     MPI_Status status;
 
-
-    data_window=(char *)malloc(mes_length*sizeof(char));
-    if(data_window==NULL)
-    {
-        printf("proc %d from %d: Can not allocate memory %d*sizeof(char)\n",comm_rank,comm_size,mes_length);
-        MPI_Abort(MPI_COMM_WORLD,-1);
-        return -1;
-    }
-
-    /*
-     * MPI2 Window creation then all processes will
-     * use this window in memory.
-     */
-    MPI_Win_create(data_window, mes_length*sizeof(char), sizeof(char), MPI_INFO_NULL, MPI_COMM_WORLD, &win);
 
     if(comm_rank==0)
     {
@@ -78,11 +62,14 @@ int put_one_to_one(Test_time_result_type *times,int mes_length,int num_repeats)
             if(recv_proc)
                 MPI_Send(pair,2,MPI_INT,recv_proc,1,MPI_COMM_WORLD);
 
+            if(recv_proc==0)
+            {
+                times[send_proc]=real_one_to_one(mes_length,num_repeats,send_proc,recv_proc);
+            }
             if(send_proc==0)
             {
-                times[recv_proc]=real_put_one_to_one(mes_length,num_repeats,send_proc,recv_proc,&win);
+                real_one_to_one(mes_length,num_repeats,send_proc,recv_proc);
             }
-
             if(send_proc)
             {
                 MPI_Recv(&confirmation_flag,1,MPI_INT,send_proc,1,MPI_COMM_WORLD,&status);
@@ -106,35 +93,34 @@ int put_one_to_one(Test_time_result_type *times,int mes_length,int num_repeats)
             send_proc=pair[0];
             recv_proc=pair[1];
 
-            if(send_proc==-1)
+	    if(send_proc==-1)
                 break;
             if(send_proc==comm_rank)
-                times[recv_proc]=real_put_one_to_one(mes_length,num_repeats,send_proc,recv_proc,&win);
+                real_one_to_one(mes_length,num_repeats,send_proc,recv_proc);
+            if(recv_proc==comm_rank)
+                times[send_proc]=real_one_to_one(mes_length,num_repeats,send_proc,recv_proc);
 
             confirmation_flag=1;
             MPI_Send(&confirmation_flag,1,MPI_INT,0,1,MPI_COMM_WORLD);
         }
     } /* end else comm_rank==0 */
 
-    MPI_Win_free(&win);
-    free(data_window);
-
     return 0;
-}
+} /* end one_to_one */
 
-Test_time_result_type real_put_one_to_one(int mes_length,int num_repeats,int source_proc,int dest_proc, MPI_Win *win)
+
+Test_time_result_type real_one_to_one(int mes_length,int num_repeats,int source_proc,int dest_proc)
 {
     px_my_time_type time_beg,time_end;
     char *data=NULL;
     px_my_time_type *tmp_results=NULL;
+    MPI_Status status;
     int i;
     px_my_time_type sum;
     Test_time_result_type  times;
 
     px_my_time_type st_deviation;
-
-
-
+    int tmp;
 
     if(source_proc==dest_proc)
     {
@@ -153,7 +139,6 @@ Test_time_result_type real_put_one_to_one(int mes_length,int num_repeats,int sou
     }
 
     data=(char *)malloc(mes_length*sizeof(char));
-
     if(data==NULL)
     {
         free(tmp_results);
@@ -163,23 +148,54 @@ Test_time_result_type real_put_one_to_one(int mes_length,int num_repeats,int sou
     }
 
 
+
     for(i=0; i<num_repeats; i++)
     {
 
         if(comm_rank==source_proc)
         {
-            MPI_Win_lock(MPI_LOCK_EXCLUSIVE, dest_proc, 0, *win);
             time_beg=px_my_cpu_time();
 
-            MPI_Put(data, mes_length, MPI_BYTE, dest_proc , 0, mes_length, MPI_BYTE, *win);
+            MPI_Send(	data,
+                        mes_length,
+                        MPI_BYTE,
+                        dest_proc,
+                        0,
+                        MPI_COMM_WORLD
+                    );
 
-            MPI_Win_unlock(dest_proc, *win);
             time_end=px_my_cpu_time();
+
+            MPI_Recv(&tmp,1,MPI_INT,dest_proc,100,MPI_COMM_WORLD,&status);
 
             tmp_results[i]=(time_end-time_beg);
             /*
              printf("process %d from %d:\n  Finished recive message length=%d from %d throug the time %ld\n",
              comm_rank,comm_size,mes_length,i,tmp_results[i]);
+            */
+        }
+        if(comm_rank==dest_proc)
+        {
+
+            time_beg=px_my_cpu_time();
+
+            MPI_Recv(	data,
+                        mes_length,
+                        MPI_BYTE,
+                        source_proc,
+                        0,
+                        MPI_COMM_WORLD,
+                        &status
+                    );
+
+
+            time_end=px_my_cpu_time();
+            tmp_results[i]=(time_end-time_beg);
+
+            MPI_Send(&comm_rank,1,MPI_INT,source_proc,100,MPI_COMM_WORLD);
+            /*
+             printf("process %d from %d:\n  Finished recive message length=%d from %d throug the time %ld\n",
+             comm_rank,comm_size,mes_length,finished,times[finished]);
             */
         }
     }
