@@ -3,11 +3,14 @@
 
 
 #include "netcdf_file.h"
+#include "arc_netcdf_file.h"
 
 #define CHECK_THROW(p,s) try {(p);} catch (...) {throw s;}
 #define VAR_CREATE_ERR_STR	"NetCDFFileWriter :: NetCDFFileWriter : Error creating variables"
 #define VAR_GET_ERR_STR	"NetCDFFileWriter :: NetCDFFileWriter : Error achieving variables"
 #define DIM_CREATE_ERR_STR	"NetCDFFileWriter :: NetCDFFileWriter : Error creating dimensions"
+
+
 
 NetCDFFileWriter :: NetCDFFileWriter (const char *output_file_name, const char *input_netcdf_name):
 input_ (NULL),
@@ -23,9 +26,9 @@ proc_num_ (0)
 	if (!input_->is_valid ()) {
 		throw "NetCDFFileWriter :: NetCDFFileWriter : Can't read input file \"" + string (input_netcdf_name) + "\"";
 	}
-	
-	output_ = new NcFile (output_file_name, NcFile :: New);
-	
+
+	//output_ = new NcFile (output_file_name, NcFile :: New);
+	output_ = new NcFile(output_file_name, NcFile:: New);
 	if (!output_->is_valid ()) {
 		throw "NetCDFFileWriter :: NetCDFFileWriter : Can't create file \"" + string (output_file_name) +  "\"";
 	}
@@ -35,10 +38,12 @@ proc_num_ (0)
 	//P_dim = input_->get_dim ("P");
 	
 	
-	
 	NcVar *proc_num, *test_type, *data_type, *begin_mes_length, *end_mes_length;
 	NcVar *step_length, *noise_mes_length, *num_noise_mes, *num_noise_proc, *num_repeates;
 	
+    const char *data_typv;
+    const char *test_typv;
+    
 	int proc_num_v,	test_type_v, data_type_v, begin_mes_length_v, end_mes_length_v, step_length_v,
 	noise_mes_length_v, num_noise_mes_v, num_noise_proc_v, num_repeates_v;
 	//int err_count = 0;
@@ -46,8 +51,10 @@ proc_num_ (0)
 	//printf ("?");
 	
 	CHECK_THROW (proc_num_v			= input_->get_var ("proc_num")->as_int (0), VAR_GET_ERR_STR);
-	CHECK_THROW (test_type_v		= input_->get_var ("test_type")->as_int (0), VAR_GET_ERR_STR);
-	CHECK_THROW (data_type_v		= input_->get_var ("data_type")->as_int (0), VAR_GET_ERR_STR);
+    CHECK_THROW (get_test_type(test_typv = (input_->get_var ("test_type")->as_string(0))), VAR_GET_ERR_STR);
+	CHECK_THROW (get_data_type(data_typv= (input_->get_var ("data_type")->as_string(0))), VAR_GET_ERR_STR);
+	/*CHECK_THROW (test_type_v		= input_->get_var ("test_type")->as_int (0), VAR_GET_ERR_STR);
+	CHECK_THROW (data_type_v		= input_->get_var ("data_type")->as_int (0), VAR_GET_ERR_STR);*/
 	CHECK_THROW (begin_mes_length_v	= input_->get_var ("begin_mes_length")->as_int (0), VAR_GET_ERR_STR);
 	CHECK_THROW (end_mes_length_v	= input_->get_var ("end_mes_length")->as_int (0), VAR_GET_ERR_STR);
 	CHECK_THROW (step_length_v		= input_->get_var ("step_length")->as_int (0), VAR_GET_ERR_STR);
@@ -69,14 +76,14 @@ proc_num_ (0)
 	//num_repeates->get (&num_repeates_v);
 	
 	//printf("%d\n", proc_num_v);
-	
+
 	CHECK_THROW (x_dim = output_->add_dim ("x", proc_num_v), DIM_CREATE_ERR_STR);
 	CHECK_THROW (y_dim = output_->add_dim ("y", proc_num_v), DIM_CREATE_ERR_STR);
 	CHECK_THROW (n_dim = output_->add_dim ("n"), DIM_CREATE_ERR_STR);
 	
 	CHECK_THROW (proc_num			= output_->add_var ("proc_num", ncInt), VAR_CREATE_ERR_STR);
-	CHECK_THROW (test_type			= output_->add_var ("test_type", ncInt), VAR_CREATE_ERR_STR);
-	CHECK_THROW (data_type			= output_->add_var ("data_type", ncInt), VAR_CREATE_ERR_STR);
+	CHECK_THROW (test_type			= output_->add_var ("test_type", ncChar, n_dim), VAR_CREATE_ERR_STR);
+	CHECK_THROW (data_type			= output_->add_var ("data_type", ncChar, n_dim), VAR_CREATE_ERR_STR);
 	CHECK_THROW (begin_mes_length	= output_->add_var ("begin_mes_length", ncInt), VAR_CREATE_ERR_STR);
 	CHECK_THROW (end_mes_length		= output_->add_var ("end_mes_length", ncInt), VAR_CREATE_ERR_STR);
 	CHECK_THROW (step_length		= output_->add_var ("step_length", ncInt), VAR_CREATE_ERR_STR);
@@ -87,8 +94,8 @@ proc_num_ (0)
 	CHECK_THROW (data_var_			= output_->add_var ("data", ncDouble, n_dim, x_dim, y_dim), VAR_CREATE_ERR_STR);
 	
 	proc_num->put (&proc_num_v);
-	test_type->put (&test_type_v);
-	data_type->put (&data_type_v);
+	test_type->put (test_typv, strlen(test_typv));
+	data_type->put (data_typv, strlen(data_typv));
 	begin_mes_length->put (&begin_mes_length_v);
 	end_mes_length->put (&end_mes_length_v);
 	step_length->put (&step_length_v);

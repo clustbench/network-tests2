@@ -1,6 +1,8 @@
 #include "data_netcdf.h"
+#include <iostream>
 #include <netcdf.h>
 #include "data_text.h"
+#define TDIMS 2
 
 Data_NetCDF::Data_NetCDF (const QString &f_name, const QString &hosts_fname, NV::ErrCode &err) {
 	this->source_fname=f_name;
@@ -15,15 +17,20 @@ Data_NetCDF::Data_NetCDF (const QString &f_name, const QString &hosts_fname, NV:
 	}
 
 	int id;
-	int tmp_str;
+    char tempo[30];
+    size_t tx_start[TDIMS];
+    size_t tx_count[TDIMS];
+    tx_start[0] = 0;      
+    tx_start[1] = 0; 
+    tx_count[0] = 28;      
+    tx_count[1] = 29;  
+	if ((nc_inq_varid(source_file,"test_type",&id)==NC_NOERR) && (nc_get_vara_text(source_file,id,tx_start,tx_count,tempo)==NC_NOERR))
+            this->test_type = tempo;
 
-	if ((nc_inq_varid(source_file,"test_type",&id)==NC_NOERR) &&
-		(nc_get_var1_int(source_file,id,NULL,&tmp_str)==NC_NOERR))
-		this->test_type.setNum(tmp_str);
-	if ((nc_inq_varid(source_file,"data_type",&id)==NC_NOERR) &&
-		(nc_get_var1_int(source_file,id,NULL,&tmp_str)==NC_NOERR))
-		this->data_type.setNum(tmp_str);
-	
+
+	if ((nc_inq_varid(source_file,"data_type",&id)==NC_NOERR) && (nc_get_vara_text(source_file,id,tx_start,tx_count,tempo)==NC_NOERR))
+        this->data_type = tempo;
+
 	#define READVAR(var,var_name,error) \
 			if ((nc_inq_varid(source_file,var_name,&id)!=NC_NOERR) || \
 				(nc_get_var1(source_file,id,NULL,&var)!=NC_NOERR)) \

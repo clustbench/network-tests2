@@ -28,8 +28,17 @@ extern int create_netcdf_header
 	const int file_data_type,
 	const struct network_test_parameters_struct* test_parameters,
 	int *file_id,
-	int *data_id
+	int *data_id/*,
+	MPI_Comm comm,
+	MPI_Info info*/
 );
+
+extern int open_netcdf_file
+(
+	const int file_data_type,
+	const struct network_test_parameters_struct* test_parameters,
+	int *file_id,
+	int *data_id);
 
 extern int netcdf_write_matrix
 (
@@ -38,7 +47,10 @@ extern int netcdf_write_matrix
         const int matrix_number_in_file,
         const int size_x,
         const int size_y,
-        const double *data
+        const double *data,
+	const int comm_rank,
+	const int file_data_type,
+        const struct network_test_parameters_struct* test_parameters
 );
 
 extern int netcdf_close_file(const int netcdf_file_id);

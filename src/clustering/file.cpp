@@ -65,14 +65,16 @@ int FileReader :: ReadLine(file_value_t line []) {
 }*/
 
 FileReader :: FileReader(char *file_name) {
+
+    std::cout << file_name << "\n";
 	try {
+        
 		netcdf_ptr_ = new data_netcdf (file_name);
 	}
 	catch (string err_string) {
 		//printf ("%s\n That means it is wrong file format \n", err_string);
 		throw "FileReader::FileReader : Can't read file \"" + string (file_name) + "\"\n"+err_string;
 	}
-	
 	file_info_.length_min = netcdf_ptr_->getBeginMessageLength ();
 	file_info_.length_step = netcdf_ptr_->getStepLength ();
 	file_info_.line_length = netcdf_ptr_->getNumProcessors ()*netcdf_ptr_->getNumProcessors ();

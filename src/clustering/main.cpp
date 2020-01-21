@@ -108,17 +108,19 @@ int main (int argc, char **argv)
 	}
 
 	try {
-		FileReader reader (argv [1]);
+		FileReader reader (argv [2]);
 
-		file_info_t file_info;
+        file_info_t file_info;
 		reader.GetFileInfo(&file_info);
 
-		if (is_archive) {
-			writer = new ArcNetCDFFileWriter (output_name, argv [1]);
+        if (is_archive) {
+			writer = new ArcNetCDFFileWriter (output_name, argv [2]);
 		} else {
-			writer = new NetCDFFileWriter (output_name, argv [1]);;
+
+            writer = new NetCDFFileWriter (output_name, argv [1]);;
 			//writer = new StdFileWriter (file_info);
 		}
+
 		if (writer == NULL) {
 			throw string ("Unexpected error - can't create writer object");
 		}
