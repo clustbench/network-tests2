@@ -38,6 +38,14 @@
 #include "my_time.h"
 #include "types.h"
 
+/*
+ * Is initilized by main
+ * function of program.
+ */
+extern int comm_size;
+extern int comm_rank;
+
+
 
 typedef struct tag_test_time_result_type
 {
