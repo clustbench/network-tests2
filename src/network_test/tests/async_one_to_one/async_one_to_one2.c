@@ -27,7 +27,7 @@
 
 #include "my_time.h"
 #include "my_malloc.h"
-#include "tests_common.h"
+#include "../tests_common.h"
 
 
 extern int comm_rank;
