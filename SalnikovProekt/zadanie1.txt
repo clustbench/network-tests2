@@ -1,0 +1,91 @@
+Надо создать динамические библиотеки для тестов .so.
+
+Надо сделать чтобы они работали на разных компьютерах.
+Так как у нас вычисления выполняются в сети компьютеров.
+
+Также после каждого изменения нужно в другой папке также в какие то документы вносить изменения.
+
+При команде ncdump -h nn_average.nc нужно сделать чтобы выводились настоящие значения, а не простые имена переменных.
+Также надо вносить изменения в графическую часть программы. Туда где выводятся графики. Также вносить изменения в часть где есть питон.
+
+
+
+Example: one_to_one2.c
+
+#include "my_malloc.h"
+#include "test_common.h"
+#include "my_time.h"
+
+
+
+
+Шаги:
+1. Протестировать программу на разных тестах, чтобы понять каким образом они компилируются.
+2. Разобраться какие файлы нужно подавать на компиляцию каждому тесту, чтобы каждый работал.
+3. Запомнить все эти тесты.
+4. Сделать из них динамическую библиотеку, которую после подавать на запуск тесту.
+
+
+//Data types
+
+#define AVERAGE_NETWORK_TEST_DATATYPE   1
+#define MEDIAN_NETWORK_TEST_DATATYPE    2
+#define DEVIATION_NETWORK_TEST_DATATYPE 3
+#define MIN_NETWORK_TEST_DATATYPE       4
+
+
+//Test types
+
+
+#define UNKNOWN_TEST_TYPE 0
+#define ONE_TO_ONE_TEST_TYPE 1
+#define ALL_TO_ALL_TEST_TYPE 2
+#define ASYNC_ONE_TO_ONE_TEST_TYPE 3
+#define SEND_RECV_AND_RECV_SEND_TEST_TYPE 4
+#define NOISE_TEST_TYPE 5
+#define NOISE_BLOCKING_TEST_TYPE 6
+#define BCAST_TEST_TYPE 7
+#define PUT_ONE_TO_ONE_TEST_TYPE 8
+#define GET_ONE_TO_ONE_TEST_TYPE 9
+
+netCDF:
+	Надо переделать, чтобы занчения были в variables, а не attr.
+
+
+Перекомпиляция:
+	Переход по тестам переходит по свитчу.
+	Надо это переделать, чтобы вместо этого оно переходило к необходимой .so библиотетке и подключало её.
+	Возможно!!! её(библиотеку) можно открыть прри помощи dlopen() и dlsym()
+
+
+
+if ((retval = nc_put_att_text(netcdf_file_id,test_type_var_id, "test_type",strlen(str),str))!=NC_NOERR)
+		return NETCDF_ERROR;
+	
+	if ((retval = nc_put_att_text(netcdf_file_id,file_data_type_var_id, "data_type", strlen(file_data_type_to_sring(file_data_type)),file_data_type_to_sring(file_data_type)))!=NC_NOERR)
+		return NETCDF_ERROR;
+
+	if((retval = nc_put_att_int(netcdf_file_id,num_procs_var_id,"num_procs",NC_INT,1,&test_parameters->num_procs))!=NC_NOERR)
+                return NETCDF_ERROR;
+
+        if((retval = nc_put_att_int(netcdf_file_id,begin_message_length_var_id,"begin_mes_length", NC_INT,1,&test_parameters->begin_message_length))!=NC_NOERR)
+                return NETCDF_ERROR;
+
+        if((retval = nc_put_att_int(netcdf_file_id,end_message_length_var_id,"end_mes_length",NC_INT,1,&test_parameters->end_message_length))!=NC_NOERR)
+                return NETCDF_ERROR;
+
+        if((retval = nc_put_att_int(netcdf_file_id,step_length_var_id,"step_length",NC_INT,1,&test_parameters->step_length))!=NC_NOERR)
+                return NETCDF_ERROR;
+
+       /* if((retval = nc_put_att_int(netcdf_file_id,num_repeats_var_id,"num_repeats",NC_INT,1,&test_parameters->num_repeats))!=NC_NOERR)
+                return NETCDF_ERROR;
+*/
+/*        if((retval = nc_put_att_int(netcdf_file_id,noise_message_length_var_id,"noise_mes_length",NC_INT,1,&test_parameters->noise_message_length))!=NC_NOERR)
+                return NETCDF_ERROR;
+
+        if((retval = nc_put_att_int(netcdf_file_id,num_noise_procs_var_id,"num_noise_proc",NC_INT,1,&test_parameters->num_noise_procs))!=NC_NOERR)
+                return NETCDF_ERROR;
+	
+	if((retval = nc_put_att_int(netcdf_file_id,num_noise_messages_var_id,"num_noise_mes",NC_INT,1,&test_parameters->num_noise_messages))!=NC_NOERR)
+                return NETCDF_ERROR;
+ */   
