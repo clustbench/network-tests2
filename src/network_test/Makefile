@@ -87,7 +87,7 @@ send_recv_and_recv_send: tests_common.o parse_arguments.o
 #	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -I ../core -c -fPIC test_noise_common.c -o noisecommon.o
 
 network_test2: parse_arguments.o tests_common.o network_test2.o $(FILES)
-	$(MPI_CXX) $(MPI_CXX_FLAGS) $(MPI_CXX_INCLUDE) $(MPI_LIB_PATH) $(NETCDF_INCLUDE) -rdynamic -o network_test2 network_test2.o parse_arguments.o tests_common.o ../core/*.o -ldl $(MPI_LIBS) -lm -lnetcdf -lconfig
+	$(MPI_CXX) $(MPI_CXX_FLAGS) $(MPI_CXX_INCLUDE) $(MPI_LIB_PATH) $(NETCDF_INCLUDE) -rdynamic -o network_test2 network_test2.o parse_arguments.o tests_common.o ../core/*.o -ldl $(MPI_LIBS) -lm -lnetcdf #-lconfig
 
 network_test.o: network_test2.c
 	$(MPI_CXX) $(MPI_CC_FLAGS) $(MPI_CXX_FLAGS) $(MPI_CXX_INCLUDE) $(MPI_CC_INCLUDE) $(NETCDF_INCLUDE) -I ../core -c network_test2.c -ldl -o network_test2.o
@@ -103,7 +103,7 @@ tests_common.o: tests_common.c
 	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -I ../core -c tests_common.c -o tests_common.o
 	
 parse_arguments.o: parse_arguments.c
-	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -I ../core -c parse_arguments.c -o parse_arguments.o -lconfig
+	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -I ../core -c parse_arguments.c -o parse_arguments.o #-lconfig
 
 all:
 	echo "OK"
