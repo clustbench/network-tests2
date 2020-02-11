@@ -1,0 +1,71 @@
+#
+# This file is a part of the PARUS project and  makes the core of the parus system
+# Copyright (C) 2006  Alexey N. Salnikov (salnikov@cmc.msu.ru)
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
+
+include ./config
+SHELL=/bin/bash
+
+all: core $(GOALS)
+
+install: prepare_install install_core $(GOALS) $(INSTALL_DIR)/config install_doc
+	$(foreach rule, $(GOALS), $(MAKE) install -C ./src/$(rule);)
+	echo $(PARUS_VERSION) > $(INSTALL_DIR)/version
+	cp ./parus_config.h $(INSTALL_DIR)/include/parus_config.h
+
+uninstall:
+	if [ -f $(INSTALL_DIR)/version ]; then      \
+	    rm -rf $(INSTALL_DIR);                  \
+	else                                        \
+	    echo "Parus system are not installed";  \
+	fi
+
+force_uninstall:
+	rm -rf $(INSTALL_DIR)
+
+install_doc:
+	cp -rf ./doc/* $(INSTALL_DIR)/doc/
+
+core:
+	$(MAKE) -C ./src/core
+
+install_core: core
+	$(MAKE) install -C ./src/core
+
+clean_core:
+	$(MAKE) clean -C ./src/core
+
+network_test:
+	$(MAKE) -C ./src/network_test
+
+network_viewer_qt_v2:
+	$(MAKE) -C ./src/network_viewer_qt_v2
+
+clustering:
+	$(MAKE) -C ./src/clustering
+
+clean: clean_core
+	$(foreach rule, $(GOALS), $(MAKE) clean -C ./src/$(rule);)
+
+purge: clean force_uninstall
+	rm -f ./parus_config.h ./configure ./Makefile
+
+prepare_install:
+	./prepare_install.sh $(INSTALL_DIR)
+
+$(INSTALL_DIR)/config:
+	cp config $(INSTALL_DIR)/config

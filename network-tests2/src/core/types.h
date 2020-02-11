@@ -38,7 +38,7 @@ struct network_test_parameters_struct
 	int  noise_message_length;
 	int  num_noise_messages;
 	int  num_noise_procs;
-	const char *file_name_prefix;
+	char *file_name_prefix;
 };
 
 
