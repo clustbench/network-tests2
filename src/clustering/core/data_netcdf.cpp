@@ -7,6 +7,7 @@ data_netcdf::data_netcdf(string iFileName, string iHostsFileName)
 {
     source_file_name = iFileName;
     sourceFile = new NcFile(source_file_name.c_str());
+	//std::cout << "OK\n";
 
     if (!sourceFile->is_valid())
         throw "file \"" + iFileName + "\" is not valid NetCDF file";
@@ -16,18 +17,21 @@ data_netcdf::data_netcdf(string iFileName, string iHostsFileName)
 //wtf???
 //    if (sourceFile->num_dims() != 3  || sourceFile->num_vars() != 11)
 //         throw "file \"" + iFileName + "\" have incorrect format: wrong count of variables and/or dimensions";
-
+    //std::cout << "OK\n";
     test_type = sourceFile->get_var("test_type")->as_string(0);
-
+    
     data_type = sourceFile->get_var("data_type")->as_string(0);
-
+    //std::cout << test_type << data_type << "\n";
     FORMATCHECK(num_processors, "proc_num", "cannot get count of processors");
     FORMATCHECK(begin_message_length, "begin_mes_length", "cannot get begin message length");
     FORMATCHECK(end_message_length, "end_mes_length", "cannot get end message length");
+    //std::cout << "OK\n";
     FORMATCHECK(step_length, "step_length", "cannot get step length");
     FORMATCHECK(noise_message_length, "noise_mes_length", "cannot get noise message length");
     FORMATCHECK(noise_message_num, "num_noise_mes", "cannot get count of noise messages");
+    //std::cout << "OK\n";
     FORMATCHECK(noise_processors, "num_noise_proc", "cannot get count of noise processors");
+    //std::cout << "OK\n";
     FORMATCHECK(num_repeats, "num_repeates", "cannot get count of repeats");
 
     if (iHostsFileName != "") {

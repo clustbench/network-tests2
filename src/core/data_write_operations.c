@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <mpi.h>
 #include <fcntl.h>
 
 #include "types.h"
@@ -16,7 +17,9 @@ int create_netcdf_header(
 		const int file_data_type, 
 		const struct network_test_parameters_struct *test_parameters, 
 		int *file_id, 
-		int *data_id)
+		int *data_id/*, 
+        MPI_Comm comm, 
+        MPI_Info info*/)
 {
 
 	int netcdf_file_id;
@@ -45,15 +48,17 @@ int create_netcdf_header(
 	sprintf(file_name,"%s_%s.nc",test_parameters->file_name_prefix,file_data_type_to_sring(file_data_type));
 
 
-    if ((retval = nc_create(file_name,NC_WRITE | NC_NOCLOBBER | NC_64BIT_OFFSET | NC_SHARE, &netcdf_file_id))!= NC_NOERR)
+    if ((retval = nc_create(file_name, NC_WRITE | NC_NOCLOBBER | NC_64BIT_OFFSET | NC_SHARE, &netcdf_file_id))!= NC_NOERR)
         return CREATE_FILE_ERROR;
+    //if ((retval = nc_create_par(file_name,NC_WRITE | NC_NOCLOBBER | NC_64BIT_OFFSET | NC_SHARE,comm,info, &netcdf_file_id))!= NC_NOERR)
+        //return CREATE_FILE_ERROR;
 	
 	free(file_name);
 	file_name = NULL;
 
 //Set dimensions
 
-	if ((retval = nc_def_dim(netcdf_file_id, "x", test_parameters->num_procs,&x_dim_id))!=NC_NOERR)
+	if ((retval = nc_def_dim(netcdf_file_id, "x",1 /*test_parameters->num_procs*/,&x_dim_id))!=NC_NOERR)
 		return NETCDF_ERROR;
 	
 	if ((retval = nc_def_dim(netcdf_file_id, "y", test_parameters->num_procs,&y_dim_id))!=NC_NOERR)
@@ -106,7 +111,7 @@ int create_netcdf_header(
                 return NETCDF_ERROR;
  
 
-	if ((retval = nc_def_var(netcdf_file_id, "num_repeats", NC_INT, 0, 0, &num_repeats_var_id))!= NC_NOERR)
+	if ((retval = nc_def_var(netcdf_file_id, "num_repeates", NC_INT, 0, 0, &num_repeats_var_id))!= NC_NOERR)
                 return NETCDF_ERROR;
   
     
@@ -224,33 +229,127 @@ int create_netcdf_header(
 
 	*file_id = netcdf_file_id;
 	*data_id = data_var_id;
-	return 0;
+    
+    if (retval = nc_close(netcdf_file_id))
+            return NETCDF_ERROR;
+	
+    return 0;
+}
+
+int open_netcdf_file(const int file_data_type, const struct network_test_parameters_struct *test_parameters, int *file_id, int *data_id)
+{
+    char *file_name = NULL;
+    int retval, netcdf_file_id, data_var_id;
+    int old_fill_mode;
+    
+    file_name = (char*)malloc(strlen(test_parameters->file_name_prefix)+strlen("_deviation.nc")+1);
+    
+    if(file_name == NULL)
+	{
+		return MEM_ERROR;
+	}
+	
+    sprintf(file_name,"%s_%s.nc",test_parameters->file_name_prefix,file_data_type_to_sring(file_data_type));
+    
+    if ((retval = nc_open(file_name, NC_WRITE |  NC_SHARE /*|NC_NOCLOBBER |NC_64BIT_OFFSET */, &netcdf_file_id))!= NC_NOERR)
+        return NETCDF_ERROR;
+    
+    free(file_name);
+	//file_name = NULL;
+    //if((retval = nc_redef(netcdf_file_id))!=NC_NOERR)
+    //        return NETCDF_ERROR;
+    if ((retval = nc_inq_varid(netcdf_file_id, "data", &data_var_id))!= NC_NOERR)
+        return NETCDF_ERROR;
+    if ((retval = nc_set_fill(netcdf_file_id, NC_NOFILL, &old_fill_mode))!=NC_NOERR)
+            return NETCDF_ERROR;
+    //if((retval = nc_enddef(netcdf_file_id))!=NC_NOERR)
+     //           return NETCDF_ERROR;
+    
+    //if((retval = nc_redef(netcdf_file_id))!=NC_NOERR)
+     //           return NETCDF_ERROR;
+    //if((retval = nc_enddef(netcdf_file_id))!=NC_NOERR)
+     //           return NETCDF_ERROR;
+    
+    
+    *file_id = netcdf_file_id;
+    *data_id = data_var_id;
+    
+    return 0;
 }
 
 int netcdf_write_matrix
 (
-        const int netcdf_file_id,
-        const int netcdf_var_id,
+         int netcdf_file_id,
+         int netcdf_var_id,
         const int matrix_number_in_file,
         const int size_x,
         const int size_y,
-        const double *data
+        const double *data,
+        const int comm_rank,
+        const int file_data_type,
+        const struct network_test_parameters_struct* test_parameters
 )
 {
         size_t start[3]={matrix_number_in_file,0,0};
         size_t count[3]={1,size_x,size_y};
+        int retval, old_fill_mode;
+        
+        
+        
+
+        //if (retval = open_netcdf_file(file_data_type,test_parameters,&netcdf_file_id,&netcdf_var_id))
+        //    return NETCDF_ERROR;
+            
+        //nc_sync(netcdf_file_id);
+        
+       // if((retval = nc_redef(netcdf_file_id))!=NC_NOERR)
+        //        return NETCDF_ERROR;
+        
+       // if ((retval = nc_inq_varid(netcdf_file_id, "data", &netcdf_var_id))!= NC_NOERR)
+        //    return NETCDF_ERROR;
+        
+        //if((retval = nc_enddef(netcdf_file_id))!=NC_NOERR)
+        //        return NETCDF_ERROR;
+        
+        //if ((retval = nc_set_fill(netcdf_file_id, NC_NOFILL, &old_fill_mode))!=NC_NOERR)
+        //    return NETCDF_ERROR;
+        
+        nc_sync(netcdf_file_id);
         if(nc_put_vara_double(netcdf_file_id,netcdf_var_id,start,count,data)!=NC_NOERR)
         {
                 return -35;
         }
-        nc_sync(netcdf_file_id);
-
+        
+       // nc_sync(netcdf_file_id);
+        
+        /*if((retval = nc_redef(netcdf_file_id))!=NC_NOERR)
+                return NETCDF_ERROR;
+        
+        if ((retval = nc_inq_varid(netcdf_file_id, "data", &netcdf_var_id))!= NC_NOERR)
+            return NETCDF_ERROR;
+        //nc_sync(netcdf_file_id);
+        if((retval = nc_enddef(netcdf_file_id))!=NC_NOERR)
+                return NETCDF_ERROR;*/
+        
+        //if((retval = nc_redef(netcdf_file_id))!=NC_NOERR)
+         //       return NETCDF_ERROR;
+        //if((retval = nc_enddef(netcdf_file_id))!=NC_NOERR)
+         //       return NETCDF_ERROR;
+         
+        //nc_sync(netcdf_file_id);
+        
+        
         return 0;
 }
 
 int netcdf_close_file(const int netcdf_file_id)
 {
-        nc_close(netcdf_file_id);
-        return 0;
+    int i,j;
+    int retval;
+    //nc_sync(netcdf_file_id);
+    if (retval = nc_close(netcdf_file_id))
+        return NETCDF_ERROR;
+    
+    return 0;
 }
 
