@@ -32,7 +32,7 @@
  */
 
 #include <mpi.h>
-#include "libconfig.h"
+//#include "libconfig.h"
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
