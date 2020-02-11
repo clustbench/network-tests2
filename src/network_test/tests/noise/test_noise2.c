@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <math.h>
 #include <mpi.h>
 #include <time.h>
@@ -52,14 +53,16 @@ int noise(Test_time_result_type *times, int mes_length, int num_repeats, int num
 	MPI_Request* requests_noise=NULL;
 	MPI_Status*  statuses_noise=NULL;
 	
-    
+    int rank_procceses[comm_size - num_noise_procs];
+    int flag_proc, t, i_i, j_j;
+    int m_proc = 0;
 	int sync_sum;
 	int i, j, k, l;
 	px_my_time_type time_beg,time_end;
 	px_my_time_type sum;
 	px_my_time_type st_deviation;
 	
-    
+    char *host_name;
 	int flag;
 	int work_flag=1;
 
@@ -104,6 +107,49 @@ int noise(Test_time_result_type *times, int mes_length, int num_repeats, int num
 		td.tmp_results[i][j] = 0;
 	}
 
+	if (comm_rank ==0)
+    {
+        gethostname( host_name, 255 );
+        for (j=0;j<num_noise_procs;j++)
+        {
+            if (strcmp(host_name, hosts_names[j])==0)
+            {
+                rank_procceses[m_proc] = comm_rank;
+                m_proc++;
+            }
+        
+        }
+        for (i = 1;i<comm_size;i++)
+        {
+            MPI_Recv(&flag_proc, 1,MPI_INT,i,121, MPI_COMM_WORLD, &status);
+            if (flag_proc == 0)
+            {
+                rank_procceses[m_proc] = i;
+                m_proc++;
+            }
+        }
+    }
+    else
+    {
+            gethostname( host_name, 255 );
+            t=0;
+            flag_proc = 0;
+            for (j=0;j<num_noise_procs;j++)
+            {
+                if (strcmp(host_name, hosts_names[j])==0)
+                {
+                    flag_proc = 1;
+                    MPI_Send(&flag_proc,1,MPI_INT, 0,121,MPI_COMM_WORLD);
+                    t=1;
+                }
+            
+            }
+            if (t==0)
+            {
+                MPI_Send(&flag_proc,1,MPI_INT,0,121,MPI_COMM_WORLD);
+            }
+            
+    }
 	if(comm_rank==0)
 	{
         
@@ -117,17 +163,18 @@ int noise(Test_time_result_type *times, int mes_length, int num_repeats, int num
 				return -1;
         }*/
 
-		for(proc1=0;proc1<comm_size; proc1++)
-		for(proc2=0;proc2<comm_size; proc2++)
+		for(i_i=0;i_i<comm_size-num_noise_procs; i_i++)
+		for(j_j=0;j_j<comm_size - num_noise_procs; j_j++)
 		{
-            //flag = init_mode_array1(proc1,proc2,num_noise_procs,comm_size,mode_array, hosts_names, comm_proc);
             
-			flag=init_mode_array(proc1,proc2,num_noise_procs,comm_size,mode_array);
+            proc1 = rank_procceses[i_i];
+            proc2 = rank_procceses[j_j];
+			flag = init_mode_array1(proc1,proc2,num_noise_procs,comm_size,mode_array, hosts_names, comm_proc);
+            //flag=init_mode_array(proc1,proc2,num_noise_procs,comm_size,mode_array);
 			if(flag)
 			{
 				return -1;
 			}
-
 			for(i=0;i<num_repeats;i++)
 			{
             
@@ -150,6 +197,7 @@ int noise(Test_time_result_type *times, int mes_length, int num_repeats, int num
 				 * Goal messages in proc with number 0
 				 *
 				 */
+                
 				if(mode_array[0]==MODE_GOAL_MESSAGES)
 				{
 					if(proc1==0)
@@ -188,6 +236,7 @@ int noise(Test_time_result_type *times, int mes_length, int num_repeats, int num
 				 * Noise messages in proc with number 0
 				 *
 				 */
+                
 				if(mode_array[0]==MODE_NOISE_MESSAGES)
 				{
 						for( j = 0; j < num_noise_repeats; j++ )

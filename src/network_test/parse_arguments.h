@@ -14,7 +14,7 @@ extern "C"
 
 extern int parse_network_test_arguments(int argc,char **argv,struct network_test_parameters_struct *parameters);
 extern int print_network_test_help_message(void);
-
+extern int read_string(char **str,FILE *f,int *xx);
 #ifdef __cplusplus
 }
 #endif

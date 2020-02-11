@@ -48,7 +48,7 @@ extern int random_choice( int proc1, int proc2, int num_processors, int* process
  * This array should be brodcasted to all MPI-processes.
  */
 extern int init_mode_array(int proc1,int proc2,int num_noise_procs,int num_all_procs,int *mode_array);
-
+extern int init_mode_array1(int proc1,int proc2,int num_noise_procs,int num_all_procs,int *mode_array, char **noise_hosts, COMM_PROC *comm_proc);
 #ifdef __cplusplus
 }
 #endif

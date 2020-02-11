@@ -89,7 +89,8 @@ int main(int argc,char **argv)
     int len;
     char b;
     config_t cfg;
-    
+    int xx, err;
+    FILE *noise_file;
     char **proc_names= NULL;
     char **proc_names1 = NULL;
     
@@ -164,7 +165,7 @@ int main(int argc,char **argv)
 
     int comm_rank_prob;
     int flag;
-	
+	int end_flag=0;
 	/*
     int help_flag = 0;
     int version_flag = 0;
@@ -203,12 +204,30 @@ int main(int argc,char **argv)
         }
         
         printf("\n"); 
-        if (parse_network_test_arguments(argc,argv,&test_parameters))
+        error_flag = parse_network_test_arguments(argc,argv,&test_parameters);
+        if (error_flag)
         {
-            MPI_Abort(MPI_COMM_WORLD,-1);
-            return -1;
+            if (error_flag == 5 || error_flag ==1 || error_flag == 2)
+            {
+                end_flag = 1;
+                for (i=1; i < comm_size; i++)
+                {
+                    MPI_Send(&end_flag,1, MPI_INT, i, 199, MPI_COMM_WORLD);
+                }
+                //MPI_Bcast(&end_flag, 1,MPI_INT, 0, MPI_COMM_WORLD);
+                MPI_Finalize();
+                return 0;
+            }
+            else
+            {
+                MPI_Abort(MPI_COMM_WORLD,-1);
+                return -1;
+            }
         }
-        
+        for (i=1;i<comm_size; i++)
+        {
+            MPI_Send(&end_flag,1, MPI_INT, i, 199, MPI_COMM_WORLD);
+        }
         //printf("all right 1 \n");                
         
         host_names = (char**)malloc(sizeof(char*)*comm_size);
@@ -229,7 +248,15 @@ int main(int argc,char **argv)
             }
         }
     } /* End if(rank==0) */
-
+    else
+    {
+        MPI_Recv(&end_flag, 1,MPI_INT, 0, 199, MPI_COMM_WORLD, &status);
+        if (end_flag == 1)
+        {
+            MPI_Finalize();
+            return 0;
+        }
+    }
     /*
      * Going to get and write all processors' hostnames
      */
@@ -530,7 +557,62 @@ int main(int argc,char **argv)
 
     if (test_parameters.test_type == NOISE_BLOCKING_TEST_TYPE || test_parameters.test_type == NOISE_TEST_TYPE)
         {
-            config_init(&cfg);
+            noise_file=fopen("noise_hosts.txt","rt");
+            if (noise_file==NULL)
+            {
+                printf("Error: can't open file 'noise_hosts.txt'\n");
+                return 1;
+            }
+            kol=0;
+            m=0;
+            while (1)
+            {
+                int err=read_string(&hosts_name,noise_file,&xx);
+                if (err==2)
+                {
+                    printf("Realloc Error\n");
+                    return 1;
+                }
+
+                if(xx == EOF)
+                {
+                    break;
+                }
+                if (err == 1)
+                {
+                    proc_names1=(char**)realloc(proc_names,m*sizeof(char*));
+                    if (proc_names1==NULL)
+                    {
+                        printf("Realloc Error\n");
+                        return 1;
+                    }
+                    proc_names=proc_names1;
+                    m++;
+                    proc_names[kol] = hosts_name;
+                    kol++;
+                    break;
+                }
+
+                proc_names1=(char**)realloc(proc_names,m*sizeof(char *));
+                if(proc_names1==NULL)
+                {
+                    printf("Realloc Error\n");
+                    return 1;
+
+                }
+                proc_names=proc_names1;
+                m+=1;
+                proc_names[kol]=hosts_name;
+                kol+=1;
+            }
+
+            fclose(noise_file);
+            /*for (i=0;i<kol;i++)
+            {
+                printf("%s\n", proc_names[i]);
+            }
+            */
+            /*config_init(&cfg);
             if (!config_read_file(&cfg, "proc_config.cfg"))
             {
                 return -1;
@@ -596,6 +678,8 @@ int main(int argc,char **argv)
             
             config_destroy(&cfg);
             
+            
+            */
             
         }
         
@@ -778,7 +862,14 @@ int main(int argc,char **argv)
     free(mtr_me.body);
     free(mtr_di.body);
     free(mtr_mi.body);
-    
+    if (test_parameters.test_type == NOISE_BLOCKING_TEST_TYPE || test_parameters.test_type == NOISE_TEST_TYPE)
+        {
+            for (i=0;i<kol;i++)
+            {
+                free(proc_names[i]);
+            }
+            free(proc_names);
+        }
 	if(comm_rank==0)
     {
 

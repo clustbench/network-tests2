@@ -325,7 +325,7 @@ int init_mode_array(int proc1,int proc2,int num_noise_procs,int num_all_procs,in
 }
 */
 
-/*int init_mode_array1(int num_noise_procs, int num_all_procs, int *mode_array, char **noise_hosts, COMM_PROC *comm_proc)
+int init_mode_array1(int proc1, int proc2, int num_noise_procs, int num_all_procs, int *mode_array, char **noise_hosts, COMM_PROC *comm_proc)
 {
     char host_name[HOST_NAME_MAX];
     
@@ -334,8 +334,11 @@ int init_mode_array(int proc1,int proc2,int num_noise_procs,int num_all_procs,in
     
     for(i=0;i<num_all_procs;i++)
 	{
-		mode_array[i]=MODE_GOAL_MESSAGES;
+		mode_array[i]=MODE_IDLE;
 	}
+
+	mode_array[proc1]=MODE_GOAL_MESSAGES;
+	mode_array[proc2]=MODE_GOAL_MESSAGES;
 	
     //* Check for boundaries
 	/* 
@@ -348,7 +351,7 @@ int init_mode_array(int proc1,int proc2,int num_noise_procs,int num_all_procs,in
 		return 0;
 	}*/
     
-    /*for (i=0;i<num_all_procs;i++)
+    for (i=0;i<num_all_procs;i++)
     {
         for (j=0;j<num_noise_procs;j++)
         {
@@ -362,10 +365,10 @@ int init_mode_array(int proc1,int proc2,int num_noise_procs,int num_all_procs,in
     
 
     return 0;
-}*/
+}
 
 
-int init_mode_array(int proc1,int proc2,int num_noise_procs,int num_all_procs,int *mode_array)
+/*int init_mode_array(int proc1,int proc2,int num_noise_procs,int num_all_procs,int *mode_array)
 {	
 	// is num_all_procs==comm_size???? WTF??
 	int i;
@@ -380,13 +383,19 @@ int init_mode_array(int proc1,int proc2,int num_noise_procs,int num_all_procs,in
     int *noise_procs=NULL;	
     
     //printf("%d\n", comm_rank);
+   /* if(!random_choice(proc1,proc2, num_noise_procs,noise_procs))
+	{
+		return -2;
+
+	} comment below this part*/
+   
 	/*if(!random_choice(proc1,proc2, num_noise_procs,noise_procs))
 	{
 		return -2;
 
-	}
-	
-	*/for(i=0;i<num_noise_procs;i++)
+	}*/
+	/*
+	for(i=0;i<num_noise_procs;i++)
 	{
 		mode_array[noise_procs[i]]=MODE_NOISE_MESSAGES;
 	}
@@ -401,7 +410,6 @@ int init_mode_array(int proc1,int proc2,int num_noise_procs,int num_all_procs,in
 	{
 		return 0;
 	}
-
 	int r=0;
 	int k=(num_all_procs-2)/num_noise_procs;
 	for ( i = 0; i < num_noise_procs; i++ )
@@ -414,4 +422,4 @@ int init_mode_array(int proc1,int proc2,int num_noise_procs,int num_all_procs,in
 
 	
 	return 0;
-}
+}*/

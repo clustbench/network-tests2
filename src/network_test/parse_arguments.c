@@ -28,7 +28,94 @@
 #define HELP_FLAG    2
 
 const char *default_file_name_prefix = "network";
+int size = 0;
 
+int read_string(char **str,FILE *f,int *xx)
+{
+        int i=1;
+        int x;
+        char *k=NULL;
+        char *n=NULL;
+        //k=(char*)malloc(i);
+        n=k;
+        /*if (k==NULL)
+        {
+                return 2;
+        }*/
+        while ((x=fgetc(f))!=EOF && x!='\n')
+        {
+                n=(char*)realloc(k,i+1);
+                if (n==NULL)
+                {
+                        free(n);
+                        return 2;
+                }
+                n[i-1]=x;
+                k=n;
+                i+=1;
+        }
+        if (x==EOF)
+        {
+            if (i==1)
+            {
+                //flag = 1;
+                free(k);
+                size+=1;
+                *xx=x;
+            }
+            else
+            {
+                //flag = 2;
+                n[i-1] ='\0';
+                i++;
+                n=(char*)realloc(k,i+1);
+                if (n==NULL)
+                {
+                    free(n);
+                    return 2;
+                }
+                k=n;
+                //n[i-1] = '\0';
+                /*i++;
+                n=(char*)realloc(k,i+1);
+                if (n==NULL)
+                {
+                    free(n);
+                    return 2;
+                }
+                k=n;*/
+                size++;
+                *str = n;
+                *xx = x;
+            }
+                return 1;
+        }
+	if (i==1)
+	{
+		n=(char*)realloc(k,i+1);
+		if (n==NULL)
+		{
+			free(n);
+			return 2;
+		}
+		k=n;
+	}
+    /*n[i-1]='\n';
+    i++;
+	n=(char*)realloc(k,i+1);
+	if (n==NULL)
+	{
+		free(n);
+		return 2;
+	}*/
+	size +=1;
+	n[i-1] = '\0';
+	k=n;
+    *str=n;
+	*xx=x;
+    return 0;
+
+}
 
 int print_network_test_help_message(void)
 {
@@ -125,7 +212,10 @@ int print_info_test(struct network_test_parameters_struct *parameters ,int d)
     char libso[5] = ".so";
     char liblib[5] ="/lib";
     char info[12] = "/config.cfg";
+    char info_full[17] = "/config_full.cfg";
+    FILE *f;
     config_t cfg;
+    int a;
     const char *info_str;
     const char *info_parameters;
     if (get_test_type_name(parameters->test_type, test) == -1)
@@ -133,9 +223,19 @@ int print_info_test(struct network_test_parameters_struct *parameters ,int d)
     strcat(library, tests);
     strcat(library, test);
     library[strlen(library)] = '//';
-    strcat(library, info);
+    if (d == 0)
+        strcat(library, info);
+    else
+        strcat(library, info_full);
+    //strcat(library, info);
     
-    config_init(&cfg);
+    f = fopen(library,"rt");
+    while ((a=fgetc(f)) != EOF)
+    {
+        printf("%c",a);
+    }
+    fclose(f);
+    /*config_init(&cfg);
     if (! config_read_file(&cfg, library))
     {
         return -1;
@@ -156,6 +256,7 @@ int print_info_test(struct network_test_parameters_struct *parameters ,int d)
     }
     
     config_destroy(&cfg);
+*/
     return 0;
 }
 
