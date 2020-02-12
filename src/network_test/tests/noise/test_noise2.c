@@ -62,7 +62,7 @@ int noise(Test_time_result_type *times, int mes_length, int num_repeats, int num
 	px_my_time_type sum;
 	px_my_time_type st_deviation;
 	
-    char *host_name;
+    char host_name[256];
 	int flag;
 	int work_flag=1;
 
@@ -95,29 +95,26 @@ int noise(Test_time_result_type *times, int mes_length, int num_repeats, int num
 	{
 		return -1;
 	}
-
-	/*
-	 * Ok, lets begin test part
-	 */
-	srand( (unsigned)time( NULL ) );
-	
-	for(i=0; i<comm_size; i++)
-	for(j=0; j<num_repeats; j++)
-	{
-		td.tmp_results[i][j] = 0;
-	}
-
+    
+    
 	if (comm_rank ==0)
     {
         gethostname( host_name, 255 );
+        t=0;
         for (j=0;j<num_noise_procs;j++)
         {
             if (strcmp(host_name, hosts_names[j])==0)
             {
-                rank_procceses[m_proc] = comm_rank;
-                m_proc++;
+                //rank_procceses[m_proc] = comm_rank;
+                //m_proc++;
+                t=1;
             }
         
+        }
+        if (t==0)
+        {
+            rank_procceses[m_proc] = comm_rank;
+            m_proc++;
         }
         for (i = 1;i<comm_size;i++)
         {
@@ -150,6 +147,23 @@ int noise(Test_time_result_type *times, int mes_length, int num_repeats, int num
             }
             
     }
+    /*if (comm_rank == 0)
+    {
+    for (i=0;i<comm_size;i++)
+        printf("%d\n", rank_procceses[i]);
+    }*/
+    //printf("ok\n");
+    /*
+	 * Ok, lets begin test part
+	 */
+	srand( (unsigned)time( NULL ) );
+	
+	for(i=0; i<comm_size; i++)
+	for(j=0; j<num_repeats; j++)
+	{
+		td.tmp_results[i][j] = 0;
+	}
+	
 	if(comm_rank==0)
 	{
         
@@ -175,6 +189,7 @@ int noise(Test_time_result_type *times, int mes_length, int num_repeats, int num
 			{
 				return -1;
 			}
+			//printf("okay\n");
 			for(i=0;i<num_repeats;i++)
 			{
             

@@ -32,7 +32,7 @@
  */
 
 #include <mpi.h>
-#include "libconfig.h"
+//#include "libconfig.h"
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
@@ -88,7 +88,7 @@ int main(int argc,char **argv)
     int c, m;
     int len;
     char b;
-    config_t cfg;
+    //config_t cfg;
     int xx, err;
     FILE *noise_file;
     char **proc_names= NULL;
@@ -897,4 +897,3 @@ int main(int argc,char **argv)
     MPI_Finalize();
     return 0;
 } /* main finished */
-

@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "string.h"
-#include "libconfig.h"
+//#include "libconfig.h"
 
 #include "types.h"
 #include "../../parus_config.h"
@@ -214,7 +214,7 @@ int print_info_test(struct network_test_parameters_struct *parameters ,int d)
     char info[12] = "/config.cfg";
     char info_full[17] = "/config_full.cfg";
     FILE *f;
-    config_t cfg;
+    //config_t cfg;
     int a;
     const char *info_str;
     const char *info_parameters;
