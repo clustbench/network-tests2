@@ -563,8 +563,16 @@ int main(int argc,char **argv)
                 printf("Error: can't open file 'noise_hosts.txt'\n");
                 return 1;
             }
+            proc_names1 = (char**)malloc(1*sizeof(char*));
+            if (proc_names1 == NULL)
+            {
+                free(proc_names1);
+                printf("Malloc error\n");
+                return 1;
+            }
+            proc_names = proc_names1;
             kol=0;
-            m=0;
+            m=1;
             while (1)
             {
                 int err=read_string(&hosts_name,noise_file,&xx);
@@ -580,6 +588,8 @@ int main(int argc,char **argv)
                 }
                 if (err == 1)
                 {
+                    proc_names[kol] = hosts_name;
+                    m++;
                     proc_names1=(char**)realloc(proc_names,m*sizeof(char*));
                     if (proc_names1==NULL)
                     {
@@ -587,12 +597,12 @@ int main(int argc,char **argv)
                         return 1;
                     }
                     proc_names=proc_names1;
-                    m++;
-                    proc_names[kol] = hosts_name;
+                    
                     kol++;
                     break;
                 }
-
+                proc_names[kol]=hosts_name;
+                m++;
                 proc_names1=(char**)realloc(proc_names,m*sizeof(char *));
                 if(proc_names1==NULL)
                 {
@@ -601,8 +611,8 @@ int main(int argc,char **argv)
 
                 }
                 proc_names=proc_names1;
-                m+=1;
-                proc_names[kol]=hosts_name;
+                //m+=1;
+                //proc_names[kol]=hosts_name;
                 kol+=1;
             }
 
