@@ -1,0 +1,6 @@
+Following folder contains tools for partitial network_test2 working support.
+
+- net_file_generator -- tool written using Python 3, allows to automate GML files creation from cabel journal.
+- topology_split -- tool written using C, allows to automate supercomputer topology splitting on 
+equality classes. 
+- kde_estimator -- tool for estimating delays for two nodes, using data collected by enchanted network_test2.
