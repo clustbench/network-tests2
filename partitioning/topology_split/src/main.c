@@ -9,10 +9,10 @@ int main(int argc, char** argv)
     if (!net)
         return 1;
 
-    BellmanFord(net);
+  //  BellmanFord(net);
+    printf("%d %s\n", net->nodes, net->unitList[1].label);
 
-
-
+    freeNet(net);
 
 
     return 0;

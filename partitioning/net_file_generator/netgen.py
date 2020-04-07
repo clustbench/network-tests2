@@ -143,6 +143,8 @@ class SupecomputerNet:
     def serialize(self, output_name, name_map):
         with open(output_name, 'w+') as f:
             f.write('graph [\n')
+            f.write('\tnodesNum {:d}\n'.format(self.nodes))
+            f.write('\tswitchesNum {:d}\n'.format(self.switches))
             f.write('\tdirected 1\n')
             f.write('\tsupercomputerName "{:s}"\n'.format(self.supercomputername))
             for i in range(1, self.nodes + 1):
@@ -169,6 +171,7 @@ class SupecomputerNet:
                 f.write('\tedge [\n')
                 f.write('\t\tsource {:d}\n'.format(e.source))
                 f.write('\t\ttarget {:d}\n'.format(e.target))
+                f.write('\t\tdirected {:s}\n'.format(DirectString[e.direct_type]))
                 f.write('\t\tgraphics [\n')
                 f.write('\t\t\ttargetArrow "standard"\n')
                 if (e.direct_type == DirectionTypes.BI_DIRECTIONAL):
