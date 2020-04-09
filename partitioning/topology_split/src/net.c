@@ -1,8 +1,4 @@
 #include "net.h"
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <memory.h>
 
 typedef enum ParserState
 {
@@ -47,6 +43,7 @@ void addLink(Net* net, int source, int destination)
     
     newNode->next = head;
     newNode->dest = destination;
+    printf("%d %d\n", source, destination);
     net->adjLists[source].head = newNode;
 
 }
@@ -180,7 +177,6 @@ Net* parseGML(char* filename)
                     if (!strncmp(tok, "[", 255))
                     {
                         size_t q = sizeof(Unit);
-                        printf("%d\n", sizeof(Unit));
                         unIns = (Unit*)malloc(q);
                         unIns->label = NULL;
                         state = PARSE_NODE;
@@ -297,5 +293,6 @@ Net* parseGML(char* filename)
             k++;
         }
     }
+    fclose(f);
     return resultNet;
 }

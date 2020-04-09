@@ -1,6 +1,10 @@
 #ifndef _NET_H_
 #define _NET_H_
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
 typedef struct Unit Unit;
 typedef struct Net Net;
 

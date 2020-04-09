@@ -171,7 +171,7 @@ class SupecomputerNet:
                 f.write('\tedge [\n')
                 f.write('\t\tsource {:d}\n'.format(e.source))
                 f.write('\t\ttarget {:d}\n'.format(e.target))
-                f.write('\t\tdirected {:s}\n'.format(DirectString[e.direct_type]))
+                f.write('\t\tdirected "{:s}"\n'.format(DirectString[e.direct_type]))
                 f.write('\t\tgraphics [\n')
                 f.write('\t\t\ttargetArrow "standard"\n')
                 if (e.direct_type == DirectionTypes.BI_DIRECTIONAL):
