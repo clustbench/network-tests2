@@ -40,6 +40,7 @@ int print_network_test_help_message(void)
            "\t\t\t[{ -m | --num_noise_message } <number of noise messages> ]\n"
            "\t\t\t[{ -p | --procs_noise } <number of noise MPI processes> ]\n"
            "\t\t\t[{ -n | --num_iterations } <number of iterations> ]\n"
+           "\t\t\t[{ -q | --eq_filename } <equality classes filename> ]\n"
            "\t\t\t[{ -h | --help }]\n"
            "\t\t\t[{ -v | --version }]\n","network_test2");
 #else
@@ -54,6 +55,7 @@ int print_network_test_help_message(void)
            "\t\t\t[ -m <number of noise message> ]\n"
            "\t\t\t[ -p <number of noise processes> ]\n"
            "\t\t\t[ -n <number of iterations> ]\n"
+           "\t\t\t[ -q <equality classes filename> ]\n"
            "\t\t\t[ -h ] - print help\n"
            "\t\t\t[ -v ] - print version\n","network_test2");
 #endif
@@ -120,6 +122,7 @@ int parse_network_test_arguments(int argc,char **argv,struct network_test_parame
     parameters->num_noise_messages   =  NOISE_MESSAGE_NUM;
     parameters->num_noise_procs      =  NUM_NOISE_PROCS;
     parameters->file_name_prefix     =  default_file_name_prefix;
+    parameters->eq_classes_filename = NULL;
 
 #ifdef _GNU_SOURCE
 
@@ -134,6 +137,7 @@ int parse_network_test_arguments(int argc,char **argv,struct network_test_parame
         {"length_noise_message",required_argument,NULL,'l'},
         {"num_noise_message",required_argument,NULL,'m'},
         {"procs_noise",required_argument,NULL,'p'},
+        {"eq_filename",required_argument, NULL, 'q'},
         {"version",no_argument,NULL,'v'},
         {"help",no_argument,NULL,'h'},
         {"resume",no_argument,NULL,'r'},
@@ -145,10 +149,10 @@ int parse_network_test_arguments(int argc,char **argv,struct network_test_parame
     for ( ; ; )
     {
 #ifdef _GNU_SOURCE
-        arg_val = getopt_long(argc,argv,"t:f:n:b:e:s:l:m:p:h:v:r:i",options,NULL);
+        arg_val = getopt_long(argc,argv,"t:f:n:b:e:s:l:m:p:h:v:r:i:q:",options,NULL);
 #else
 
-        arg_val = getopt(argc,argv,"t:f:n:b:e:s:l:m:p:h:v:r:i");
+        arg_val = getopt(argc,argv,"t:f:n:b:e:s:l:m:p:h:v:r:i:q:");
 #endif
 
         if ( arg_val== -1 )
@@ -179,6 +183,9 @@ int parse_network_test_arguments(int argc,char **argv,struct network_test_parame
             break;
         case 'f':
             parameters->file_name_prefix = optarg;
+            break;
+        case 'q':
+            parameters->eq_classes_filename = optarg;
             break;
         case 't':
             if ( ( parameters->test_type = get_test_type(optarg) ) == UNKNOWN_TEST_TYPE )

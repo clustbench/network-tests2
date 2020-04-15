@@ -27,6 +27,7 @@
 
 #include "my_time.h"
 #include "tests_common.h"
+#include "types.h"
 
 #define UNKNOWN_TEST_TYPE 0
 #define ONE_TO_ONE_TEST_TYPE 1
@@ -38,6 +39,7 @@
 #define BCAST_TEST_TYPE 7
 #define PUT_ONE_TO_ONE_TEST_TYPE 8
 #define GET_ONE_TO_ONE_TEST_TYPE 9
+#define DIRECTED_ONE_TO_ONE_TEST_TYPE 10
 
 #ifdef __cplusplus
 extern "C"
@@ -53,6 +55,7 @@ extern int test_noise(Test_time_result_type *times,int mes_length, int num_repea
 extern int test_noise_blocking(Test_time_result_type *times,int mes_length, int num_repeats, int num_noise_repeats, int noise_message_length, int num_noise_procs);
 extern int get_one_to_one(Test_time_result_type *times,int mes_length,int num_repeats);
 extern int put_one_to_one(Test_time_result_type *times,int mes_length,int num_repeats);
+extern int directed_one_to_one(equality_class* eq_classes, int total_classes, struct network_test_parameters_struct* params);
 
 
 #ifdef __cplusplus

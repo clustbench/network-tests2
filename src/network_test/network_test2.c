@@ -105,11 +105,16 @@ int main(int argc,char **argv)
      *
      * This is not C++ class but very like.
      */
+
+    //char_rank_map_el* rank_mapping;
+
     Easy_matrix mtr_av;
     Easy_matrix mtr_me;
     Easy_matrix mtr_di;
     Easy_matrix mtr_mi;
 
+    equality_class* eq_classes = NULL;
+    int total_classes = 0;
 
     char test_type_name[100];
     int i,j;
@@ -149,6 +154,7 @@ int main(int argc,char **argv)
 
     if(comm_rank == 0)
     {
+        //rank_mapping = (char_rank_map_el*)malloc(sizeof(char_rank_map_el) * comm_rank);
         if ( comm_size == 1 )
         {
             error_flag = 1;
@@ -190,12 +196,170 @@ int main(int argc,char **argv)
         for ( i = 1; i < comm_size; i++ )
             MPI_Recv( host_names[i], 256, MPI_CHAR, i, 200, MPI_COMM_WORLD, &status );
         strcpy(host_names[0],host_name);
+
     }
     else
     {
         MPI_Send( host_name, 256, MPI_CHAR, 0, 200, MPI_COMM_WORLD );
+
+
     }
 
+    //construct test scheme for provided nodes and equality classes 
+    if (comm_rank == 0)
+    {
+
+        if (test_parameters.test_type==DIRECTED_ONE_TO_ONE_TEST_TYPE)
+        {
+
+            //DELETE FOR TEST PURPOSE
+            memset(host_names[0], 0, 255);
+            memset(host_names[1], 0, 255);
+            strcpy(host_names[0], "node1");
+            strcpy(host_names[1], "node2");
+
+            if (test_parameters.eq_classes_filename == NULL)
+            {
+                printf("No equality classes mapping file provided!\n");
+                MPI_Abort(MPI_COMM_WORLD, -1);
+            }
+            FILE *eq_file;
+            eq_file = fopen(test_parameters.eq_classes_filename, "r");
+            if (!eq_file)
+            {
+                printf("File for equality classes not found\n");
+                MPI_Abort(MPI_COMM_WORLD, -1);
+            }
+            char *line = NULL;
+            size_t line_buf_size = 0;
+            ssize_t line_size = 0;        
+            int line_cnt = 0;
+
+            line_size = getline(&line, &line_buf_size, eq_file);
+
+            line_cnt++;
+
+            while(line_size >= 0)
+            {
+                if (line_cnt == 1)
+                {
+                    line_size = getline(&line, &line_buf_size, eq_file);
+                    line_cnt++;
+                    continue;
+                }
+            
+                char* first_c = strchr(line, ',');
+                char* second_c = strrchr(line, ',');
+
+                if (first_c == NULL || second_c == NULL)
+                {
+                    line_size = getline(&line, &line_buf_size, eq_file);
+                    line_cnt++;
+                    continue;
+                }
+                char *classind = (char*)malloc(sizeof(char) *  (first_c - line + 1 ));
+                classind[first_c - line] = 0;
+                strncpy(classind, line, first_c - line);
+
+                char *send_node_name = (char*)malloc(sizeof(char) * (second_c - first_c));
+                memset(send_node_name, 0, second_c - first_c);
+                strncpy(send_node_name, first_c +  1, (second_c - first_c - 1));
+
+                char *recv_node_name = (char*)malloc(sizeof(char) * (strlen(second_c)));
+                memset(recv_node_name, 0 , strlen(second_c));
+                strncpy(recv_node_name, second_c + 1, strlen(second_c) - 2);
+
+                int send_rank = -1;
+                int recv_rank = -1;
+                int class_id;
+                for (int i = 0; i < comm_size; ++i)
+                {
+                    if (!strcmp(send_node_name, host_names[i]))
+                    {
+                        send_rank = i;
+                    }
+                    if (!strcmp(recv_node_name, host_names[i]))
+                    {
+                        recv_rank = i;
+                    }
+                }
+
+                if (send_rank == -1 || recv_rank == -1)
+                {
+                    line_size = getline(&line, &line_buf_size, eq_file);
+                    line_cnt++;
+                    continue;
+                }
+
+                char *hops = strchr(classind, '.');
+                if (hops == NULL)
+                {
+                    class_id = atoi(classind);
+                } 
+                else
+                {
+                    hops[0] = 0;
+                    class_id = atoi(classind);
+                }
+                
+                int found = -1;
+                if (total_classes == 0)
+                {
+                    eq_classes = (equality_class*)malloc(sizeof(equality_class));
+                    total_classes++;
+                    eq_classes[0].links = NULL; 
+                    eq_classes[0].links_count = 0;
+                    eq_classes[0].id = class_id;
+                    found = 0;
+                } 
+                else
+                {
+                    for (int i = 0 ; i < total_classes; ++i)
+                    {
+                        if (class_id == eq_classes[i].id)
+                        {
+                            found = i;
+                            break;       
+                        }
+                    }
+                    if (found == -1)
+                    {
+                        eq_classes = (equality_class*)realloc(eq_classes, sizeof(equality_class) * (total_classes + 1));
+                        total_classes++;
+                        eq_classes[total_classes - 1].links = NULL; 
+                        eq_classes[total_classes - 1].links_count = 0; 
+                        eq_classes[total_classes - 1].id = class_id;
+                        found = total_classes - 1;
+                    }
+                }
+                if (eq_classes[found].links_count == 0)
+                {
+                    eq_classes[found].links = (eq_class_elem*)malloc(sizeof(eq_class_elem));
+                } else 
+                {
+                    eq_classes[found].links = (eq_class_elem*)realloc(eq_classes[found].links,sizeof(eq_class_elem) * (eq_classes[found].links_count + 1));
+                }
+                eq_classes[found].links_count++;
+                eq_classes[found].links[eq_classes[found].links_count - 1].send_rank = send_rank;
+                eq_classes[found].links[eq_classes[found].links_count - 1].recv_rank = recv_rank;
+
+
+                free(classind);
+                free(send_node_name);
+                free(recv_node_name);
+                line_size = getline(&line, &line_buf_size, eq_file);
+                line_cnt++;
+            }
+
+            for (int i = 0; i < total_classes; ++i)
+            {
+                for (int j = 0; j < eq_classes[i].links_count; ++j)
+                    printf("c:%d, s:%d, r:%d\n", eq_classes[i].id, eq_classes[i].links[j].send_rank, eq_classes[i].links[j].recv_rank);
+            }
+        }
+
+
+    }
     /*
      * Initializing num_procs parameter
      */
@@ -208,61 +372,65 @@ int main(int argc,char **argv)
          * Matrices initialization
          *
          */
-        flag = easy_mtr_create(&mtr_av,comm_size,comm_size);
-        if( flag==-1 )
-        {
-            printf("Can not to create average matrix to story the test results\n");
-            MPI_Abort(MPI_COMM_WORLD,-1);
-            return -1;
-        }
-        flag = easy_mtr_create(&mtr_me,comm_size,comm_size);
-        if( flag==-1 )
-        {
-            printf("Can not to create median matrix to story the test results\n");
-            MPI_Abort(MPI_COMM_WORLD,-1);
-            return -1;
-        }
-        flag = easy_mtr_create(&mtr_di,comm_size,comm_size);
-        if( flag==-1 )
-        {
-            printf("Can not to create deviation matrix to story the test results\n");
-            MPI_Abort(MPI_COMM_WORLD,-1);
-            return -1;
-        }
-        flag = easy_mtr_create(&mtr_mi,comm_size,comm_size);
-        if( flag==-1 )
-        {
-            printf("Can not to create min values matrix to story  the test results\n");
-            MPI_Abort(MPI_COMM_WORLD,-1);
-            return -1;
-        }
 
-        if(create_netcdf_header(AVERAGE_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_av,&netcdf_var_av))
+        if (test_parameters.test_type != DIRECTED_ONE_TO_ONE_TEST_TYPE)
         {
-            printf("Can not to create file with name \"%s_average.nc\"\n",test_parameters.file_name_prefix);
-            MPI_Abort(MPI_COMM_WORLD,-1);
-            return -1;
-        }
+            flag = easy_mtr_create(&mtr_av,comm_size,comm_size);
+            if( flag==-1 )
+            {
+                printf("Can not to create average matrix to story the test results\n");
+                MPI_Abort(MPI_COMM_WORLD,-1);
+                return -1;
+            }
+            flag = easy_mtr_create(&mtr_me,comm_size,comm_size);
+            if( flag==-1 )
+            {
+                printf("Can not to create median matrix to story the test results\n");
+                MPI_Abort(MPI_COMM_WORLD,-1);
+                return -1;
+            }
+            flag = easy_mtr_create(&mtr_di,comm_size,comm_size);
+            if( flag==-1 )
+            {
+                printf("Can not to create deviation matrix to story the test results\n");
+                MPI_Abort(MPI_COMM_WORLD,-1);
+                return -1;
+            }
+            flag = easy_mtr_create(&mtr_mi,comm_size,comm_size);
+            if( flag==-1 )
+            {
+                printf("Can not to create min values matrix to story  the test results\n");
+                MPI_Abort(MPI_COMM_WORLD,-1);
+                return -1;
+            }
 
-        if(create_netcdf_header(MEDIAN_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_me,&netcdf_var_me))
-        {
-            printf("Can not to create file with name \"%s_median.nc\"\n",test_parameters.file_name_prefix);
-            MPI_Abort(MPI_COMM_WORLD,-1);
-            return -1;
-        }
+            if(create_netcdf_header(AVERAGE_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_av,&netcdf_var_av))
+            {
+                printf("Can not to create file with name \"%s_average.nc\"\n",test_parameters.file_name_prefix);
+                MPI_Abort(MPI_COMM_WORLD,-1);
+                return -1;
+            }
 
-        if(create_netcdf_header(DEVIATION_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_di,&netcdf_var_di))
-        {
-            printf("Can not to create file with name \"%s_deviation.nc\"\n",test_parameters.file_name_prefix);
-            MPI_Abort(MPI_COMM_WORLD,-1);
-            return -1;
-        }
+            if(create_netcdf_header(MEDIAN_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_me,&netcdf_var_me))
+            {
+                printf("Can not to create file with name \"%s_median.nc\"\n",test_parameters.file_name_prefix);
+                MPI_Abort(MPI_COMM_WORLD,-1);
+                return -1;
+            }
 
-        if(create_netcdf_header(MIN_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_mi,&netcdf_var_mi))
-        {
-            printf("Can not to create file with name \"%s_min.nc\"\n",test_parameters.file_name_prefix);
-            MPI_Abort(MPI_COMM_WORLD,-1);
-            return -1;
+            if(create_netcdf_header(DEVIATION_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_di,&netcdf_var_di))
+            {
+                printf("Can not to create file with name \"%s_deviation.nc\"\n",test_parameters.file_name_prefix);
+                MPI_Abort(MPI_COMM_WORLD,-1);
+                return -1;
+            }
+
+            if(create_netcdf_header(MIN_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_mi,&netcdf_var_mi))
+            {
+                printf("Can not to create file with name \"%s_min.nc\"\n",test_parameters.file_name_prefix);
+                MPI_Abort(MPI_COMM_WORLD,-1);
+                return -1;
+            }
         }
 
 	if(create_test_hosts_file(&test_parameters,host_names))		
@@ -305,7 +473,7 @@ int main(int argc,char **argv)
      *
      * Little hack from Alexey Salnikov.
      */
-    MPI_Bcast(&test_parameters,9,MPI_INT,0,MPI_COMM_WORLD);
+    MPI_Bcast(&test_parameters,10,MPI_INT,0,MPI_COMM_WORLD);
 
 
     /*
@@ -340,146 +508,154 @@ int main(int argc,char **argv)
     /*
      * Circle by length of messages
      */
-    for
-	    (
-	     tmp_mes_size=test_parameters.begin_message_length;
-	     tmp_mes_size<test_parameters.end_message_length;
-	     step_num++,tmp_mes_size+=test_parameters.step_length
-	     )
+    if(test_parameters.test_type==DIRECTED_ONE_TO_ONE_TEST_TYPE)
     {
-        if(test_parameters.test_type==ALL_TO_ALL_TEST_TYPE)
+        directed_one_to_one(eq_classes, total_classes, &test_parameters);
+    } 
+    else 
+    {
+        for
+            (
+            tmp_mes_size=test_parameters.begin_message_length;
+            tmp_mes_size<test_parameters.end_message_length;
+            step_num++,tmp_mes_size+=test_parameters.step_length
+            )
         {
-            all_to_all(times,tmp_mes_size,test_parameters.num_repeats);
-        }
-        if(test_parameters.test_type==BCAST_TEST_TYPE)
-        {
-            bcast(times,tmp_mes_size,test_parameters.num_repeats);
-        }
-
-        if(test_parameters.test_type==NOISE_BLOCKING_TEST_TYPE)
-        {
-                test_noise_blocking
-		(
-		 	times,
-		    	tmp_mes_size,
-			test_parameters.num_repeats,
-			test_parameters.num_noise_messages,
-			test_parameters.noise_message_length,
-		       	test_parameters.num_noise_procs
-		);
-        }
-
-        if(test_parameters.test_type==NOISE_TEST_TYPE)
-        {
-            		test_noise
-			(
-			 	times,
-				tmp_mes_size,
-				test_parameters.num_repeats,
-				test_parameters.num_noise_messages,
-				test_parameters.noise_message_length,
-				test_parameters.num_noise_procs
-			);
-        }
-
-        if(test_parameters.test_type==ONE_TO_ONE_TEST_TYPE)
-        {
-            one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
-        } /* end one_to_one */
-
-        if(test_parameters.test_type==ASYNC_ONE_TO_ONE_TEST_TYPE)
-        {
-            async_one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
-        } /* end async_one_to_one */
-
-        if(test_parameters.test_type==SEND_RECV_AND_RECV_SEND_TEST_TYPE)
-        {
-            send_recv_and_recv_send(times,tmp_mes_size,test_parameters.num_repeats);
-        } /* end send_recv_and_recv_send */
-
-
-
-
-        if(test_parameters.test_type==PUT_ONE_TO_ONE_TEST_TYPE)
-        {
-		put_one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
-        } /* end put_one_to_one */
-
-        if(test_parameters.test_type==GET_ONE_TO_ONE_TEST_TYPE)
-        {
-		get_one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
-        } /* end get_one_to_one */
-
-
-        MPI_Barrier(MPI_COMM_WORLD);
-
-        if(comm_rank==0)
-        {
-            for(j=0; j<comm_size; j++)
+            if(test_parameters.test_type==ALL_TO_ALL_TEST_TYPE)
             {
-                MATRIX_FILL_ELEMENT(mtr_av,0,j,times[j].average);
-                MATRIX_FILL_ELEMENT(mtr_me,0,j,times[j].median);
-                MATRIX_FILL_ELEMENT(mtr_di,0,j,times[j].deviation);
-                MATRIX_FILL_ELEMENT(mtr_mi,0,j,times[j].min);
+                all_to_all(times,tmp_mes_size,test_parameters.num_repeats);
             }
-            for(i=1; i<comm_size; i++)
+            if(test_parameters.test_type==BCAST_TEST_TYPE)
             {
+                bcast(times,tmp_mes_size,test_parameters.num_repeats);
+            }
 
-                MPI_Recv(times,comm_size,MPI_My_time_struct,i,100,MPI_COMM_WORLD,&status);
+            if(test_parameters.test_type==NOISE_BLOCKING_TEST_TYPE)
+            {
+                    test_noise_blocking
+            (
+                times,
+                    tmp_mes_size,
+                test_parameters.num_repeats,
+                test_parameters.num_noise_messages,
+                test_parameters.noise_message_length,
+                    test_parameters.num_noise_procs
+            );
+            }
+
+            if(test_parameters.test_type==NOISE_TEST_TYPE)
+            {
+                        test_noise
+                (
+                    times,
+                    tmp_mes_size,
+                    test_parameters.num_repeats,
+                    test_parameters.num_noise_messages,
+                    test_parameters.noise_message_length,
+                    test_parameters.num_noise_procs
+                );
+            }
+
+            if(test_parameters.test_type==ONE_TO_ONE_TEST_TYPE)
+            {
+                one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
+            } /* end one_to_one */
+
+            if(test_parameters.test_type==ASYNC_ONE_TO_ONE_TEST_TYPE)
+            {
+                async_one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
+            } /* end async_one_to_one */
+
+            if(test_parameters.test_type==SEND_RECV_AND_RECV_SEND_TEST_TYPE)
+            {
+                send_recv_and_recv_send(times,tmp_mes_size,test_parameters.num_repeats);
+            } /* end send_recv_and_recv_send */
+
+
+
+
+            if(test_parameters.test_type==PUT_ONE_TO_ONE_TEST_TYPE)
+            {
+            put_one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
+            } /* end put_one_to_one */
+
+            if(test_parameters.test_type==GET_ONE_TO_ONE_TEST_TYPE)
+            {
+            get_one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
+            } /* end get_one_to_one */
+
+
+            MPI_Barrier(MPI_COMM_WORLD);
+
+            if(comm_rank==0)
+            {
                 for(j=0; j<comm_size; j++)
                 {
-                    MATRIX_FILL_ELEMENT(mtr_av,i,j,times[j].average);
-                    MATRIX_FILL_ELEMENT(mtr_me,i,j,times[j].median);
-                    MATRIX_FILL_ELEMENT(mtr_di,i,j,times[j].deviation);
-                    MATRIX_FILL_ELEMENT(mtr_mi,i,j,times[j].min);
-
+                    MATRIX_FILL_ELEMENT(mtr_av,0,j,times[j].average);
+                    MATRIX_FILL_ELEMENT(mtr_me,0,j,times[j].median);
+                    MATRIX_FILL_ELEMENT(mtr_di,0,j,times[j].deviation);
+                    MATRIX_FILL_ELEMENT(mtr_mi,0,j,times[j].min);
                 }
-            }
+                for(i=1; i<comm_size; i++)
+                {
+
+                    MPI_Recv(times,comm_size,MPI_My_time_struct,i,100,MPI_COMM_WORLD,&status);
+                    for(j=0; j<comm_size; j++)
+                    {
+                        MATRIX_FILL_ELEMENT(mtr_av,i,j,times[j].average);
+                        MATRIX_FILL_ELEMENT(mtr_me,i,j,times[j].median);
+                        MATRIX_FILL_ELEMENT(mtr_di,i,j,times[j].deviation);
+                        MATRIX_FILL_ELEMENT(mtr_mi,i,j,times[j].min);
+
+                    }
+                }
 
 
-            if(netcdf_write_matrix(netcdf_file_av,netcdf_var_av,step_num,mtr_av.sizex,mtr_av.sizey,mtr_av.body))
+                if(netcdf_write_matrix(netcdf_file_av,netcdf_var_av,step_num,mtr_av.sizex,mtr_av.sizey,mtr_av.body))
+                {
+                    printf("Can't write average matrix to file.\n");
+                    MPI_Abort(MPI_COMM_WORLD,-1);
+                    return 1;
+                }
+
+                if(netcdf_write_matrix(netcdf_file_me,netcdf_var_me,step_num,mtr_me.sizex,mtr_me.sizey,mtr_me.body))
+                {
+                    printf("Can't write median matrix to file.\n");
+                    MPI_Abort(MPI_COMM_WORLD,-1);
+                    return 1;
+                }
+
+                if(netcdf_write_matrix(netcdf_file_di,netcdf_var_di,step_num,mtr_di.sizex,mtr_di.sizey,mtr_di.body))
+                {
+                    printf("Can't write deviation matrix to file.\n");
+                    MPI_Abort(MPI_COMM_WORLD,-1);
+                    return 1;
+                }
+
+                if(netcdf_write_matrix(netcdf_file_mi,netcdf_var_mi,step_num,mtr_mi.sizex,mtr_mi.sizey,mtr_mi.body))
+                {
+                    printf("Can't write  matrix with minimal values to file.\n");
+                    MPI_Abort(MPI_COMM_WORLD,-1);
+                    return 1;
+                }
+
+
+                printf("message length %d finished\r",tmp_mes_size);
+                fflush(stdout);
+            
+
+            } /* end comm rank 0 */
+            else
             {
-                printf("Can't write average matrix to file.\n");
-                MPI_Abort(MPI_COMM_WORLD,-1);
-                return 1;
-            }
-
-            if(netcdf_write_matrix(netcdf_file_me,netcdf_var_me,step_num,mtr_me.sizex,mtr_me.sizey,mtr_me.body))
-            {
-                printf("Can't write median matrix to file.\n");
-                MPI_Abort(MPI_COMM_WORLD,-1);
-                return 1;
-            }
-
-            if(netcdf_write_matrix(netcdf_file_di,netcdf_var_di,step_num,mtr_di.sizex,mtr_di.sizey,mtr_di.body))
-            {
-                printf("Can't write deviation matrix to file.\n");
-                MPI_Abort(MPI_COMM_WORLD,-1);
-                return 1;
-            }
-
-            if(netcdf_write_matrix(netcdf_file_mi,netcdf_var_mi,step_num,mtr_mi.sizex,mtr_mi.sizey,mtr_mi.body))
-            {
-                printf("Can't write  matrix with minimal values to file.\n");
-                MPI_Abort(MPI_COMM_WORLD,-1);
-                return 1;
+                MPI_Send(times,comm_size,MPI_My_time_struct,0,100,MPI_COMM_WORLD);
             }
 
 
-            printf("message length %d finished\r",tmp_mes_size);
-            fflush(stdout);
-
-        } /* end comm rank 0 */
-        else
-        {
-            MPI_Send(times,comm_size,MPI_My_time_struct,0,100,MPI_COMM_WORLD);
+            /* end for cycle .
+            * Now we  go to the next length of message that is used in
+            * the test perfomed on multiprocessor.
+            */
         }
-
-
-        /* end for cycle .
-         * Now we  go to the next length of message that is used in
-         * the test perfomed on multiprocessor.
-         */
     }
 
     /* TODO
@@ -491,7 +667,6 @@ int main(int argc,char **argv)
      */
 
 	free(times);
-
 
 	if(comm_rank==0)
     {
@@ -507,11 +682,22 @@ int main(int argc,char **argv)
         }
         free(host_names);
 
-        free(mtr_av.body);
-        free(mtr_me.body);
-        free(mtr_di.body);
-        free(mtr_mi.body);
-
+        if (test_parameters.test_type != DIRECTED_ONE_TO_ONE_TEST_TYPE)
+        {
+            free(mtr_av.body);
+            free(mtr_me.body);
+            free(mtr_di.body);
+            free(mtr_mi.body);
+        }
+        else
+        {
+            for(int q = 0; q < total_classes; ++q)
+            {
+                free(eq_classes[q].links);
+            }
+            free(eq_classes);
+        }
+        
         printf("\nTest is done\n");
     }
 

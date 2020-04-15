@@ -38,6 +38,21 @@
 #include "my_time.h"
 #include "types.h"
 
+typedef struct eq_class_elem
+{
+	int send_rank;
+	int recv_rank;
+} eq_class_elem;
+
+
+typedef struct equality_class
+{
+	int id;
+	int links_count;
+	eq_class_elem *links;	
+} equality_class;
+
+
 
 typedef struct tag_test_time_result_type
 {

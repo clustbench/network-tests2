@@ -15,7 +15,7 @@
  * Test types
  */
 
-#define NUM_TEST_TYPES 9
+#define NUM_TEST_TYPES 10
 
 #define UNKNOWN_TEST_TYPE 0
 #define ONE_TO_ONE_TEST_TYPE 1
@@ -27,6 +27,7 @@
 #define BCAST_TEST_TYPE 7
 #define PUT_ONE_TO_ONE_TEST_TYPE 8
 #define GET_ONE_TO_ONE_TEST_TYPE 9
+#define DIRECTED_ONE_TO_ONE_TEST_TYPE 10
 
 
 #ifdef __cplusplus

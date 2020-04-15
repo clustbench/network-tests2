@@ -31,6 +31,15 @@ extern int create_netcdf_header
 	int *data_id
 );
 
+extern int create_netcdf_header4d_eq_class
+(
+	const struct network_test_parameters_struct* test_parameters,
+	int *file_id,
+	int *data_id,
+        char *filename;
+);
+
+
 extern int netcdf_write_matrix
 (
         const int netcdf_file_id,
@@ -38,6 +47,17 @@ extern int netcdf_write_matrix
         const int matrix_number_in_file,
         const int size_x,
         const int size_y,
+        const double *data
+);
+
+extern int netcdf_write_matrix4d
+(
+        const int netcdf_file_id,
+        const int netcdf_var_id,
+        const int matrix_number_in_file,
+        const int size_x,
+        const int size_y,
+        const int size_z,
         const double *data
 );
 

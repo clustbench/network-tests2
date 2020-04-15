@@ -43,6 +43,8 @@ int get_test_type(const char *str)
         return PUT_ONE_TO_ONE_TEST_TYPE;
     if(!strcmp(str,"get"))
         return GET_ONE_TO_ONE_TEST_TYPE;
+    if(!strcmp(str,"directed_one_to_one"))
+        return DIRECTED_ONE_TO_ONE_TEST_TYPE;
     return UNKNOWN_TEST_TYPE;
 }
 
@@ -77,6 +79,9 @@ int get_test_type_name(int test_type,char *str)
         break;
     case PUT_ONE_TO_ONE_TEST_TYPE:
         strcpy(str,"put");
+        break;
+    case DIRECTED_ONE_TO_ONE_TEST_TYPE:
+        strcpy(str,"directed_one_to_one");
         break;
     default:
         strcpy(str,"unknown");

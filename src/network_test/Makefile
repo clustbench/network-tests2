@@ -40,6 +40,7 @@ FILES_TEST2=\
 	bcast2.o\
 	get2.o\
 	put2.o\
+	directed_one_to_one.o\
 	parse_arguments.o
 
 FILES_PRINT_FROM_TO=\
