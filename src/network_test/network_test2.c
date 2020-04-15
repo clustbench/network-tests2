@@ -117,7 +117,7 @@ int main(int argc,char **argv)
     int total_classes = 0;
 
     char test_type_name[100];
-    int i,j;
+    int i,j,q;
 
 
     char** host_names=NULL;
@@ -211,13 +211,6 @@ int main(int argc,char **argv)
 
         if (test_parameters.test_type==DIRECTED_ONE_TO_ONE_TEST_TYPE)
         {
-
-            //DELETE FOR TEST PURPOSE
-            memset(host_names[0], 0, 255);
-            memset(host_names[1], 0, 255);
-            strcpy(host_names[0], "node1");
-            strcpy(host_names[1], "node2");
-
             if (test_parameters.eq_classes_filename == NULL)
             {
                 printf("No equality classes mapping file provided!\n");
@@ -272,7 +265,7 @@ int main(int argc,char **argv)
                 int send_rank = -1;
                 int recv_rank = -1;
                 int class_id;
-                for (int i = 0; i < comm_size; ++i)
+                for (i = 0; i < comm_size; ++i)
                 {
                     if (!strcmp(send_node_name, host_names[i]))
                     {
@@ -314,7 +307,7 @@ int main(int argc,char **argv)
                 } 
                 else
                 {
-                    for (int i = 0 ; i < total_classes; ++i)
+                    for (i = 0 ; i < total_classes; ++i)
                     {
                         if (class_id == eq_classes[i].id)
                         {
@@ -351,11 +344,6 @@ int main(int argc,char **argv)
                 line_cnt++;
             }
 
-            for (int i = 0; i < total_classes; ++i)
-            {
-                for (int j = 0; j < eq_classes[i].links_count; ++j)
-                    printf("c:%d, s:%d, r:%d\n", eq_classes[i].id, eq_classes[i].links[j].send_rank, eq_classes[i].links[j].recv_rank);
-            }
         }
 
 
@@ -691,7 +679,7 @@ int main(int argc,char **argv)
         }
         else
         {
-            for(int q = 0; q < total_classes; ++q)
+            for(q = 0; q < total_classes; ++q)
             {
                 free(eq_classes[q].links);
             }

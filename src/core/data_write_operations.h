@@ -36,7 +36,7 @@ extern int create_netcdf_header4d_eq_class
 	const struct network_test_parameters_struct* test_parameters,
 	int *file_id,
 	int *data_id,
-        char *filename;
+        char *filename
 );
 
 

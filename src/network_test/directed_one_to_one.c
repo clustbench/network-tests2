@@ -44,7 +44,7 @@ int directed_one_to_one(equality_class* eq_classes, int total_classes, struct ne
     int end_mes_length;
     int step;
     int num_repeats = params->num_repeats;
-
+    int q, mes_len, i;
     int confirmation_flag;
 
     int send_proc,recv_proc;
@@ -59,7 +59,7 @@ int directed_one_to_one(equality_class* eq_classes, int total_classes, struct ne
     
     if(comm_rank == 0)
     {
-        for(int q = 0; q < total_classes; ++q)
+        for(q = 0; q < total_classes; ++q)
         {
             char filename[255];
             memset(filename, 0, 255);
@@ -72,10 +72,10 @@ int directed_one_to_one(equality_class* eq_classes, int total_classes, struct ne
             beg_mes_length = params->begin_message_length;
             end_mes_length = params->end_message_length;
             step = params->step_length;
-            for (int mes_len = beg_mes_length; mes_len < end_mes_length; mes_len += step)
+            for (mes_len = beg_mes_length; mes_len < end_mes_length; mes_len += step)
             {
                 memset(classes_times, -1.0,  comm_size * comm_size * num_repeats * sizeof(double));
-                for(int i = 0; i < eq_classes[q].links_count; ++i)
+                for(i = 0; i < eq_classes[q].links_count; ++i)
                 {
                     send_proc=eq_classes[q].links[i].send_rank;
                     recv_proc=eq_classes[q].links[i].recv_rank;
@@ -121,7 +121,7 @@ int directed_one_to_one(equality_class* eq_classes, int total_classes, struct ne
         }
             free(classes_times);
             pair[0] = -1;
-            for(int i = 1; i < comm_size; i++)
+            for(i = 1; i < comm_size; i++)
                 MPI_Send(pair,3,MPI_INT,i,1,MPI_COMM_WORLD);
     }
     else
