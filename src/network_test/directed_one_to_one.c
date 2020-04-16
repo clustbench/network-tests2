@@ -67,14 +67,18 @@ int directed_one_to_one(equality_class* eq_classes, int total_classes, struct ne
             int netcdf_class_file;
             int netcdf_repeats_data;
 
-            create_netcdf_header4d_eq_class(params, &netcdf_class_file, &netcdf_repeats_data, filename);
-
+            if (create_netcdf_header4d_eq_class(params, &netcdf_class_file, &netcdf_repeats_data, filename))
+            {
+                printf("Can not to create file with name %s\n", filename);
+                MPI_Abort(MPI_COMM_WORLD,-1);
+                return -1;
+            }
             beg_mes_length = params->begin_message_length;
             end_mes_length = params->end_message_length;
             step = params->step_length;
             for (mes_len = beg_mes_length; mes_len < end_mes_length; mes_len += step)
             {
-                memset(classes_times, -1.0,  comm_size * comm_size * num_repeats * sizeof(double));
+                memset(classes_times, 0,  comm_size * comm_size * num_repeats * sizeof(double));
                 for(i = 0; i < eq_classes[q].links_count; ++i)
                 {
                     send_proc=eq_classes[q].links[i].send_rank;
@@ -110,7 +114,7 @@ int directed_one_to_one(equality_class* eq_classes, int total_classes, struct ne
                         MPI_Recv(&confirmation_flag,1,MPI_INT,recv_proc,1,MPI_COMM_WORLD,&status);
                     }
                     double *class_beg_cpy = classes_times + send_proc * comm_size * num_repeats + recv_proc * num_repeats;
-                    memcpy(class_beg_cpy, recv_times, num_repeats);
+                    memcpy(class_beg_cpy, recv_times, num_repeats * sizeof(double));
                     free(recv_times);
                 } 
                 printf("Message length for class %d: %d is done\n", q, mes_len);
