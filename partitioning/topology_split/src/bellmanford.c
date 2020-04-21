@@ -223,9 +223,9 @@ EqualityClass* findEqualClasses(Net* network, int* totalClasses)
     int** switchDists = BellmanFord(&graph, &coreSwitches, network->switches, network->nodes);
     int** nodeDists = getNodeDists(network, inNodeSwitches, &coreSwitches, switchDists, network->nodes);
     
-    for (int i = 1; i < network->nodes; ++i)
+    for (int i = 1; i <= network->nodes; ++i)
     {
-        for (int j = 1; j < network->nodes; ++j)
+        for (int j = 1; j <= network->nodes; ++j)
         {
             if (i != j)
             {

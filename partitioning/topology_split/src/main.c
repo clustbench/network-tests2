@@ -19,10 +19,9 @@ void serializeEqualClasses(EqualityClass* classes, int totalClasses, char* filen
         printf("Writing classes to file went wrong.\n");
         return;
     }
-
+	fprintf(f, "Class:Hops,SendNode,RecvNode\n");
     for (int i = 0; i < totalClasses; ++i)
     {
-        fprintf(f, "Class:Hops,SendNode,RecvNode\n");
         for (int j = 0; j < classes[i].transm; ++j)
         {
             fprintf(f, "%d:%d,%s,%s\n", i, classes[i].hops, classes[i].listOfTransmissions[j].sendNodeName, classes[i].listOfTransmissions[j].recvNodeName);

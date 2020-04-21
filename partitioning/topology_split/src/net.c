@@ -43,7 +43,6 @@ void addLink(Net* net, int source, int destination)
     
     newNode->next = head;
     newNode->dest = destination;
-    printf("%d %d\n", source, destination);
     net->adjLists[source].head = newNode;
 
 }
