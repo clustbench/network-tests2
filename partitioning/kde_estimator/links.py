@@ -28,6 +28,7 @@ class LinkList:
 
         self.estimators = {}
 
+        random.seed(42)
         with open(csv_file, 'r') as csv_f:
             readCSV = csv.reader(csv_f, delimiter=',')
             skip = True
@@ -39,8 +40,7 @@ class LinkList:
                 dropconn = False
 
                 if dropout:
-                    random.seed(42)
-                    dropconn = random.gauss(0, 1) > 0
+                    dropconn = random.randint(0,1) == 1
 
                 cls = int(row[0].split(':')[0])
                 hops = 0
@@ -52,6 +52,7 @@ class LinkList:
                     if row[2] in hosts_map:
                         recv = hosts_map[row[2]]
                         
+                        print(dropconn)
                         if (cls in data_map) and (dropconn == False):
                             delays = np.squeeze(np.array(data_map[cls][:, send, recv, :]))
                             if cls not in flatten_map:
