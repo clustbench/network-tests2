@@ -15,7 +15,7 @@ DirectString = {DirectionTypes.ONE_DIRECTIONAL : "ONE", DirectionTypes.BI_DIRECT
 ConnectTypesMap = {"IB56GB" : ConnectionTypes.INFINIBAND_56GBIT, "ETH100MB" : ConnectionTypes.ETHERNET_100MBIT}
 DirectTypesMap = {"ONE" : DirectionTypes.ONE_DIRECTIONAL,  "BI" : DirectionTypes.BI_DIRECTIONAL}
 
-class SupecomputerNet:
+class SupercomputerNet:
 
     class Edge:
         def __init__(self, source, target, direct_type = DirectionTypes.BI_DIRECTIONAL, conn_type = ConnectionTypes.INFINIBAND_56GBIT):
@@ -172,6 +172,7 @@ class SupecomputerNet:
                 f.write('\t\tsource {:d}\n'.format(e.source))
                 f.write('\t\ttarget {:d}\n'.format(e.target))
                 f.write('\t\tdirected "{:s}"\n'.format(DirectString[e.direct_type]))
+                f.write('\t\tconnectionType "{:s}"\n'.format(ConnectStrings[e.conn_type]))
                 f.write('\t\tgraphics [\n')
                 f.write('\t\t\ttargetArrow "standard"\n')
                 if (e.direct_type == DirectionTypes.BI_DIRECTIONAL):
