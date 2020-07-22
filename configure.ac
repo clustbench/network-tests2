@@ -108,5 +108,5 @@ AS_IF([test "x$MPI_LDFLAGS" = "x"], [AC_SUBST([MPI_LDFLAGS], $LDFLAGS)])
 AS_IF([test "x$MPI_LIBS" = "x"], [AC_SUBST([MPI_LIBS], $LIBS)])
 
 # Define output files to be built from templates
-AC_CONFIG_FILES([config Makefile parus_config.h])
+AC_CONFIG_FILES([config Makefile clustbench_config.h])
 AC_OUTPUT
