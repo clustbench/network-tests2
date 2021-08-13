@@ -12,10 +12,11 @@
 
 int create_netcdf_header
 (
-	const int file_data_type,
+	const char* file_data_type,
 	const struct network_test_parameters_struct *test_parameters,
 	int *file_id,
 	int *data_id
+    int (*benchmark_netcdf_header_writer)(int file_id, clustbench_benchmark_parameters_t* params)
 )
 {
 	int netcdf_file_id;
