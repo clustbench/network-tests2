@@ -2,6 +2,7 @@
 
 #include "data_abstract.h"
 #include <qwt_raster_data.h>
+#include <qwt_interval.h>
 
 class MatrixRaster: public QwtRasterData {
   private:
@@ -22,14 +23,16 @@ class MatrixRaster: public QwtRasterData {
 		  return new_m_r;
 	  }
 	
-	  virtual QwtDoubleInterval range () const { return QwtDoubleInterval(from,to); } // derived from QwtRasterData
+	  virtual QwtInterval range () const { return QwtInterval(from,to); } // derived from QwtRasterData
 	
-	  virtual double value (double col, double row) const { // derived from QwtRasterData
+	  virtual double value (double col, double row) const override{ // derived from QwtRasterData
 		  const int x=static_cast<const int>(col),y=static_cast<const int>(row);
 		  if ((x>=0) && (x<cols) && (y>=0) && (y<rows)) return data_array[y*cols+x];
 		  return 0.0;
 	  }
 	
+	  QwtInterval interval( Qt::Axis ) const override { return QwtInterval(from,to); }  //must be derived because it is pure virtual in the base class
+
 	  const double* Data () const { return data_array; }
 	
 	  int GetRows () const { return rows; }

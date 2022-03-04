@@ -52,7 +52,7 @@ void MatrixViewer::Init (const QString &title, MatrixRaster* data[2]) {
 	_data[0]=dt;
 	dt->show();
 
-	const QwtDoubleInterval tmp_range=_data[0]->data().range();
+	const QwtInterval tmp_range=_data[0]->data().range();
 	ui->S_Left->setRange(tmp_range.minValue(),tmp_range.maxValue());
 	ui->S_Left->setValue(ui->S_Left->minValue());
 	ui->S_Right->setRange(ui->S_Left->minValue(),ui->S_Left->maxValue());
@@ -344,7 +344,7 @@ void MatrixViewer::SaveImage() {
 
 void MatrixViewer::LocalNormalization(bool checked) {
 	if (checked) {
-		const QwtDoubleInterval tmp_range=_data[0]->data().range();
+		const QwtInterval tmp_range=_data[0]->data().range();
 
 		ui->S_Left->setRange(tmp_range.minValue(),tmp_range.maxValue());
 		ui->S_Left->setValue(ui->S_Left->minValue());

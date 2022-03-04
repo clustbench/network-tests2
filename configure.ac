@@ -48,7 +48,7 @@ AC_ARG_ENABLE([all], [AS_HELP_STRING([--enable-all], [Enable all modules])], [
 AS_IF([test "x$MPICC" = "x"], [AC_SUBST([MPICC], [mpicc])])
 AS_IF([test "x$MPICXX" = "x"], [AC_SUBST([MPICXX], [mpicxx])])
 # TODO: Change the value for qmake for QT5 later
-AS_IF([test "x$QMAKE" = "x"], [AC_SUBST([QMAKE], [qmake-qt4])])
+AS_IF([test "x$QMAKE" = "x"], [AC_SUBST([QMAKE], [qmake])])
 
 # Checks for programs.
 AC_PROG_CXX

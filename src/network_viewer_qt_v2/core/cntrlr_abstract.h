@@ -2,6 +2,7 @@
 
 #include "data_abstract.h"
 #include <qwt_color_map.h>
+#include <QObject>
 
 class MatrixRaster;
 

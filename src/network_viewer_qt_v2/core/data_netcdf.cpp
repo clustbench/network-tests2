@@ -135,13 +135,13 @@ NV::ErrCode Data_NetCDF::GetDataAndMove (double *buf) {
 			if (start[2]!=static_cast<size_t>(this->num_processors))
 				break;
 			start[2]=0u;
-			//break;
+			break;
 		case IData::Row:
 			++(start[1]);
 			if (start[1]!=static_cast<size_t>(this->num_processors))
 				break;
 			start[1]=0u;
-			//break;
+			break;
 		case IData::Matrix:
 			++(start[0]);
 			break;

@@ -67,7 +67,7 @@ translations:
 	$(MAKE) -C translations
 
 Makefile_network_viewer_qt.mk: Network_viewer_qt_v2.pro 
-	qmake-qt4 $(QMAKE_OPTIONS) -o $@ $^
+	qmake $(QMAKE_OPTIONS) -o $@ $^
 
 
 install: $(EXECS)
