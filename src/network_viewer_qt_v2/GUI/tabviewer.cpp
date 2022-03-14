@@ -70,10 +70,10 @@ void TabViewer::Initialize () {
 			  tmp_to=controller->GetRealEndMessageLength(),
 			  tmp_step=controller->GetStepLength();
 
-	ui->S_WindowNumber->setRange(tmp_from,tmp_to,tmp_step);
-	ui->SB_MatrixNumber->setRange(tmp_from,tmp_to,tmp_step);
-	ui->SB_LoadWinFrom->setRange(tmp_from,tmp_to-tmp_step,tmp_step);
-	ui->SB_LoadWinTo->setRange(tmp_from+tmp_step,tmp_to,tmp_step);
+	// ui->S_WindowNumber->setRange(tmp_from,tmp_to,tmp_step);
+	ui->SB_MatrixNumber->setRange(tmp_from,tmp_to);
+	ui->SB_LoadWinFrom->setRange(tmp_from,tmp_to-tmp_step);
+	ui->SB_LoadWinTo->setRange(tmp_from+tmp_step,tmp_to);
 }
 
 void TabViewer::LoadWindow () {

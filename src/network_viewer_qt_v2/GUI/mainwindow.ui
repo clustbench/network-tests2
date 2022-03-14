@@ -500,9 +500,9 @@
      <property name="shortcut">
       <string>Ctrl+L</string>
      </property>
-     <property name="softKeyRole">
+     <!-- <property name="softKeyRole">
       <enum>QAction::NoSoftKey</enum>
-     </property>
+     </property> -->
     </action>
     <addaction name="actionShow_logs"/>
     <addaction name="separator"/>

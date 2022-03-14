@@ -26,7 +26,7 @@
          <enum>Qt::Vertical</enum>
         </property>
         <property name="scalePosition">
-         <enum>QwtSlider::LeftScale</enum>
+         <enum>QwtSlider::TrailingScale</enum>
         </property>
        </widget>
       </item>
@@ -39,7 +39,7 @@
          <enum>Qt::Vertical</enum>
         </property>
         <property name="scalePosition">
-         <enum>QwtSlider::RightScale</enum>
+         <enum>QwtSlider::LeadingScale</enum>
         </property>
        </widget>
       </item>

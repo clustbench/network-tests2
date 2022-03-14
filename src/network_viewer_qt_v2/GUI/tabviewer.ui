@@ -46,10 +46,10 @@
            <property name="basicstep" stdset="0">
             <double>1.000000000000000</double>
            </property>
-           <property name="minValue">
+           <property name="Minimum">
             <double>0.000000000000000</double>
            </property>
-           <property name="maxValue">
+           <property name="Maximum">
             <double>100.000000000000000</double>
            </property>
           </widget>
@@ -57,11 +57,11 @@
          <item>
           <widget class="QwtSlider" name="S_WindowNumber">
            <property name="scalePosition">
-            <enum>QwtSlider::TopScale</enum>
+            <enum>QwtSlider::TrailingScale</enum>
            </property>
-           <property name="thumbLength">
+           <!-- <property name="thumbLength">
             <number>16</number>
-           </property>
+           </property> -->
           </widget>
          </item>
          <item>
@@ -344,10 +344,10 @@
                   <property name="basicstep" stdset="0">
                    <double>1.000000000000000</double>
                   </property>
-                  <property name="minValue">
+                  <property name="Minimum">
                    <double>0.000000000000000</double>
                   </property>
-                  <property name="maxValue">
+                  <property name="Maximum">
                    <double>100.000000000000000</double>
                   </property>
                  </widget>
@@ -369,10 +369,10 @@
                   <property name="basicstep" stdset="0">
                    <double>1.000000000000000</double>
                   </property>
-                  <property name="minValue">
+                  <property name="Minimum">
                    <double>0.000000000000000</double>
                   </property>
-                  <property name="maxValue">
+                  <property name="Maximum">
                    <double>100.000000000000000</double>
                   </property>
                  </widget>

@@ -125,15 +125,15 @@ class MatrixViewer: public QWidget {
 	  }
 
   private Q_SLOTS:
-	  void SetRightSldrMinVal (const double val);
-	  void SetLeftSldrMaxVal (const double val);
+	//   void SetRightSldrMinVal (const double val);
+	//   void SetLeftSldrMaxVal (const double val);
 	  void ShowInfo ();
-	  void RectSelected (const QwtDoubleRect &rect);
+	  void RectSelected (const QRectF &rect);
 	  void SetAim ();
 	  void DrawSelectionRect ();
 	  void ShowZoom ();
       void SaveImage ();
-      void LocalNormalization(bool checked);
-      void WindowNormalization(bool checked);
+    //   void LocalNormalization(bool checked);
+    //   void WindowNormalization(bool checked);
 };
 

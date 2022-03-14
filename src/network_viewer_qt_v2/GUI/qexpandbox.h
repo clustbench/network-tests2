@@ -15,7 +15,7 @@ class QExpandBox: public QWidget
 	friend class MasterButton;
 
   public:
-	  static const unsigned int Error=static_cast<const unsigned int>(-1); // addItem() may return this
+	  static const unsigned int Error=static_cast<unsigned int>(-1); // addItem() may return this
 
   private:
 	  MasterButton **masters; // control buttons

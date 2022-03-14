@@ -14,7 +14,7 @@ MatrixRaster::MatrixRaster (double* &matr, const int rws, const int cls):
 	}
 	else
 	{
-		const unsigned int matr_size=static_cast<const unsigned int>(rws)*static_cast<const unsigned int>(cls);
+		unsigned int matr_size=static_cast<unsigned int>(rws)*static_cast<unsigned int>(cls);
 		double tmp;
 
 		to=from=matr[0];

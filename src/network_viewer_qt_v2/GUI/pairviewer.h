@@ -25,6 +25,7 @@
 #include <QMdiSubWindow>
 #include <QLayout>
 #include <QMdiArea>
+#include <QPen>
 #include <qwt_plot.h>
 #include <qwt_plot_curve.h>
 #include <qwt_legend.h>
@@ -38,7 +39,7 @@ class PairViewer: public QMdiSubWindow {
 	  QwtPlot plot;
 	  QwtPlotCurve curve1,curve2,curve3;
 	  QwtLegend legend;
-	  QwtLegendItem leg_item1,leg_item2,leg_item3;
+	//   QwtLegendItem leg_item1,leg_item2,leg_item3;
 	
 	  Q_DISABLE_COPY(PairViewer);
 
@@ -57,7 +58,7 @@ class PairViewer: public QMdiSubWindow {
 		  legend.setParent(this);
 		  legend.hide();
 		
-		  curve1.setData(x_points,y_points,num_points);
+		  curve1.setRawSamples(x_points,y_points,num_points);
 		  curve1.setPen(pen);
 		
 		  plot.enableAxis(QwtPlot::xBottom,true);
@@ -97,7 +98,7 @@ class PairViewer: public QMdiSubWindow {
 				  double *dfr=static_cast<double*>(malloc(num_points*sizeof(double)));
 				  for (unsigned int i=0u; i<num_points; ++i)
 					  dfr[i]=y_points[i]-y_points_aux[i];
-				  curve3.setData(x_points,dfr,num_points);
+				  curve3.setRawSamples(x_points,dfr,num_points);
 				  curve3.attach(&plot);
 				  pen.setColor(Qt::darkYellow);
 				  curve3.setPen(pen);
@@ -107,19 +108,19 @@ class PairViewer: public QMdiSubWindow {
 				  free(dfr);
 			  }
 			  // red curve for values in the second file
-			  curve2.setData(x_points,y_points_aux,num_points);
+			  curve2.setRawSamples(x_points,y_points_aux,num_points);
 			  pen.setColor(Qt::red);
 			  curve2.setPen(pen);
 			  curve2.attach(&plot);
 			
-			  leg_item1.setIdentifierMode(QwtLegendItem::ShowText);
-			  legend.insert(&curve1,&leg_item1);
-			  leg_item2.setIdentifierMode(QwtLegendItem::ShowText);
-			  legend.insert(&curve2,&leg_item2);
+			//   leg_item1.setIdentifierMode(QwtLegendItem::ShowText);
+			//   legend.insert(&curve1,&leg_item1);
+			//   leg_item2.setIdentifierMode(QwtLegendItem::ShowText);
+			//   legend.insert(&curve2,&leg_item2);
 			  if (type==2)
 			  {
-				  leg_item3.setIdentifierMode(QwtLegendItem::ShowText);
-				  legend.insert(&curve3,&leg_item3);
+				//   leg_item3.setIdentifierMode(QwtLegendItem::ShowText);
+				//   legend.insert(&curve3,&leg_item3);
 			  }
 			  legend.show();
 			  plot.insertLegend(&legend,QwtPlot::RightLegend);
