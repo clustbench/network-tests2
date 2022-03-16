@@ -35,7 +35,7 @@ extern "C"
 #endif
 
 
-extern const char *file_data_type_to_sring(const int data_type);
+extern const char *file_data_type_to_string(const int data_type);
 extern int get_test_type(const char *str);
 extern int get_test_type_name(int test_type,char *str);
 

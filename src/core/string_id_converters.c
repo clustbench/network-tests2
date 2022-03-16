@@ -13,7 +13,7 @@ static const char* file_data_types[NUM_NETWORK_TEST_DATATYPES+1]=
 };
 
 
-const char* file_data_type_to_sring(const int data_type)
+const char* file_data_type_to_string(const int data_type)
 {
     if((data_type>0)&&(data_type<=NUM_NETWORK_TEST_DATATYPES))
         return file_data_types[data_type];
