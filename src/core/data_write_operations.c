@@ -64,9 +64,9 @@ int create_netcdf_header
 	}
 
 	if(nc_def_dim(netcdf_file_id,"strings",101,&strings_dim_id)!=NC_NOERR)
-        {
-                return NETCDF_ERROR;
-        }
+    {
+        return NETCDF_ERROR;
+    }
 
 	if(nc_def_var(netcdf_file_id,"proc_num",NC_INT,0,0,&num_procs_var_id)!=NC_NOERR)
 	{
@@ -84,9 +84,9 @@ int create_netcdf_header
         */
 
 	if(nc_def_var(netcdf_file_id,"test_type",NC_INT,0,0,&test_type_var_id)!=NC_NOERR)
-        {
-                return NETCDF_ERROR;
-        }
+    {
+        return NETCDF_ERROR;
+    }
 
 	/*
          * For future
@@ -99,52 +99,52 @@ int create_netcdf_header
         */
 
 	if(nc_def_var(netcdf_file_id,"data_type",NC_INT,0,0,&file_data_type_var_id)!=NC_NOERR)
-        {
-                return NETCDF_ERROR;
-        }
+    {
+        return NETCDF_ERROR;
+    }
 
 	if(nc_def_var(netcdf_file_id,"begin_mes_length",NC_INT,0,0,&begin_message_length_var_id)!=NC_NOERR)
-        {
-                return NETCDF_ERROR;
-        }
+    {
+        return NETCDF_ERROR;
+    }
 
 	if(nc_def_var(netcdf_file_id,"end_mes_length",NC_INT,0,0,&end_message_length_var_id)!=NC_NOERR)
-        {
-                return NETCDF_ERROR;
-        }
+    {
+        return NETCDF_ERROR;
+    }
 
 	if(nc_def_var(netcdf_file_id,"step_length",NC_INT,0,0,&step_length_var_id)!=NC_NOERR)
-        {
-                return NETCDF_ERROR;
-        }
+    {
+        return NETCDF_ERROR;
+    }
 
 	if(nc_def_var(netcdf_file_id,"noise_mes_length",NC_INT,0,0,&noise_mesage_length_var_id)!=NC_NOERR)
 	{
 		return NETCDF_ERROR;
-        }
+    }
 
 	if(nc_def_var(netcdf_file_id,"num_noise_mes",NC_INT,0,0,&num_noise_messages_var_id)!=NC_NOERR)
 	{
 		return NETCDF_ERROR;
-        }
+    }
 
 	if(nc_def_var(netcdf_file_id,"num_noise_proc",NC_INT,0,0,&num_noise_procs_var_id)!=NC_NOERR)
 	{
 		return NETCDF_ERROR;
-        }
+    }
 
 	if(nc_def_var(netcdf_file_id,"num_repeates",NC_INT,0,0,&num_repeats_var_id)!=NC_NOERR)
 	{
 		return NETCDF_ERROR;
-        }
+    }
 
 	dims[0]=num_matrices_dim_id;
 	dims[1]=x_dim_id;
 	dims[2]=y_dim_id;
 	if(nc_def_var(netcdf_file_id,"data",NC_DOUBLE,3,dims,&data_var_id)!=NC_NOERR)
-        {
-                return NETCDF_ERROR;
-        }
+    {
+        return NETCDF_ERROR;
+    }
 	
 	if(nc_enddef(netcdf_file_id)!=NC_NOERR)
 	{

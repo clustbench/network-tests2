@@ -6,12 +6,12 @@
 #define CLUSTBENCH_HOSTNAME_LENGTH 1024
 
 #define CLUSTBENCH_MIN             1
-#define CLUSTBENCH_DISPERSION      2
+#define CLUSTBENCH_DEVIATION       2
 #define CLUSTBENCH_AVERAGE         4
 #define CLUSTBENCH_MEDIAN          8
 #define CLUSTBENCH_ALL_VALUES     16
 
-typedef clustbench_time_t double;
+typedef double clustbench_time_t;
 
 typedef struct
 {
