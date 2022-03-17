@@ -19,7 +19,7 @@ int clustbench_time_cmp(const void *a, const void *b)
 
 int create_test_hosts_file
 (
-    const struct clustbench_benchmark_parameters_t *parameters,
+    const clustbench_benchmark_parameters_t *parameters,
     char **hosts_names
 )
 {
