@@ -15,6 +15,8 @@ extern "C"
 {
 #endif
 
+    int print_benchmark_help_message (clustbench_benchmark_parameters_t *parameters);
+
     int print_network_test_help_message(clustbench_benchmark_parameters_t *parameters);
 
     int parse_network_test_arguments(clustbench_benchmark_parameters_t *parameters,
@@ -28,10 +30,9 @@ extern "C"
 
     int print_individual_benchmark_parameters(clustbench_benchmark_parameters_t *parameters);
 
-    int parse_individual_benchmark_parameters(int argc, 
-                                              char **argv
-                                              clustbench_benchmark_parameters_t *parameters
-                                             );
+    int parse_individual_benchmark_parameters(clustbench_benchmark_parameters_t *parameters,
+                                          int argc, char **argv,int mpi_rank);
+                                          
 #ifdef __cplusplus
 }
 #endif

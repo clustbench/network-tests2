@@ -4,18 +4,16 @@
 #include <string.h>
 
 #include "types.h"
-#include "data_write_operations.h"
+#include "clustbench_data_write_operations.h"
 #include "string_id_converters.h"
-
-
-
+#include "clustbench_types.h"
 
 int create_netcdf_header
 (
-	const char* file_data_type,
-	const struct network_test_parameters_struct *test_parameters,
+	int file_data_type,
+	const clustbench_benchmark_parameters_t *test_parameters,
 	int *file_id,
-	int *data_id
+	int *data_id,
     int (*benchmark_netcdf_header_writer)(int file_id, clustbench_benchmark_parameters_t* params)
 )
 {
@@ -25,12 +23,12 @@ int create_netcdf_header
 
 	int num_procs_var_id, test_type_var_id, file_data_type_var_id, begin_message_length_var_id, end_message_length_var_id;
 	int step_length_var_id, num_repeats_var_id;
-	int noise_mesage_length_var_id, num_noise_messages_var_id, num_noise_procs_var_id;	
+	//int noise_mesage_length_var_id, num_noise_messages_var_id, num_noise_procs_var_id;	
 	int data_var_id;
 
 	int dims[3];
 
-	
+	int test_type_len = strlen(test_parameters->benchmark_name);
 
 	char *file_name=NULL;
 
@@ -53,7 +51,7 @@ int create_netcdf_header
 	{
 		return NETCDF_ERROR;
 	}
-
+    
 	if(nc_def_dim(netcdf_file_id,"y",test_parameters->num_procs,&y_dim_id)!=NC_NOERR)
 	{
 		return NETCDF_ERROR;
@@ -64,10 +62,10 @@ int create_netcdf_header
 		return NETCDF_ERROR;
 	}
 
-	if(nc_def_dim(netcdf_file_id,"strings",101,&strings_dim_id)!=NC_NOERR)
-        {
-                return NETCDF_ERROR;
-        }
+	if(nc_def_dim(netcdf_file_id,"strings",test_type_len,&strings_dim_id)!=NC_NOERR)
+    {
+            return NETCDF_ERROR;
+    }
 
 	if(nc_def_var(netcdf_file_id,"proc_num",NC_INT,0,0,&num_procs_var_id)!=NC_NOERR)
 	{
@@ -79,47 +77,47 @@ int create_netcdf_header
          */
 	/*
 	if(nc_def_var(netcdf_file_id,"test_type",NC_CHAR,1,&strings_dim_id,&test_type_var_id)!=NC_NOERR)
-        {
-                return NETCDF_ERROR;
-        }
+    {
+            return NETCDF_ERROR;
+    }
         */
 
-	if(nc_def_var(netcdf_file_id,"test_type",NC_INT,0,0,&test_type_var_id)!=NC_NOERR)
-        {
-                return NETCDF_ERROR;
-        }
+	if(nc_def_var(netcdf_file_id,"test_type",NC_CHAR,1,&strings_dim_id,&test_type_var_id)!=NC_NOERR)
+    {
+        return NETCDF_ERROR;
+    } //RENAME TO TEST_NAME
 
 	/*
          * For future
          */
 	/*
 	if(nc_def_var(netcdf_file_id,"data_type",NC_CHAR,1,&strings_dim_id,&file_data_type_var_id)!=NC_NOERR)
-        {
-                return NETCDF_ERROR;
-        }
+    {
+            return NETCDF_ERROR;
+    }
         */
 
 	if(nc_def_var(netcdf_file_id,"data_type",NC_INT,0,0,&file_data_type_var_id)!=NC_NOERR)
-        {
-                return NETCDF_ERROR;
-        }
+    {
+            return NETCDF_ERROR;
+    }
 
 	if(nc_def_var(netcdf_file_id,"begin_mes_length",NC_INT,0,0,&begin_message_length_var_id)!=NC_NOERR)
-        {
-                return NETCDF_ERROR;
-        }
+    {
+            return NETCDF_ERROR;
+    }
 
 	if(nc_def_var(netcdf_file_id,"end_mes_length",NC_INT,0,0,&end_message_length_var_id)!=NC_NOERR)
-        {
-                return NETCDF_ERROR;
-        }
+    {
+            return NETCDF_ERROR;
+    }
 
 	if(nc_def_var(netcdf_file_id,"step_length",NC_INT,0,0,&step_length_var_id)!=NC_NOERR)
-        {
-                return NETCDF_ERROR;
-        }
+    {
+            return NETCDF_ERROR;
+    }
 
-	if(nc_def_var(netcdf_file_id,"noise_mes_length",NC_INT,0,0,&noise_mesage_length_var_id)!=NC_NOERR)
+	/*if(nc_def_var(netcdf_file_id,"noise_mes_length",NC_INT,0,0,&noise_mesage_length_var_id)!=NC_NOERR)
 	{
 		return NETCDF_ERROR;
         }
@@ -132,7 +130,7 @@ int create_netcdf_header
 	if(nc_def_var(netcdf_file_id,"num_noise_proc",NC_INT,0,0,&num_noise_procs_var_id)!=NC_NOERR)
 	{
 		return NETCDF_ERROR;
-        }
+        }*/
 
 	if(nc_def_var(netcdf_file_id,"num_repeates",NC_INT,0,0,&num_repeats_var_id)!=NC_NOERR)
 	{
@@ -143,9 +141,9 @@ int create_netcdf_header
 	dims[1]=x_dim_id;
 	dims[2]=y_dim_id;
 	if(nc_def_var(netcdf_file_id,"data",NC_DOUBLE,3,dims,&data_var_id)!=NC_NOERR)
-        {
-                return NETCDF_ERROR;
-        }
+    {
+            return NETCDF_ERROR;
+    }
 	
 	if(nc_enddef(netcdf_file_id)!=NC_NOERR)
 	{
@@ -157,8 +155,10 @@ int create_netcdf_header
 		return NETCDF_ERROR;
 	}
 
-	if(nc_put_var_int(netcdf_file_id,test_type_var_id,&test_parameters->test_type)!=NC_NOERR)
+    int status = nc_put_var_text(netcdf_file_id,test_type_var_id,test_parameters->benchmark_name);
+	if(status!=NC_NOERR)
 	{
+        fprintf(stderr, "%s\n", nc_strerror(status));
 		return NETCDF_ERROR;
 	}
 
@@ -187,7 +187,7 @@ int create_netcdf_header
 		return NETCDF_ERROR;
 	}
 
-	if(nc_put_var_int(netcdf_file_id,noise_mesage_length_var_id,&test_parameters->noise_message_length)!=NC_NOERR)
+	/*if(nc_put_var_int(netcdf_file_id,noise_mesage_length_var_id,&test_parameters->noise_message_length)!=NC_NOERR)
 	{
 		return NETCDF_ERROR;
 	}
@@ -200,7 +200,7 @@ int create_netcdf_header
 	if(nc_put_var_int(netcdf_file_id,num_noise_procs_var_id,&test_parameters->num_noise_procs)!=NC_NOERR)
 	{
 		return NETCDF_ERROR;
-	}
+	}*/
 
 	nc_sync(netcdf_file_id);
 	

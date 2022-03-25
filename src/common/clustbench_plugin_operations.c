@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <dlfcn.h>
+#include <string.h>
+#include <errno.h>
+#include <unistd.h>
 
 #include <sys/types.h>
 #include <dirent.h>
@@ -21,10 +24,12 @@ int clustbench_open_benchmark(const char *path_to_benchmark_code_dir,
     pointers->print_help              = NULL;
     pointers->print_parameters        = NULL;
     pointers->parse_parameters        = NULL;
+    pointers->test_function           = NULL;
 
+    int path_length = 0;
     path_length += strlen(path_to_benchmark_code_dir);
     path_length += 2*strlen(benchmark_name);
-    path_length += 6 /* " path_to_dir/benchmark_name/benchmark_name.so" */
+    path_length += 6; /* " path_to_dir/benchmark_name/benchmark_name.so" */
 
     path_to_so=(char *)malloc(path_length*sizeof(char));
     if(path_to_so == NULL)
@@ -33,11 +38,11 @@ int clustbench_open_benchmark(const char *path_to_benchmark_code_dir,
         return 1;
     }
     
-    snprintf(path_to_so, path_length, "%s/%s/%s.so", parameters->path_to_benchmark_code_dir,
-                                       parameters->benchmark_name,
-                                       parameters->benchmark_name);
+    snprintf(path_to_so, path_length, "%s/%s/%s.so", path_to_benchmark_code_dir,
+                                       benchmark_name,
+                                       benchmark_name);
 
-    pointers->dynamic_library_handler=dlopen(path_to_so,RTLD_LAZY);
+    pointers->dynamic_library_handler = dlopen(path_to_so,RTLD_LAZY);
     if(pointers->dynamic_library_handler == NULL)
     {
         fprintf(stderr,"clustbench_open_benchmark: %s\n",dlerror());
@@ -86,8 +91,18 @@ int clustbench_open_benchmark(const char *path_to_benchmark_code_dir,
     }
    
     sprintf(symbol_name,"%s_%s",benchmark_name,"parse_parameters");
-    pointers->parse_parameters = dlsym(dynamic_library_handler, symbol_name);
+    pointers->parse_parameters = dlsym(pointers->dynamic_library_handler, symbol_name);
     if(pointers->parse_parameters == NULL)
+    {
+        fprintf(stderr,"Can't read symbol '%s' from '%s'\n",symbol_name,path_to_so);
+        free(symbol_name);
+        free(path_to_so);
+        return 1;
+    }
+    
+    sprintf(symbol_name,"%s",benchmark_name);
+    pointers->test_function = dlsym(pointers->dynamic_library_handler, symbol_name);
+    if(pointers->test_function == NULL)
     {
         fprintf(stderr,"Can't read symbol '%s' from '%s'\n",symbol_name,path_to_so);
         free(symbol_name);
@@ -169,7 +184,7 @@ int clustbench_print_list_of_benchmarks(const char *path_to_benchmarks_code_dir)
                      * There memory leak. And we should free all memory.
                      * But indeed it is no matter because program will be terminated. 
                      */
-                    free(current_path);
+                    free(path);
                     fprintf(stderr,"clustbench_print_list_of_benchmarks: can't allocate memory\n");
                     return -1;
                 }
@@ -194,16 +209,16 @@ int clustbench_print_list_of_benchmarks(const char *path_to_benchmarks_code_dir)
     for(i = 0; i < current_size; i++)
     {
         clustbench_benchmark_pointers_t pointers;
-        if(clustbench_open_benchmark(path_to_benchmark_code_dir,benchmark_names[i],&pointers))
+        if(clustbench_open_benchmark(path_to_benchmarks_code_dir,benchmark_names[i],&pointers))
         {
             fprintf(stderr,"clustbench_print_list_of_benchmarks: problems read code for benchmark '%s'\n",
                    benchmark_names[i]);
-            clustbench_close_benchmark_lib(pointers);
+            clustbench_close_benchmark_lib(&pointers);
             continue;
 
         }
         printf("%s - %s\n",benchmark_names[i],pointers.short_description);
-        clustbench_close_benchmark_lib(pointers);       
+        clustbench_close_benchmark_lib(&pointers);       
     }
 
     for(i = 0; i < current_size; i++)

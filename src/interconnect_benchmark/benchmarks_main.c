@@ -34,29 +34,34 @@
 #include <unistd.h>
 #endif
 
-#include "clustbench_types.h"
+//from ../..
+#include "clustbench_config.h"
 
+//from ../core 
+#include "string_id_converters.h"
+#include "my_time.h"
+
+//from common
 #include "clustbench_time.h"
 #include "clustbench_malloc.h"
-#include "clustbench_config.h"
+#include "clustbench_types.h"
 #include "clustbench_easy_matrices.h"
-
-#include "get_node_name.h"
-
-#include "data_write_operations.h"
+#include "clustbench_plugin_operations.h"
+#include "clustbench_data_write_operations.h"
 #include "benchmarks_common.h"
+
+//from ./
+#include "get_node_name.h"
 #include "parse_arguments.h"
 
 int comm_size;
 int comm_rank;
 
-
-
 int main(int argc,char **argv)
 {
     MPI_Status status;
 
-    Test_time_result_type *times=NULL; /* old px_my_time_type *times=NULL;*/
+    clustbench_time_result_t *times = NULL; /* old px_my_time_type *times=NULL;*/
 
     /*
      * The structure with network_test parameters.
@@ -140,7 +145,7 @@ int main(int argc,char **argv)
     int blocklength[4]= {1,1,1,1/*,1*/};
     MPI_Aint displace[4],base;
 
-    int step_num=0;
+    int step_num = 0;
 
     MPI_Init(&argc,&argv);
     MPI_Comm_size(MPI_COMM_WORLD,&comm_size);
@@ -149,9 +154,8 @@ int main(int argc,char **argv)
     /*
      * Initializing num_procs parameter
      */
-    test_parameters.num_procs=comm_size;
 
-    error_flag=parse_network_test_arguments(&test_parameters,argc,argv,comm_rank);
+    error_flag = parse_network_test_arguments(&test_parameters,argc,argv,comm_rank);
     if(error_flag == ERROR_FLAG)
     {
             MPI_Abort(MPI_COMM_WORLD,1);
@@ -177,16 +181,26 @@ int main(int argc,char **argv)
         MPI_Finalize();
         return 0;
     }
+    
+    test_parameters.num_procs=comm_size;
 
 
-
-    if ( comm_size == 1 )
+    if (comm_size == 1)
     {
         if(comm_rank == 0)
         {
-            printf("\n\nYou tries to run this program with only one MPI process!\n\n");
+            printf("\n\nYou try to run this program with only one MPI process!\n\n");
         }
         MPI_Finalize();
+        return 1;
+    }
+    
+    clustbench_benchmark_pointers_t pointers;
+    if (clustbench_open_benchmark(test_parameters.path_to_benchmark_code_dir,
+        test_parameters.benchmark_name,
+        &pointers))
+    {
+        fprintf(stderr, "Cannot open the benchmark\n");
         return 1;
     }
 
@@ -223,7 +237,7 @@ int main(int argc,char **argv)
         return 1;
     }
 
-    if ( comm_rank == 0 )
+    if (comm_rank == 0)
     {
         for ( i = 1; i < comm_size; i++ )
         {
@@ -236,7 +250,7 @@ int main(int argc,char **argv)
         MPI_Send(host_name, CLUSTBENCH_HOSTNAME_LENGTH, MPI_CHAR, 0, 200, MPI_COMM_WORLD);
     }
 
-    if( comm_rank == 0)
+    if(comm_rank == 0)
     {
         /*
          *
@@ -244,7 +258,7 @@ int main(int argc,char **argv)
          *
          */
 
-        if(test_parameters.statistics & CLUSTBENCH_AVERAGE)
+        if(test_parameters.statistics_save & CLUSTBENCH_AVERAGE)
         {
             flag = easy_mtr_create(&mtr_av,comm_size,comm_size);
             if( flag==-1 )
@@ -254,7 +268,7 @@ int main(int argc,char **argv)
                 return 1;
             }
 
-            if(create_netcdf_header(AVERAGE_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_av,&netcdf_var_av))
+            if(create_netcdf_header(AVERAGE_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_av,&netcdf_var_av,pointers.write_netcdf_header))
             {
                 fprintf(stderr,"Can not to create file with name \"%s_average.nc\"\n",test_parameters.file_name_prefix);
                 MPI_Abort(MPI_COMM_WORLD,1);
@@ -262,7 +276,7 @@ int main(int argc,char **argv)
             }
         }
 
-        if(test_parameters.statistics & CLUSTBENCH_MEDIAN)
+        if(test_parameters.statistics_save & CLUSTBENCH_MEDIAN)
         {
             flag = easy_mtr_create(&mtr_me,comm_size,comm_size);
             if( flag==-1 )
@@ -272,7 +286,7 @@ int main(int argc,char **argv)
                 return 1;
             }
 
-            if(create_netcdf_header(MEDIAN_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_me,&netcdf_var_me))
+            if(create_netcdf_header(MEDIAN_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_me,&netcdf_var_me,pointers.write_netcdf_header))
             {
                 fprintf(stderr,"Can not to create file with name \"%s_median.nc\"\n",test_parameters.file_name_prefix);
                 MPI_Abort(MPI_COMM_WORLD,1);
@@ -280,7 +294,7 @@ int main(int argc,char **argv)
             }
         }
 
-        if(test_parameters.statistics & CLUSTBENCH_DIVIATION)
+        if(test_parameters.statistics_save & CLUSTBENCH_DEVIATION)
         {
             flag = easy_mtr_create(&mtr_di,comm_size,comm_size);
             if( flag==-1 )
@@ -290,7 +304,7 @@ int main(int argc,char **argv)
                 return 1;
             }
 
-            if(create_netcdf_header(DEVIATION_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_di,&netcdf_var_di))
+            if(create_netcdf_header(DEVIATION_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_di,&netcdf_var_di,pointers.write_netcdf_header))
             {
                 fprintf(stderr,"Can not to create file with name \"%s_deviation.nc\"\n",test_parameters.file_name_prefix);
                 MPI_Abort(MPI_COMM_WORLD,1);
@@ -298,7 +312,7 @@ int main(int argc,char **argv)
             }
         }
 
-        if(test_parameters.statistics & CLUSTBENCH_MIN)
+        if(test_parameters.statistics_save & CLUSTBENCH_MIN)
         {
             flag = easy_mtr_create(&mtr_mi,comm_size,comm_size);
             if( flag==-1 )
@@ -308,7 +322,7 @@ int main(int argc,char **argv)
                 return 1;
             }
 
-            if(create_netcdf_header(MIN_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_mi,&netcdf_var_mi))
+            if(create_netcdf_header(MIN_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_mi,&netcdf_var_mi,pointers.write_netcdf_header))
             {
                 fprintf(stderr,"Can not to create file with name \"%s_min.nc\"\n",test_parameters.file_name_prefix);
                 MPI_Abort(MPI_COMM_WORLD,1);
@@ -316,7 +330,7 @@ int main(int argc,char **argv)
             }
         }
 
-        if(test_parameters.statistics & CLUSTBENCH_ALL_VALUES)
+        /*if(test_parameters.statistics & CLUSTBENCH_ALL_VALUES)
         {
             flag = easy_mtr_create_3d(&mtr_all,comm_size,comm_size,test_parameters.num_repeats);
             if( flag==-1 )
@@ -332,9 +346,9 @@ int main(int argc,char **argv)
                 MPI_Abort(MPI_COMM_WORLD,1);
                 return 1;
             }
-        }
+        }*/
 
-        if(create_test_hosts_file(&test_parameters,host_names))    	
+        if(clustbench_create_hosts_file(&test_parameters,host_names))    	
         {
     	    fprintf(stderr,"Can not to create file with name \"%s_hosts.txt\"\n",test_parameters.file_name_prefix);
         	MPI_Abort(MPI_COMM_WORLD,1);
@@ -347,7 +361,7 @@ int main(int argc,char **argv)
          *
          */
 
-        if(print_network_test_parameters(test_parameters))
+        if(print_network_test_parameters(&test_parameters))
         {
             fprintf(stderr,"Can't print parameters\n");
             MPI_Abort(MPI_COMM_WORLD,1);
@@ -372,24 +386,24 @@ int main(int argc,char **argv)
      * Creating struct time type for MPI operations
      */
     {
-        Test_time_result_type tmp_time;
-        MPI_Address( &(tmp_time.average), &base);
-        MPI_Address( &(tmp_time.median), &displace[1]);
-        MPI_Address( &(tmp_time.deviation), &displace[2]);
-        MPI_Address( &(tmp_time.min), &displace[3]);
+        clustbench_time_result_t tmp_time;
+        MPI_Get_address( &(tmp_time.average), &base);
+        MPI_Get_address( &(tmp_time.median), &displace[1]);
+        MPI_Get_address( &(tmp_time.deviation), &displace[2]);
+        MPI_Get_address( &(tmp_time.min), &displace[3]);
     }
     displace[0]=0;
     displace[1]-=base;
     displace[2]-=base;
     displace[3]-=base;
-    MPI_Type_struct(4,blocklength,displace,struct_types,&MPI_My_time_struct);
+    MPI_Type_create_struct(4,blocklength,displace,struct_types,&MPI_My_time_struct);
     MPI_Type_commit(&MPI_My_time_struct);
 
 
-    times=(Test_time_result_type* )malloc(comm_size*sizeof(Test_time_result_type));
+    times=(clustbench_time_result_t* )malloc(comm_size*sizeof(clustbench_time_result_t));
     if(times==NULL)
     {
-    	printf("Memory allocation error\n");
+    	fprintf(stderr, "Memory allocation error\n");
     	MPI_Abort(MPI_COMM_WORLD,1);
     	return 1;
     }
@@ -400,14 +414,18 @@ int main(int argc,char **argv)
     /*
      * Circle by length of messages
      */
+    
     for
         (
          tmp_mes_size=test_parameters.begin_message_length;
          tmp_mes_size<test_parameters.end_message_length;
          step_num++,tmp_mes_size+=test_parameters.step_length
-         )
+        )
     {
-        if(test_parameters.test_type==ALL_TO_ALL_TEST_TYPE)
+        
+        pointers.test_function(times, tmp_mes_size, test_parameters.num_repeats, test_parameters.benchmark_parameters);
+        
+        /*if(test_parameters.test_type==ALL_TO_ALL_TEST_TYPE)
         {
             all_to_all(times,tmp_mes_size,test_parameters.num_repeats);
         }
@@ -431,7 +449,7 @@ int main(int argc,char **argv)
 
         if(test_parameters.test_type==NOISE_TEST_TYPE)
         {
-                	test_noise
+            test_noise
     		(
     		 	times,
     			tmp_mes_size,
@@ -445,30 +463,27 @@ int main(int argc,char **argv)
         if(test_parameters.test_type==ONE_TO_ONE_TEST_TYPE)
         {
             one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
-        } /* end one_to_one */
+        } 
 
         if(test_parameters.test_type==ASYNC_ONE_TO_ONE_TEST_TYPE)
         {
             async_one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
-        } /* end async_one_to_one */
+        } 
 
         if(test_parameters.test_type==SEND_RECV_AND_RECV_SEND_TEST_TYPE)
         {
             send_recv_and_recv_send(times,tmp_mes_size,test_parameters.num_repeats);
-        } /* end send_recv_and_recv_send */
-
-
-
+        } 
 
         if(test_parameters.test_type==PUT_ONE_TO_ONE_TEST_TYPE)
         {
-    	put_one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
-        } /* end put_one_to_one */
+            put_one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
+        } 
 
         if(test_parameters.test_type==GET_ONE_TO_ONE_TEST_TYPE)
         {
-    	get_one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
-        } /* end get_one_to_one */
+            get_one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
+        } */
 
 
         MPI_Barrier(MPI_COMM_WORLD);
@@ -541,6 +556,8 @@ int main(int argc,char **argv)
          * the test perfomed on multiprocessor.
          */
     }
+    
+    clustbench_close_benchmark_lib(&pointers);
 
     /* TODO
      * Now free times array.

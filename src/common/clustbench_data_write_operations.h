@@ -25,16 +25,16 @@ extern "C"
 
 
 
-extern int create_netcdf_header
+int create_netcdf_header
 (
-	const char *file_data_type,
-	const struct network_test_parameters_struct* test_parameters,
+	int file_data_type,
+	const clustbench_benchmark_parameters_t* test_parameters,
 	int *file_id,
-	int *data_id
+	int *data_id,
     int (*benchmark_netcdf_header_writer)(int file_id, clustbench_benchmark_parameters_t* params)
 );
 
-extern int netcdf_write_matrix
+int netcdf_write_matrix
 (
         const int netcdf_file_id,
         const int netcdf_var_id,
@@ -44,7 +44,7 @@ extern int netcdf_write_matrix
         const double *data
 );
 
-extern int netcdf_close_file(const int netcdf_file_id);
+int netcdf_close_file(const int netcdf_file_id);
 
 #ifdef __cplusplus
 }

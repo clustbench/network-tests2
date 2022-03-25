@@ -2,6 +2,7 @@
 #define __CLUSTBENCH_PLUGIN_OPERATIONS_H__
 
 #include "clustbench_types.h"
+#include "benchmarks_common.h"
 
 #ifdef __clpusplus
 extern "C" {
@@ -16,6 +17,11 @@ typedef struct
     int (*print_parameters)(clustbench_benchmark_parameters_t*);
     int (*parse_parameters)(clustbench_benchmark_parameters_t*,int,char**,int);
     int (*write_netcdf_header)(int file_id, clustbench_benchmark_parameters_t* params);
+    int (*test_function)(clustbench_time_result_t *times,
+        int mes_length,
+        int num_repeats,
+        void *individual_parameters);
+    // тут еще указатель на функцию-тест
 } clustbench_benchmark_pointers_t;
 
    
