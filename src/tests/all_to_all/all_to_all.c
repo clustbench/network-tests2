@@ -228,8 +228,8 @@ int all_to_all_print_help (clustbench_benchmark_parameters_t* parameters) {
 
 char *all_to_all_short_description = "short description";
 
+int all_to_all_write_netcdf_header (int file_id, clustbench_benchmark_parameters_t* params) {return 0;}
+
 int all_to_all_print_parameters (clustbench_benchmark_parameters_t* parameters) {return 0;}
 
-int all_to_all_parse_parameters (clustbench_benchmark_parameters_t* parameters) {return 0;}
-
-int all_to_all_write_netcdf_header (int file_id, clustbench_benchmark_parameters_t* params) {return 0;}
+int all_to_all_parse_parameters (clustbench_benchmark_parameters_t* parameters,int argc,char **argv,int count) {return 0;}
