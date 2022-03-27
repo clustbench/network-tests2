@@ -24,6 +24,7 @@ int clustbench_open_benchmark(const char *path_to_benchmark_code_dir,
     pointers->print_help              = NULL;
     pointers->print_parameters        = NULL;
     pointers->parse_parameters        = NULL;
+    pointers->write_netcdf_header     = NULL;
     pointers->test_function           = NULL;
 
     int path_length = 0;
@@ -93,6 +94,16 @@ int clustbench_open_benchmark(const char *path_to_benchmark_code_dir,
     sprintf(symbol_name,"%s_%s",benchmark_name,"parse_parameters");
     pointers->parse_parameters = dlsym(pointers->dynamic_library_handler, symbol_name);
     if(pointers->parse_parameters == NULL)
+    {
+        fprintf(stderr,"Can't read symbol '%s' from '%s'\n",symbol_name,path_to_so);
+        free(symbol_name);
+        free(path_to_so);
+        return 1;
+    }
+    
+    sprintf(symbol_name,"%s_%s",benchmark_name,"write_netcdf_header");
+    pointers->write_netcdf_header = dlsym(pointers->dynamic_library_handler, symbol_name);
+    if(pointers->write_netcdf_header == NULL)
     {
         fprintf(stderr,"Can't read symbol '%s' from '%s'\n",symbol_name,path_to_so);
         free(symbol_name);

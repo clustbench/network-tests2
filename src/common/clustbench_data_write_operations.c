@@ -5,6 +5,7 @@
 
 #include "types.h"
 #include "clustbench_data_write_operations.h"
+#include "clustbench_plugin_operations.h"
 #include "string_id_converters.h"
 #include "clustbench_types.h"
 
@@ -141,7 +142,7 @@ int create_netcdf_header
 	if(nc_def_var(netcdf_file_id,"num_repeates",NC_INT,0,0,&num_repeats_var_id)!=NC_NOERR)
 	{
 		return NETCDF_ERROR;
-        }
+    }
 
 	dims[0]=num_matrices_dim_id;
 	dims[1]=x_dim_id;
@@ -149,6 +150,11 @@ int create_netcdf_header
 	if(nc_def_var(netcdf_file_id,"data",NC_DOUBLE,3,dims,&data_var_id)!=NC_NOERR)
     {
             return NETCDF_ERROR;
+    }
+    
+    if (benchmark_netcdf_header_writer(netcdf_file_id, test_parameters) != 0) 
+    {
+        return NETCDF_ERROR;
     }
 	
 	if(nc_enddef(netcdf_file_id)!=NC_NOERR)

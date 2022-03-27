@@ -21,7 +21,6 @@ typedef struct
         int mes_length,
         int num_repeats,
         void *individual_parameters);
-    // тут еще указатель на функцию-тест
 } clustbench_benchmark_pointers_t;
 
    
