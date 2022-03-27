@@ -198,7 +198,7 @@ int main(int argc,char **argv)
     clustbench_benchmark_pointers_t pointers;
     if (clustbench_open_benchmark(test_parameters.path_to_benchmark_code_dir,
         test_parameters.benchmark_name,
-        &pointers))
+        &pointers) != 0)
     {
         fprintf(stderr, "Cannot open the benchmark\n");
         return 1;
@@ -424,66 +424,6 @@ int main(int argc,char **argv)
     {
         
         pointers.test_function(times, tmp_mes_size, test_parameters.num_repeats, test_parameters.benchmark_parameters);
-        
-        /*if(test_parameters.test_type==ALL_TO_ALL_TEST_TYPE)
-        {
-            all_to_all(times,tmp_mes_size,test_parameters.num_repeats);
-        }
-        if(test_parameters.test_type==BCAST_TEST_TYPE)
-        {
-            bcast(times,tmp_mes_size,test_parameters.num_repeats);
-        }
-
-        if(test_parameters.test_type==NOISE_BLOCKING_TEST_TYPE)
-        {
-                test_noise_blocking
-    	(
-    	 	times,
-    	    	tmp_mes_size,
-    		test_parameters.num_repeats,
-    		test_parameters.num_noise_messages,
-    		test_parameters.noise_message_length,
-    	       	test_parameters.num_noise_procs
-    	);
-        }
-
-        if(test_parameters.test_type==NOISE_TEST_TYPE)
-        {
-            test_noise
-    		(
-    		 	times,
-    			tmp_mes_size,
-    			test_parameters.num_repeats,
-    			test_parameters.num_noise_messages,
-    			test_parameters.noise_message_length,
-    			test_parameters.num_noise_procs
-    		);
-        }
-
-        if(test_parameters.test_type==ONE_TO_ONE_TEST_TYPE)
-        {
-            one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
-        } 
-
-        if(test_parameters.test_type==ASYNC_ONE_TO_ONE_TEST_TYPE)
-        {
-            async_one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
-        } 
-
-        if(test_parameters.test_type==SEND_RECV_AND_RECV_SEND_TEST_TYPE)
-        {
-            send_recv_and_recv_send(times,tmp_mes_size,test_parameters.num_repeats);
-        } 
-
-        if(test_parameters.test_type==PUT_ONE_TO_ONE_TEST_TYPE)
-        {
-            put_one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
-        } 
-
-        if(test_parameters.test_type==GET_ONE_TO_ONE_TEST_TYPE)
-        {
-            get_one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
-        } */
 
 
         MPI_Barrier(MPI_COMM_WORLD);
@@ -492,10 +432,22 @@ int main(int argc,char **argv)
         {
             for(j=0; j<comm_size; j++)
             {
-                MATRIX_FILL_ELEMENT(mtr_av,0,j,times[j].average);
-                MATRIX_FILL_ELEMENT(mtr_me,0,j,times[j].median);
-                MATRIX_FILL_ELEMENT(mtr_di,0,j,times[j].deviation);
-                MATRIX_FILL_ELEMENT(mtr_mi,0,j,times[j].min);
+                if (test_parameters.statistics_save & CLUSTBENCH_AVERAGE)
+                {
+                    MATRIX_FILL_ELEMENT(mtr_av,0,j,times[j].average);
+                }
+                if (test_parameters.statistics_save & CLUSTBENCH_MEDIAN)
+                {
+                    MATRIX_FILL_ELEMENT(mtr_me,0,j,times[j].median);
+                }
+                if (test_parameters.statistics_save & CLUSTBENCH_DEVIATION)
+                {
+                    MATRIX_FILL_ELEMENT(mtr_di,0,j,times[j].deviation);
+                }
+                if (test_parameters.statistics_save & CLUSTBENCH_MIN)
+                {
+                    MATRIX_FILL_ELEMENT(mtr_mi,0,j,times[j].min);
+                }
             }
             for(i=1; i<comm_size; i++)
             {
@@ -503,41 +455,64 @@ int main(int argc,char **argv)
                 MPI_Recv(times,comm_size,MPI_My_time_struct,i,100,MPI_COMM_WORLD,&status);
                 for(j=0; j<comm_size; j++)
                 {
-                    MATRIX_FILL_ELEMENT(mtr_av,i,j,times[j].average);
-                    MATRIX_FILL_ELEMENT(mtr_me,i,j,times[j].median);
-                    MATRIX_FILL_ELEMENT(mtr_di,i,j,times[j].deviation);
-                    MATRIX_FILL_ELEMENT(mtr_mi,i,j,times[j].min);
-
+                    if (test_parameters.statistics_save & CLUSTBENCH_AVERAGE)
+                    {
+                        MATRIX_FILL_ELEMENT(mtr_av,i,j,times[j].average);
+                    }
+                    if (test_parameters.statistics_save & CLUSTBENCH_MEDIAN)
+                    {
+                        MATRIX_FILL_ELEMENT(mtr_me,i,j,times[j].median);
+                    }
+                    if (test_parameters.statistics_save & CLUSTBENCH_DEVIATION)
+                    {
+                        MATRIX_FILL_ELEMENT(mtr_di,i,j,times[j].deviation);
+                    }
+                    if (test_parameters.statistics_save & CLUSTBENCH_MIN)
+                    {
+                        MATRIX_FILL_ELEMENT(mtr_mi,i,j,times[j].min);
+                    }
                 }
             }
 
 
-            if(netcdf_write_matrix(netcdf_file_av,netcdf_var_av,step_num,mtr_av.sizex,mtr_av.sizey,mtr_av.body))
+            if (test_parameters.statistics_save & CLUSTBENCH_AVERAGE) 
             {
-                printf("Can't write average matrix to file.\n");
-                MPI_Abort(MPI_COMM_WORLD,1);
-                return 1;
+                if (netcdf_write_matrix(netcdf_file_av,netcdf_var_av,step_num,mtr_av.sizex,mtr_av.sizey,mtr_av.body))
+                {
+                    printf("Can't write average matrix to file.\n");
+                    MPI_Abort(MPI_COMM_WORLD,1);
+                    return 1;
+                }
             }
 
-            if(netcdf_write_matrix(netcdf_file_me,netcdf_var_me,step_num,mtr_me.sizex,mtr_me.sizey,mtr_me.body))
+            if (test_parameters.statistics_save & CLUSTBENCH_MEDIAN)
             {
-                printf("Can't write median matrix to file.\n");
-                MPI_Abort(MPI_COMM_WORLD,1);
-                return 1;
+                if (netcdf_write_matrix(netcdf_file_me,netcdf_var_me,step_num,mtr_me.sizex,mtr_me.sizey,mtr_me.body))
+                {
+                    printf("Can't write median matrix to file.\n");
+                    MPI_Abort(MPI_COMM_WORLD,1);
+                    return 1;
+                }
             }
 
-            if(netcdf_write_matrix(netcdf_file_di,netcdf_var_di,step_num,mtr_di.sizex,mtr_di.sizey,mtr_di.body))
-            {
-                printf("Can't write deviation matrix to file.\n");
-                MPI_Abort(MPI_COMM_WORLD,1);
-                return 1;
+            if (test_parameters.statistics_save & CLUSTBENCH_DEVIATION)
+            { 
+                if (netcdf_write_matrix(netcdf_file_di,netcdf_var_di,step_num,mtr_di.sizex,mtr_di.sizey,mtr_di.body))
+                {
+                    printf("Can't write deviation matrix to file.\n");
+                    MPI_Abort(MPI_COMM_WORLD,1);
+                    return 1;
+                }
             }
 
-            if(netcdf_write_matrix(netcdf_file_mi,netcdf_var_mi,step_num,mtr_mi.sizex,mtr_mi.sizey,mtr_mi.body))
+            if (test_parameters.statistics_save & CLUSTBENCH_MIN)
             {
-                printf("Can't write  matrix with minimal values to file.\n");
-                MPI_Abort(MPI_COMM_WORLD,1);
-                return 1;
+                if (netcdf_write_matrix(netcdf_file_mi,netcdf_var_mi,step_num,mtr_mi.sizex,mtr_mi.sizey,mtr_mi.body))
+                {
+                    printf("Can't write matrix with minimal values to file.\n");
+                    MPI_Abort(MPI_COMM_WORLD,1);
+                    return 1;
+                }
             }
 
 
@@ -573,21 +548,32 @@ int main(int argc,char **argv)
     if(comm_rank==0)
     {
 
-        netcdf_close_file(netcdf_file_av);
-        netcdf_close_file(netcdf_file_me);
-        netcdf_close_file(netcdf_file_di);
-        netcdf_close_file(netcdf_file_mi);
+        if (test_parameters.statistics_save & CLUSTBENCH_AVERAGE)
+        {
+            netcdf_close_file(netcdf_file_av);
+            free(mtr_av.body);
+        }
+        if (test_parameters.statistics_save & CLUSTBENCH_MEDIAN)
+        {
+            netcdf_close_file(netcdf_file_me);
+            free(mtr_me.body);
+        }
+        if (test_parameters.statistics_save & CLUSTBENCH_DEVIATION)
+        {
+            netcdf_close_file(netcdf_file_di);
+            free(mtr_di.body);
+        }
+        if (test_parameters.statistics_save & CLUSTBENCH_MIN)
+        {
+            netcdf_close_file(netcdf_file_mi);
+            free(mtr_mi.body);
+        }
 
         for(i=0; i<comm_size; i++)
         {
             free(host_names[i]);
         }
         free(host_names);
-
-        free(mtr_av.body);
-        free(mtr_me.body);
-        free(mtr_di.body);
-        free(mtr_mi.body);
 
         printf("\nTest is done\n");
     }

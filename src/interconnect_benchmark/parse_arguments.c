@@ -160,10 +160,10 @@ int parse_network_test_arguments(clustbench_benchmark_parameters_t *parameters,
     for ( ; ; )
     {
 #ifdef _GNU_SOURCE
-        arg_val = getopt_long(argc,argv,"t:f:n:b:e:s:l:p:h:v",options,NULL);
+        arg_val = getopt_long(argc,argv,"t:f:n:b:e:s:d:l:p:h:v",options,NULL);
 #else
 
-        arg_val = getopt(argc,argv,"t:f:n:b:e:s:l:p:h:v");
+        arg_val = getopt(argc,argv,"t:f:n:b:e:s:d:l:p:h:v");
 #endif
 
         if(arg_val == -1)
@@ -231,10 +231,10 @@ int parse_network_test_arguments(clustbench_benchmark_parameters_t *parameters,
             break;
         case 'd':
             {
+                parameters->statistics_save = 0;
                 char *tmp;
                 for(tmp = optarg; *tmp != '\0'; ++tmp)
                 {
-                    parameters->statistics_save=0;
                     if(*tmp == 'l') /* min */
                     {
                         parameters->statistics_save |= CLUSTBENCH_MIN;
