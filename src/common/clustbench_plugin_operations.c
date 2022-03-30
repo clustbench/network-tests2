@@ -24,7 +24,8 @@ int clustbench_open_benchmark(const char *path_to_benchmark_code_dir,
     pointers->print_help              = NULL;
     pointers->print_parameters        = NULL;
     pointers->parse_parameters        = NULL;
-    pointers->write_netcdf_header     = NULL;
+    pointers->define_netcdf_vars      = NULL;
+    pointers->put_netcdf_vars         = NULL;
     pointers->test_function           = NULL;
 
     int path_length = 0;
@@ -101,9 +102,29 @@ int clustbench_open_benchmark(const char *path_to_benchmark_code_dir,
         return 1;
     }
     
-    sprintf(symbol_name,"%s_%s",benchmark_name,"write_netcdf_header");
-    pointers->write_netcdf_header = dlsym(pointers->dynamic_library_handler, symbol_name);
-    if(pointers->write_netcdf_header == NULL)
+    sprintf(symbol_name,"%s_%s",benchmark_name,"define_netcdf_vars");
+    pointers->define_netcdf_vars = dlsym(pointers->dynamic_library_handler, symbol_name);
+    if(pointers->define_netcdf_vars == NULL)
+    {
+        fprintf(stderr,"Can't read symbol '%s' from '%s'\n",symbol_name,path_to_so);
+        free(symbol_name);
+        free(path_to_so);
+        return 1;
+    }
+    
+    sprintf(symbol_name,"%s_%s",benchmark_name,"put_netcdf_vars");
+    pointers->put_netcdf_vars = dlsym(pointers->dynamic_library_handler, symbol_name);
+    if(pointers->put_netcdf_vars == NULL)
+    {
+        fprintf(stderr,"Can't read symbol '%s' from '%s'\n",symbol_name,path_to_so);
+        free(symbol_name);
+        free(path_to_so);
+        return 1;
+    }
+    
+    sprintf(symbol_name,"%s_%s",benchmark_name,"free_parameters");
+    pointers->free_parameters = dlsym(pointers->dynamic_library_handler, symbol_name);
+    if(pointers->free_parameters == NULL)
     {
         fprintf(stderr,"Can't read symbol '%s' from '%s'\n",symbol_name,path_to_so);
         free(symbol_name);
@@ -140,6 +161,9 @@ int clustbench_close_benchmark_lib(clustbench_benchmark_pointers_t *pointers)
     pointers->print_help              = NULL;
     pointers->print_parameters        = NULL;
     pointers->parse_parameters        = NULL;
+    pointers->define_netcdf_vars      = NULL;
+    pointers->put_netcdf_vars         = NULL;
+    pointers->test_function           = NULL;
 
     return 0;
 }

@@ -157,13 +157,17 @@ int parse_network_test_arguments(clustbench_benchmark_parameters_t *parameters,
     };
 #endif
 
+    int individual_options_flag = 0;
+    opterr = 0;
+
     for ( ; ; )
     {
+        if (individual_options_flag == 1) break;
 #ifdef _GNU_SOURCE
-        arg_val = getopt_long(argc,argv,"t:f:n:b:e:s:d:l:p:h:v",options,NULL);
+        arg_val = getopt_long(argc,argv,"t:f:n:b:e:s:d:lp:h::v",options,NULL);
 #else
 
-        arg_val = getopt(argc,argv,"t:f:n:b:e:s:d:l:p:h:v");
+        arg_val = getopt(argc,argv,"t:f:n:b:e:s:d:lp:h::v");
 #endif
 
         if(arg_val == -1)
@@ -301,20 +305,38 @@ int parse_network_test_arguments(clustbench_benchmark_parameters_t *parameters,
                 return_flag = HELP_FLAG;
             break;
         case '?':
-            if(!mpi_rank)
+            /*if(!mpi_rank)
             {
                 print_network_test_help_message(NULL);
             }
-            return ERROR_FLAG;
+            return ERROR_FLAG;*/
+            individual_options_flag = 1;
             break;
         }        
     } /* end for */
+    
+    /*if (mpi_rank == 0) {
+        for (int i = 0; i < argc; ++i) {
+            printf("%d: %s\n", i, argv[i]);
+            fflush(stdout);
+        }
+        printf("\n%d: %s\n", optind - 1, *(argv + (optind - 1)));
+        fflush(stdout);
+    }*/
 
-    if(parse_individual_benchmark_parameters(parameters, 
-        argc - optind, 
-        argv + optind * sizeof(*argv),
-        mpi_rank))
+    int tmp_optind = optind;
+    optind = 0;
+    int res = parse_individual_benchmark_parameters(parameters, 
+        (argc - tmp_optind == 0) ? 0 : argc - tmp_optind + 2, 
+        argv + (tmp_optind - 2),
+        mpi_rank);
+    if (res != 0) 
     {
+        if (res == UNKNOWN_FLAG)
+        {
+            printf("Unknown option found.\n");
+            print_network_test_help_message(parameters);
+        }
         return ERROR_FLAG;
     }
 
@@ -337,7 +359,7 @@ int print_network_test_parameters(clustbench_benchmark_parameters_t *parameters)
         return 1;
     }*/
     
-    printf("Benchmark common parameters:");
+    printf("Benchmark common parameters:\n");
     printf("\tbenchmark name = \"%s\"\n", parameters->benchmark_name);
     printf("\tpath to benchmark directory = \"%s\"\n\n",parameters->path_to_benchmark_code_dir);
     printf("\tnumber proceses = %d\n", parameters->num_procs);
@@ -411,7 +433,7 @@ int parse_individual_benchmark_parameters(clustbench_benchmark_parameters_t *par
         return 1;
     }
 
-    if((argc==0) || (argv == NULL) )
+    if((argc == 0) || (argv == NULL) )
     {
         if(!mpi_rank)
         {

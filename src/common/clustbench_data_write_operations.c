@@ -15,7 +15,8 @@ int create_netcdf_header
 	const clustbench_benchmark_parameters_t *test_parameters,
 	int *file_id,
 	int *data_id,
-    int (*benchmark_netcdf_header_writer)(int file_id, clustbench_benchmark_parameters_t* params)
+    int (*benchmark_define_netcdf_vars)(int file_id, clustbench_benchmark_parameters_t* params),
+    int (*benchmark_put_netcdf_vars)(int file_id, clustbench_benchmark_parameters_t* params)
 )
 {
 	int netcdf_file_id;
@@ -152,7 +153,7 @@ int create_netcdf_header
             return NETCDF_ERROR;
     }
     
-    if (benchmark_netcdf_header_writer(netcdf_file_id, test_parameters) != 0) 
+    if (benchmark_define_netcdf_vars(netcdf_file_id, test_parameters) != 0) 
     {
         return NETCDF_ERROR;
     }
@@ -198,6 +199,11 @@ int create_netcdf_header
 	{
 		return NETCDF_ERROR;
 	}
+    
+    if (benchmark_put_netcdf_vars(netcdf_file_id, test_parameters) != 0) 
+    {
+        return NETCDF_ERROR;
+    }
 
 	/*if(nc_put_var_int(netcdf_file_id,noise_mesage_length_var_id,&test_parameters->noise_message_length)!=NC_NOERR)
 	{

@@ -31,7 +31,8 @@ int create_netcdf_header
 	const clustbench_benchmark_parameters_t* test_parameters,
 	int *file_id,
 	int *data_id,
-    int (*benchmark_netcdf_header_writer)(int file_id, clustbench_benchmark_parameters_t* params)
+    int (*benchmark_define_netcdf_vars)(int file_id, clustbench_benchmark_parameters_t* params),
+    int (*benchmark_put_netcdf_vars)(int file_id, clustbench_benchmark_parameters_t* params)
 );
 
 int netcdf_write_matrix

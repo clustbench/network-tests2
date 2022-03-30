@@ -8,7 +8,7 @@
 #define HELP_FLAG    2
 #define LIST_FLAG    3
 
-
+#define UNKNOWN_FLAG 3
 
 #ifdef __cplusplus
 extern "C"

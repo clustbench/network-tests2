@@ -268,7 +268,7 @@ int main(int argc,char **argv)
                 return 1;
             }
 
-            if(create_netcdf_header(AVERAGE_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_av,&netcdf_var_av,pointers.write_netcdf_header))
+            if(create_netcdf_header(AVERAGE_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_av,&netcdf_var_av,pointers.define_netcdf_vars,pointers.put_netcdf_vars))
             {
                 fprintf(stderr,"Can not to create file with name \"%s_average.nc\"\n",test_parameters.file_name_prefix);
                 MPI_Abort(MPI_COMM_WORLD,1);
@@ -286,7 +286,7 @@ int main(int argc,char **argv)
                 return 1;
             }
 
-            if(create_netcdf_header(MEDIAN_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_me,&netcdf_var_me,pointers.write_netcdf_header))
+            if(create_netcdf_header(MEDIAN_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_me,&netcdf_var_me,pointers.define_netcdf_vars,pointers.put_netcdf_vars))
             {
                 fprintf(stderr,"Can not to create file with name \"%s_median.nc\"\n",test_parameters.file_name_prefix);
                 MPI_Abort(MPI_COMM_WORLD,1);
@@ -304,7 +304,7 @@ int main(int argc,char **argv)
                 return 1;
             }
 
-            if(create_netcdf_header(DEVIATION_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_di,&netcdf_var_di,pointers.write_netcdf_header))
+            if(create_netcdf_header(DEVIATION_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_di,&netcdf_var_di,pointers.define_netcdf_vars,pointers.put_netcdf_vars))
             {
                 fprintf(stderr,"Can not to create file with name \"%s_deviation.nc\"\n",test_parameters.file_name_prefix);
                 MPI_Abort(MPI_COMM_WORLD,1);
@@ -322,7 +322,7 @@ int main(int argc,char **argv)
                 return 1;
             }
 
-            if(create_netcdf_header(MIN_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_mi,&netcdf_var_mi,pointers.write_netcdf_header))
+            if(create_netcdf_header(MIN_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_mi,&netcdf_var_mi,pointers.define_netcdf_vars,pointers.put_netcdf_vars))
             {
                 fprintf(stderr,"Can not to create file with name \"%s_min.nc\"\n",test_parameters.file_name_prefix);
                 MPI_Abort(MPI_COMM_WORLD,1);
@@ -531,8 +531,6 @@ int main(int argc,char **argv)
          * the test perfomed on multiprocessor.
          */
     }
-    
-    clustbench_close_benchmark_lib(&pointers);
 
     /* TODO
      * Now free times array.
@@ -543,7 +541,13 @@ int main(int argc,char **argv)
      */
 
     free(times);
-
+    
+    if (test_parameters.benchmark_parameters != NULL) 
+    {
+        pointers.free_parameters(&test_parameters);
+    }
+    
+    clustbench_close_benchmark_lib(&pointers);
 
     if(comm_rank==0)
     {
