@@ -19,20 +19,38 @@
  * Alexey N. Salnikov (salnikov@cmc.msu.ru)
  *
  */
+ 
+#ifdef _GNU_SOURCE
+#include <getopt.h>
+#else
+#include <unistd.h>
+#endif
 
 #include "my_time.h"
 #include "benchmarks_common.h"
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <netcdf.h>
 #include <math.h>
 #include <mpi.h>
+#include <errno.h>
+#include <string.h>
+
+#define UNKNOWN_FLAG 3 /*use for every benchmark*/
 
 /*extern int comm_rank;
 extern int comm_size;*/
 
-int all_to_all (clustbench_time_result_t *times,int mes_length,int num_repeats, void *additional);
-int all_to_all_print_help (clustbench_benchmark_parameters_t* parameters);
+static int random_option_1_id, random_option_2_id;
+
+static int *random_option_1 = NULL;
+static int *random_option_2 = NULL;
+
+static int random_option_1_default = 0;
+static int random_option_2_default = 3;
+
+char *all_to_all_short_description = "short description";
 
 int all_to_all(clustbench_time_result_t *times,int mes_length,int num_repeats, void *additional)
 {
@@ -221,15 +239,130 @@ int all_to_all(clustbench_time_result_t *times,int mes_length,int num_repeats, v
     return 0;
 }
 
-int all_to_all_print_help (clustbench_benchmark_parameters_t* parameters) {
+int all_to_all_print_help (clustbench_benchmark_parameters_t* parameters) 
+{
     printf("This is help message of all_to_all test\n");
+    printf("'f' for first arg, 's' for second\n\n");
     return 0;
 }
 
-char *all_to_all_short_description = "short description";
+int all_to_all_define_netcdf_vars (int file_id, clustbench_benchmark_parameters_t* params) 
+{
+    if(nc_def_var(file_id,"random_option_1",NC_INT,0,0,&random_option_1_id)!=NC_NOERR)
+    {
+            return 1;
+    }
+    if(nc_def_var(file_id,"random_option_2",NC_INT,0,0,&random_option_2_id)!=NC_NOERR)
+    {
+            return 1;
+    }
+    return 0;
+}
 
-int all_to_all_write_netcdf_header (int file_id, clustbench_benchmark_parameters_t* params) {return 0;}
+int all_to_all_put_netcdf_vars (int file_id, clustbench_benchmark_parameters_t* parameters) 
+{
+    random_option_1 = (int *)parameters->benchmark_parameters;
+    random_option_2 = (int *)(parameters->benchmark_parameters) + 1;
+    
+    if(nc_put_var_int(file_id,random_option_1_id,random_option_1)!=NC_NOERR)
+	{
+		return 1;
+	}
+    if(nc_put_var_int(file_id,random_option_2_id,random_option_2)!=NC_NOERR)
+	{
+		return 1;
+	}
+    return 0;
+}
 
-int all_to_all_print_parameters (clustbench_benchmark_parameters_t* parameters) {return 0;}
+int all_to_all_print_parameters (clustbench_benchmark_parameters_t* parameters) 
+{
+    random_option_1 = (int *)parameters->benchmark_parameters;
+    random_option_2 = (int *)(parameters->benchmark_parameters) + 1;
+    printf("\trandom_option_1 = %d\n", *random_option_1);
+    printf("\trandom_option_2 = %d\n", *random_option_2);
+    return 0;
+}
 
-int all_to_all_parse_parameters (clustbench_benchmark_parameters_t* parameters,int argc,char **argv,int count) {return 0;}
+int all_to_all_parse_parameters (clustbench_benchmark_parameters_t* parameters,int argc,char **argv,int mpi_rank) 
+{
+    parameters->benchmark_parameters = (void *) malloc(sizeof(int) * 2);
+    if (parameters->benchmark_parameters == NULL)
+    {
+        printf("Can`t allocate memory for all_to_all test individual parameters\n");
+        return 2;
+    }
+    
+    random_option_1 = (int *)parameters->benchmark_parameters;
+    random_option_2 = (int *)(parameters->benchmark_parameters) + 1;
+    
+    *random_option_1 = random_option_1_default;
+    *random_option_2 = random_option_2_default;
+    
+    #ifdef _GNU_SOURCE
+        struct option options[]=
+        {
+            {"first",required_argument,NULL,'a'},
+            {"second",required_argument,NULL,'c'},
+            {0,0,0,0}
+        };
+    #endif
+    
+    int arg_val;
+    
+    for ( ; ; )
+    {
+        #ifdef _GNU_SOURCE
+                arg_val = getopt_long(argc,argv,"a:c:",options,NULL);
+        #else
+        
+                arg_val = getopt(argc,argv,"a:c:");
+        #endif
+        
+        if(arg_val == -1)
+        break;
+
+        switch(arg_val)
+        {
+            char *tmp_str;
+        case 'a':
+            *random_option_1 = strtoul(optarg, &tmp_str, 10);
+            if(*tmp_str != '\0')
+            {
+                if(!mpi_rank)
+                {
+                    fprintf(stderr,"all_to_all_parse_parameters: Parse parameter with name 'first' failed: '%s'",
+                        strerror(errno));
+                }
+                return 1;
+            }
+            break;
+        case 'c':
+            *random_option_2 = strtoul(optarg, &tmp_str, 10);
+            if(*tmp_str != '\0')
+            {
+                if(!mpi_rank)
+                {
+                    fprintf(stderr,"all_to_all_parse_parameters: Parse parameter with name 'second' failed: '%s'",
+                        strerror(errno));
+                }
+                return 1;
+            }
+            break;
+        case '?':
+            if(!mpi_rank)
+            {
+                all_to_all_print_help(NULL);
+            }
+            return 3; /* flag of the unknown option */
+            break;
+        }
+    }
+    return 0;
+}
+
+int all_to_all_free_parameters (clustbench_benchmark_parameters_t* parameters)
+{
+    free(parameters->benchmark_parameters);
+    return 0;
+}
