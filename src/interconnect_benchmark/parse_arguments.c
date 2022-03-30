@@ -439,7 +439,6 @@ int parse_individual_benchmark_parameters(clustbench_benchmark_parameters_t *par
         {
             printf("No individual parameters for benchmark '%s'\n",parameters->benchmark_name);
         }
-        return 0;
     }
 
     if(clustbench_open_benchmark(parameters->path_to_benchmark_code_dir, parameters->benchmark_name,&pointers))
