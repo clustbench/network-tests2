@@ -164,10 +164,10 @@ int parse_network_test_arguments(clustbench_benchmark_parameters_t *parameters,
     {
         if (individual_options_flag == 1) break;
 #ifdef _GNU_SOURCE
-        arg_val = getopt_long(argc,argv,"t:f:n:b:e:s:d:lp:h::v",options,NULL);
+        arg_val = getopt_long(argc,argv,"t:f:n:b:e:s:d:lp:h:v",options,NULL);
 #else
 
-        arg_val = getopt(argc,argv,"t:f:n:b:e:s:d:lp:h::v");
+        arg_val = getopt(argc,argv,"t:f:n:b:e:s:d:lp:h:v");
 #endif
 
         if(arg_val == -1)
@@ -284,15 +284,6 @@ int parse_network_test_arguments(clustbench_benchmark_parameters_t *parameters,
             return  VERSION_FLAG;
             break;
         case ':':
-            if(optopt == 'h')
-            {
-                if(!mpi_rank)
-                {
-                    print_network_test_help_message(NULL);
-                }
-                return HELP_FLAG;
-            }
-            
             if(!mpi_rank)
             {
                 fprintf(stderr, "option -%c is missing a required argument.\n\n"
@@ -302,27 +293,31 @@ int parse_network_test_arguments(clustbench_benchmark_parameters_t *parameters,
             break;
         case 'h':
             parameters->benchmark_name = optarg;
-                return_flag = HELP_FLAG;
+            return_flag = HELP_FLAG;
             break;
         case '?':
-            /*if(!mpi_rank)
+            if(optopt == 'h')
             {
-                print_network_test_help_message(NULL);
+                if(!mpi_rank)
+                {
+                    print_network_test_help_message(NULL);
+                }
+                return HELP_FLAG;
+            } else {
+                individual_options_flag = 1;
             }
-            return ERROR_FLAG;*/
-            individual_options_flag = 1;
             break;
         }        
     } /* end for */
     
-    /*if (mpi_rank == 0) {
-        for (int i = 0; i < argc; ++i) {
-            printf("%d: %s\n", i, argv[i]);
-            fflush(stdout);
+    if(return_flag == HELP_FLAG)
+    {
+        if(mpi_rank == 0 && print_network_test_help_message(parameters))
+        {
+            return ERROR_FLAG;
         }
-        printf("\n%d: %s\n", optind - 1, *(argv + (optind - 1)));
-        fflush(stdout);
-    }*/
+        return return_flag;
+    }
 
     int tmp_optind = optind;
     optind = 0;
@@ -338,14 +333,6 @@ int parse_network_test_arguments(clustbench_benchmark_parameters_t *parameters,
             print_network_test_help_message(parameters);
         }
         return ERROR_FLAG;
-    }
-
-    if((mpi_rank == 0) && (return_flag == HELP_FLAG))
-    {
-        if(print_network_test_help_message(parameters))
-        {
-            return ERROR_FLAG;
-        }
     }
 
     return return_flag;
