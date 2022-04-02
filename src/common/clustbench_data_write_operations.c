@@ -25,12 +25,12 @@ int create_netcdf_header
 
 	int num_procs_var_id, test_type_var_id, file_data_type_var_id, begin_message_length_var_id, end_message_length_var_id;
 	int step_length_var_id, num_repeats_var_id;
-	//int noise_mesage_length_var_id, num_noise_messages_var_id, num_noise_procs_var_id;	
+	
 	int data_var_id;
 
 	int dims[3];
 
-	int test_type_len = strlen(test_parameters->benchmark_name) + 1;
+	size_t test_type_len = strlen(test_parameters->benchmark_name) + 1;
 
 	char *file_name=NULL;
     
@@ -93,7 +93,7 @@ int create_netcdf_header
     {
         fprintf(stderr, "%s\n", nc_strerror(status));
         return NETCDF_ERROR;
-    } //RENAME TO TEST_NAME
+    } /*RENAME TO TEST_NAME*/
 
 	/*
          * For future

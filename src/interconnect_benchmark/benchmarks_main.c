@@ -34,14 +34,20 @@
 #include <unistd.h>
 #endif
 
-//from ../..
+/*
+from ../..
+*/
 #include "clustbench_config.h"
 
-//from ../core 
+/*
+from ../core 
+*/
 #include "string_id_converters.h"
 #include "my_time.h"
 
-//from common
+/*
+from common
+*/
 #include "clustbench_time.h"
 #include "clustbench_malloc.h"
 #include "clustbench_types.h"
@@ -50,7 +56,9 @@
 #include "clustbench_data_write_operations.h"
 #include "benchmarks_common.h"
 
-//from ./
+/*
+from ./
+*/
 #include "get_node_name.h"
 #include "parse_arguments.h"
 
