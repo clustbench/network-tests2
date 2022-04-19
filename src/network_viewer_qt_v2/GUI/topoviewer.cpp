@@ -15,6 +15,8 @@
 #include <QTimer>
 #include "err_msgs.h"
 
+#include <iostream>
+
 const QString TopologyViewer::my_sign("Topo");
 
 // light-gray color for widget's background
@@ -887,8 +889,6 @@ bool TopologyViewer::RetrieveTopology (double *matr) {
 			}
 		}
 
-		/*for (i=0u; (i!=main_wdg.x_num) && vert_done[i]; ++i) ;
-		if (i==main_wdg.x_num) break;*/
 
 		for ( ; ; )
 		{
@@ -1412,6 +1412,40 @@ void TVWidget::SaveImageMenu (){
     window->show();
 }
 
+double dist(double *x, double *y, double *z, int i, int j)
+{
+	double res = (x[i] - x[j])*(x[i] - x[j]) + (y[i] - y[j]) * (y[i] - y[j]) + (z[i] - z[j]) * (z[i] - z[j]);
+	return std::sqrt(res);
+}
+
+double stress_part_i (double *x, double *y, double *z, double *matr, int n, int i)
+{
+	double res = 0.0, val, d_ij;
+	for (int j = 0; j < n; ++j) {
+		if (i == j) {
+			continue;
+		}
+		val = dist(x, y, z, i, j);
+		d_ij = matr[i * n + j];
+		// std::cout << "val = " << val << " d_ij = " << d_ij << std::endl;
+		res += (val - d_ij) * (val - d_ij);
+	}
+	return res;
+}
+
+double stress_fun(double *x, double *y, double *z, double *matr, int n)
+{
+	double stress = 0.0, d_ij, val;
+	for (int i = 0; i < n; ++i) {
+		for (int j = i + 1; j < n; ++j) {
+			val = dist(x, y, z, i, j);
+			d_ij = matr[i * n + j];
+			stress += (val - d_ij) * (val - d_ij);
+		}
+	}
+	return stress;
+}
+
 bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 							   unsigned int &edg_n, unsigned int &edg50_n, unsigned int &edg99_n) {
 	clock_t st=clock();
@@ -1421,38 +1455,139 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 	double val;
 	double min_val=DBL_MAX;
 
-	for (i=0u,k=0u; i!=x_num; ++i,k+=x_num)
-	{
-		j=i+1u;
-		k1=j*x_num+i;
-		for (mtr1+=j; j!=x_num; ++j,++mtr1,k1+=x_num)
-		{
-			v=edge_counts[k+j]+edge_counts[k1];
-			if (v==0u)
-				*mtr1=0.0; // assign something
-			else
-			{
-				// magic formula!
-				val=matr[k1];
-				val=val+(*mtr1-val)*static_cast<double>(edge_counts[k+j])/static_cast<double>(v);
-				val=(val<1.0e-15)? 1.0e-15 : val;
-				min_val=(val<min_val)? val : min_val;
-				*mtr1=val;
+	// for (i=0u,k=0u; i!=x_num; ++i,k+=x_num)
+	// {
+	// 	j=i+1u;
+	// 	k1=j*x_num+i;
+	// 	for (mtr1+=j; j!=x_num; ++j,++mtr1,k1+=x_num)
+	// 	{
+	// 		v=edge_counts[k+j]+edge_counts[k1];
+	// 		if (v==0u)
+	// 			*mtr1=0.0; // assign something
+	// 		else
+	// 		{
+	// 			// magic formula!
+	// 			val=matr[k1];
+	// 			std::cout << "i = " << i << " j = " << j << " ";
+	// 			std::cout << "k1 = " << k1 << " " << std::endl;
+	// 			std::cout << k << " " << edge_counts[k+j] << " " << edge_counts[k1] << std::endl;
+	// 			std::cout << *mtr1<< " " << val << std::endl;
+	// 			val=val+(*mtr1-val)*static_cast<double>(edge_counts[k+j])/static_cast<double>(v);
+	// 			val=(val<1.0e-15)? 1.0e-15 : val;
+	// 			min_val=(val<min_val)? val : min_val;
+	// 			*mtr1=val;
+	// 		}
+	// 	}
+	// }
+
+	for (i = 0; i < x_num; ++i) {
+		for (k = i; k < x_num; ++k) {
+			if (i == k) {
+				matr[i * x_num + k] = 0.0;
+				continue;
+			}
+			v = edge_counts[i * x_num + k] + edge_counts[k * x_num + i];
+			val = matr[i * x_num + k] * edge_counts[i * x_num + k];
+			val += matr[k * x_num + i] * edge_counts[k * x_num + i];
+			if (v != 0) {
+				val /= static_cast<double>(v);
+				min_val = (val < min_val)? val : min_val;
+			}
+			val = (val<1.0e-15)? 1.0e-15 : val;
+			matr[i * x_num + k] = val;
+			matr[k * x_num + i] = val;
+		}
+	}
+	min_val = (min_val < 1)? min_val : 1;
+	std::cout << "min_val = " << min_val << std::endl;
+	// for (i=0u,k=0u; i!=x_num; ++i,k+=x_num)
+	// {
+	// 	j=i+1u;
+	// 	k1=j*x_num+i;
+	// 	for (mtr1+=j; j!=x_num; ++j,++mtr1,k1+=x_num)
+	// 	{
+	// 		v=edge_counts[k+j]+edge_counts[k1];
+	// 		if (v==0u)
+	// 			*mtr1=0.0; // assign something
+	// 		else
+	// 		{
+	// 			// magic formula!
+	// 			val=matr[k1];
+	// 			val=val+(*mtr1-val)*static_cast<double>(edge_counts[k+j])/static_cast<double>(v);
+	// 			val=(val<1.0e-15)? 1.0e-15 : val;
+	// 			min_val=(val<min_val)? val : min_val;
+	// 			*mtr1=val;
+	// 		}
+	// 	}
+	// }
+	// mtr1 = matr;
+	
+	// for (int i = 0; i != x_num; ++i) {
+	// 	for (int j = 0; j != x_num; ++j) {
+	// 		std::cout << *mtr1 << " ";
+	// 		mtr1++;
+	// 	}
+	// 	std::cout << std::endl;
+	// }
+	// const unsigned int *edg = edge_counts;
+	// for (int i = 0; i != x_num; ++i) {
+	// 	for (int j = 0; j != x_num; ++j) {
+	// 		std::cout << *edg << " ";
+	// 		edg++;
+	// 	}
+	// 	std::cout << std::endl;
+	// }
+
+	// min_val=1.0/(min_val*min_val);
+
+	for (i = 0; i < x_num; ++i) {
+		for (j = i; j < x_num; ++j) {
+			if (i == j) {
+				std::cout <<i << " " << matr[i*x_num + j] << std::endl;
+			}
+			else {
+				std::cout << i << " " << j << " ";
+				std::cout << matr[i*x_num + j] << " " << matr[j*x_num + i] << std::endl;
 			}
 		}
 	}
-	min_val=1.0/(min_val*min_val);
-	mtr1=matr;
-	for (i=0u; i<x_num; ++i)
+
+	for (i = 0u; i < x_num; ++i)
 	{
-		j=i+1u;
-		for (mtr1+=j; j!=x_num; ++j,++mtr1)
+		for (j = i + 1; j != x_num; ++j,++mtr1)
 		{
-			// normalize and raise to the power of 2
-			val=*mtr1;
-			*mtr1=val*val*min_val;
+			v = edge_counts[i * x_num + k] + edge_counts[k * x_num + i];
+			// normalize 
+			if (v != 0) {
+				matr[i * x_num + j] /= min_val;
+				matr[j * x_num + i] /= min_val;
+			}
 		}
 	}
+
+	// for (i = 0; i < x_num; ++i) {
+	// 	for (j = i; j < x_num; ++j) {
+	// 		if (i == j) {
+	// 			std::cout <<i << " " << matr[i*x_num + j] << std::endl;
+	// 		}
+	// 		else {
+	// 			std::cout << i << " " << j << " ";
+	// 			std::cout << matr[i*x_num + j] << " " << matr[j*x_num + i] << std::endl;
+	// 		}
+	// 	}
+	// }
+
+
+	// for (i=0u; i<x_num; ++i)
+	// {
+	// 	j=i+1u;
+	// 	for (mtr1+=j; j!=x_num; ++j,++mtr1)
+	// 	{
+	// 		// normalize and raise to the power of 2
+	// 		val=*mtr1;
+	// 		*mtr1=val*val*min_val;
+	// 	}
+	// }
 
 	//! only the upper triangle of 'matr' is valid now!
 
@@ -1464,7 +1599,8 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 	if (zz==NULL) { free(yy); free(xx); return false; }
 
 	/* do gradient descent */
-	static const double eps=1.0e-100; // precision for distances and for the step
+	// static const double eps=1.0e-100; // precision for distances and for the step
+	static const double eps=1.0e-10; // precision for distances and for the step
 	static const double small_var=1.0e-6; // lower threshold of difference between
 										  // previous and current value of minimizing function
 	static const double dec_step=1.0/16.0,inc_step=1.5; // adjusting of the step
@@ -1504,46 +1640,46 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 	}
 	/* move all necessary values in 'matr' closer
 	   to the beginning to improve cache friendliness */
-	mtr=mtr1=matr; // first row is OK
-	edg_cnt=edge_counts;
-	for (i=0u; i!=x_num1; ++i)
-	{
-		j=i+1u;
-		mtr+=j;
-		edg_cnt+=j;
-		for ( ; j!=x_num; ++j,++mtr,++edg_cnt)
-		{
-			if (*edg_cnt!=0u)
-			{
-				*mtr1=*mtr;
-				++mtr1;
-			}
-		}
-	}
+	// mtr=mtr1=matr; // first row is OK
+	// edg_cnt=edge_counts;
+	// for (i=0u; i!=x_num1; ++i)
+	// {
+	// 	j=i+1u;
+	// 	mtr+=j;
+	// 	edg_cnt+=j;
+	// 	for ( ; j!=x_num; ++j,++mtr,++edg_cnt)
+	// 	{
+	// 		if (*edg_cnt!=0u)
+	// 		{
+	// 			*mtr1=*mtr;
+	// 			++mtr1;
+	// 		}
+	// 	}
+	// }
 
-	f=0.0;
-	mtr=matr;
-	edg_cnt=edge_counts;
-	for (i=0u,k=0u; i!=x_num1; ++i)
-	{
-		x_i=xx[i]; y_i=yy[i]; z_i=zz[i];
-		j=i+1u;
-		for (edg_cnt+=j; j!=x_num; ++j,++edg_cnt)
-		{
-			dx=x_i-xx[j]; dy=y_i-yy[j]; dz=z_i-zz[j];
-			val=dx*dx+dy*dy+dz*dz;
-			if (*edg_cnt==0u)
-				f+=((val<eps)? m_d_impact : ((val<1.0)? (m_d_impact/val) : 0.0));
-			else
-			{
-				val-=*mtr;
-				f+=(val*val);
-				++mtr;
-			}
-		}
-	}
-	f*=0.5;
-	f_prev=f;
+	// f=0.0;
+	// mtr=matr;
+	// edg_cnt=edge_counts;
+	// for (i=0u,k=0u; i!=x_num1; ++i)
+	// {
+	// 	x_i=xx[i]; y_i=yy[i]; z_i=zz[i];
+	// 	j=i+1u;
+	// 	for (edg_cnt+=j; j!=x_num; ++j,++edg_cnt)
+	// 	{
+	// 		dx=x_i-xx[j]; dy=y_i-yy[j]; dz=z_i-zz[j];
+	// 		val=dx*dx+dy*dy+dz*dz;
+	// 		if (*edg_cnt==0u)
+	// 			f+=((val<eps)? m_d_impact : ((val<1.0)? (m_d_impact/val) : 0.0));
+	// 		else
+	// 		{
+	// 			val-=*mtr;
+	// 			f+=(val*val);
+	// 			++mtr;
+	// 		}
+	// 	}
+	// }
+	// f*=0.5;
+	// f_prev=f;
 
 	QLabel l(this);
 	l.setFixedSize(200,50);
@@ -1551,122 +1687,201 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 	l.setAutoFillBackground(true);
 	l.show();
 
-	clock_t st1;
-	for (k=0u; k!=max_iter; ++k)
-	{
-		if ((k & 0x1f)==0u)
-		{
-			l.setText(QString("<div align=\"center\">iter %1 / %2</div><br><div align=\"left\">func: %3</div>").
-					  arg(k).arg(max_iter).arg(f,0,'g',12));
-			// immediate processing of all paint events and such
-			QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents,1);
-		}
-		st1=clock();
-		memset(gradx,0,x_num*sizeof(double));
-		memset(grady,0,x_num*sizeof(double));
-		memset(gradz,0,x_num*sizeof(double));
-		f=0.0;
-		t=-t; // temporary
-		mtr=matr;
-		edg_cnt=edge_counts;
-		for (i=0u; i<x_num1; ++i)
-		{
-			x_i=xx[i]; y_i=yy[i]; z_i=zz[i];
-			grx=gry=grz=0.0;
-			j=i+1u;
-			for (edg_cnt+=j; j<x_num; ++j,++edg_cnt)
-			{
-				dx=x_i-xx[j]; dy=y_i-yy[j]; dz=z_i-zz[j];
-				val=dx*dx+dy*dy+dz*dz;
-				if (*edg_cnt==0u)
-				{
-					if (!(val<1.0)) continue;
-					if (val<eps)
-					{
-						dx=dy=dz=-half_m_d_impact;
-					}
-					else
-					{
-						val=-m_d_impact/(val*val);
-						dx*=val; dy*=val; dz*=val;
-					}
-				}
-				else
-				{
-					(val-=*mtr)*=2.0;
-					++mtr;
-					dx*=val; dy*=val; dz*=val;
-				}
-				grx+=dx; gry+=dy; grz+=dz;
-				gradx[j]-=dx; grady[j]-=dy; gradz[j]-=dz;
-			}
-			gradx[i]+=grx; grady[i]+=gry; gradz[i]+=grz;
-		}
-		for (i=0u; i<x_num; ++i)
-		{
-			gradx[i]*=t;
-			xx[i]+=gradx[i];
-			grady[i]*=t;
-			yy[i]+=grady[i];
-			gradz[i]*=t;
-			zz[i]+=gradz[i];
-		}
-		mtr=matr;
-		edg_cnt=edge_counts;
-		for (i=0u; i<x_num1; ++i)
-		{
-			x_i=xx[i]; y_i=yy[i]; z_i=zz[i];
-			j=i+1u;
-			for (edg_cnt+=j; j<x_num; ++j,++edg_cnt)
-			{
-				dx=x_i-xx[j]; dy=y_i-yy[j]; dz=z_i-zz[j];
-				val=dx*dx+dy*dy+dz*dz;
-				if (*edg_cnt==0u)
-					f+=((val<eps)? m_d_impact : ((val<1.0)? (m_d_impact/val) : 0.0));
-				else
-				{
-					val-=*mtr;
-					f+=(val*val);
-					++mtr;
-				}
-			}
-		}
-		f*=0.5;
-		t=-t;
-		st1=clock()-st1;
-		printf("  %u: prev=%.12g cur=%.12g t=%g, %g мс\n",k,f_prev,f,t,
-				static_cast<double>(st1*1000u)/static_cast<double>(CLOCKS_PER_SEC));
-		if (f>f_prev)
-		{
-			if (f<f_prev+small_var) break;
-			for (i=0u; i!=x_num; ++i) // return old values
-		   	{
-		   		xx[i]-=gradx[i];
-				yy[i]-=grady[i];
-				zz[i]-=gradz[i];
-			}
-			t*=dec_step; // decrease the step
-			if (t<eps) break; // the step is too small
-		}
-		else
-		{
-			if (f_prev<f+small_var) break;
-			f_prev=f;
-			t*=inc_step; // increase the step
+	// clock_t st1;
+	// for (k=0u; k!=max_iter; ++k)
+	// {
+	// 	if ((k & 0x1f)==0u)
+	// 	{
+	// 		l.setText(QString("<div align=\"center\">iter %1 / %2</div><br><div align=\"left\">func: %3</div>").
+	// 				  arg(k).arg(max_iter).arg(f,0,'g',12));
+	// 		// immediate processing of all paint events and such
+	// 		QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents,1);
+	// 	}
+	// 	st1=clock();
+	// 	memset(gradx,0,x_num*sizeof(double));
+	// 	memset(grady,0,x_num*sizeof(double));
+	// 	memset(gradz,0,x_num*sizeof(double));
+	// 	f=0.0;
+	// 	t=-t; // temporary
+	// 	mtr=matr;
+	// 	edg_cnt=edge_counts;
+	// 	for (i=0u; i<x_num1; ++i)
+	// 	{
+	// 		x_i=xx[i]; y_i=yy[i]; z_i=zz[i];
+	// 		grx=gry=grz=0.0;
+	// 		j=i+1u;
+	// 		for (edg_cnt+=j; j<x_num; ++j,++edg_cnt)
+	// 		{
+	// 			dx=x_i-xx[j]; dy=y_i-yy[j]; dz=z_i-zz[j];
+	// 			val=dx*dx+dy*dy+dz*dz;
+	// 			if (*edg_cnt==0u)
+	// 			{
+	// 				if (!(val<1.0)) continue;
+	// 				if (val<eps)
+	// 				{
+	// 					dx=dy=dz=-half_m_d_impact;
+	// 				}
+	// 				else
+	// 				{
+	// 					val=-m_d_impact/(val*val);
+	// 					dx*=val; dy*=val; dz*=val;
+	// 				}
+	// 			}
+	// 			else
+	// 			{
+	// 				(val-=*mtr)*=2.0;
+	// 				++mtr;
+	// 				dx*=val; dy*=val; dz*=val;
+	// 			}
+	// 			grx+=dx; gry+=dy; grz+=dz;
+	// 			gradx[j]-=dx; grady[j]-=dy; gradz[j]-=dz;
+	// 		}
+	// 		gradx[i]+=grx; grady[i]+=gry; gradz[i]+=grz;
+	// 	}
+	// 	for (i=0u; i<x_num; ++i)
+	// 	{
+	// 		gradx[i]*=t;
+	// 		xx[i]+=gradx[i];
+	// 		grady[i]*=t;
+	// 		yy[i]+=grady[i];
+	// 		gradz[i]*=t;
+	// 		zz[i]+=gradz[i];
+	// 	}
+	// 	mtr=matr;
+	// 	edg_cnt=edge_counts;
+	// 	for (i=0u; i<x_num1; ++i)
+	// 	{
+	// 		x_i=xx[i]; y_i=yy[i]; z_i=zz[i];
+	// 		j=i+1u;
+	// 		for (edg_cnt+=j; j<x_num; ++j,++edg_cnt)
+	// 		{
+	// 			dx=x_i-xx[j]; dy=y_i-yy[j]; dz=z_i-zz[j];
+	// 			val=dx*dx+dy*dy+dz*dz;
+	// 			if (*edg_cnt==0u)
+	// 				f+=((val<eps)? m_d_impact : ((val<1.0)? (m_d_impact/val) : 0.0));
+	// 			else
+	// 			{
+	// 				val-=*mtr;
+	// 				f+=(val*val);
+	// 				++mtr;
+	// 			}
+	// 		}
+	// 	}
+	// 	f*=0.5;
+	// 	t=-t;
+	// 	st1=clock()-st1;
+	// 	printf("  %u: prev=%.12g cur=%.12g t=%g, %g мс\n",k,f_prev,f,t,
+	// 			static_cast<double>(st1*1000u)/static_cast<double>(CLOCKS_PER_SEC));
+	// 	if (f>f_prev)
+	// 	{
+	// 		if (f<f_prev+small_var) break;
+	// 		for (i=0u; i!=x_num; ++i) // return old values
+	// 	   	{
+	// 	   		xx[i]-=gradx[i];
+	// 			yy[i]-=grady[i];
+	// 			zz[i]-=gradz[i];
+	// 		}
+	// 		t*=dec_step; // decrease the step
+	// 		if (t<eps) break; // the step is too small
+	// 	}
+	// 	else
+	// 	{
+	// 		if (f_prev<f+small_var) break;
+	// 		f_prev=f;
+	// 		t*=inc_step; // increase the step
+	// 	}
+	// }
+	// f=(f>f_prev)? f_prev : f;
+	// free(gradz);
+	// free(grady);
+	// free(gradx);
+
+	double stress = 0.0, new_stress = 0.0, d_ij;
+	std::cout << "****" << std::endl;
+	for (int i = 0; i < x_num; ++i) {
+		for (int j = i + 1; j < x_num; ++j) {
+			// std::cout << "QQ" << std::endl;
+			val = dist(xx, yy, zz, i, j);
+			d_ij = matr[i * x_num + j];
+			// std::cout << "val = " << val << " d_ij = " << d_ij << std::endl;
+			stress += (val - d_ij) * (val - d_ij);
+			// std::cout << "STRESS = " << stress << std::endl;
 		}
 	}
-	f=(f>f_prev)? f_prev : f;
-	free(gradz);
-	free(grady);
-	free(gradx);
+	std::cout << "stress = " << stress << std::endl;
+	// std::cout << "stress = " << stress_fun(xx, yy, zz, matr, x_num) << std::endl;
+	double prev_part_i, cur_part_i;
+	bool stop = false;
+
+	for (i = 0; i < x_num; ++i) {
+		for (j = i; j < x_num; ++j) {
+			if (i == j) {
+				std::cout <<i << " " << matr[i*x_num + j] << std::endl;
+			}
+			else {
+				std::cout << i << " " << j << " ";
+				std::cout << matr[i*x_num + j] << " " << matr[j*x_num + i] << std::endl;
+			}
+		}
+	}
+	// for (i = 0; i < x_num; ++i) {
+	// 	for (j = i; j < x_num; ++j) {
+	// 		if (i == j) {
+	// 			std::cout <<i << " " << edge_counts[i*x_num + j] << std::endl;
+	// 		}
+	// 		else {
+	// 			std::cout << i << " " << j << " ";
+	// 			std::cout << edge_counts[i*x_num + j] << " " << edge_counts[j*x_num + i] << std::endl;
+	// 		}
+	// 	}
+	// }
+	std::cout << "stress = " << stress << std::endl;
+	for (int k = 0; k != max_iter; ++k) {
+		// std::cout << "k = " << k << std::endl;
+		for (int i = 0; i < x_num; ++i) {
+			double new_x = 0.0, new_y = 0.0, new_z = 0.0;
+			prev_part_i = stress_part_i(xx, yy, zz, matr, x_num, i);
+			for (int j = 0; j < x_num; ++j) {
+				if (i == j) {
+					continue;
+				}
+				double cur_dist = dist(xx, yy, zz, i, j);
+				double inv = 0.0;
+				if (cur_dist != 0.0) {
+					inv = 1 / cur_dist;
+				}
+				double d_ij = matr[i * x_num + j];
+				new_x += xx[j] + d_ij * (xx[i] - xx[j]) * inv;
+				new_y += yy[j] + d_ij * (yy[i] - yy[j]) * inv;
+				new_z += zz[j] + d_ij * (zz[i] - zz[j]) * inv;
+			}
+			xx[i] = new_x / (x_num - 1);
+			yy[i] = new_y / (x_num - 1);
+			zz[i] = new_z / (x_num - 1);
+			cur_part_i = stress_part_i(xx, yy, zz, matr, x_num, i);
+			// std::cout << prev_part_i << " " << cur_part_i << std::endl;
+			new_stress = stress - prev_part_i + cur_part_i;
+			// std::cout << "new_stress = " << new_stress << std::endl;
+			// std::cout << (stress - new_stress) / stress << std::endl;
+			if ((stress - new_stress) / stress < eps) {
+				stop = true;
+				break;
+			}
+			stress = new_stress;
+			// std::cout << "stress = " << stress << std::endl;
+		}
+		if (stop) {
+			break;
+		}
+	}
 
 	l.hide();
 
-	st=clock()-st;
+	// st=clock()-st;
 
-	printf("\nReached optimum: %.12g\n\n",f);
+	// printf("\nReached optimum: %.12g\n\n",f);
 
-	printf("\nEND BUILD GRAPH: %g мс\n\n",static_cast<double>(st*1000u)/static_cast<double>(CLOCKS_PER_SEC));
+	// printf("\nEND BUILD GRAPH: %g мс\n\n",static_cast<double>(st*1000u)/static_cast<double>(CLOCKS_PER_SEC));
 
 	/* count errors */
 	unsigned int edg_num=0u; // number of all edges
