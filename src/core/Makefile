@@ -41,7 +41,7 @@ FILES_COMMON=\
 	data_write_operations.o
 
 
-EXECS= libparus_network.a
+EXECS = libparus_network.a
 
 all: $(EXECS)
 #	$(CCLINKER) -shared $(FILES) $(LIB_FLAGS)

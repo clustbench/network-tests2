@@ -11,15 +11,13 @@
 
 #include "clustbench_types.h"
 
-clustbench_time_t clustbench_get_time(void);
-
-clustbench_time_t clustbench_get_time(void);
+clustbench_time_t clustbench_get_time(void)
 {
  return MPI_Wtime();
 }
 
 /*
- * Please use this function in place MPI_Wtime or similar if
+ * Please use this function instead of MPI_Wtime or similar if
  * implementation of the MPI_Wtime works incorrect.
  */
 double MYMPI_Wtime()

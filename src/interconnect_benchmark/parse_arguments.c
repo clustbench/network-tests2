@@ -9,9 +9,11 @@
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
+#include <errno.h>
 
 #include "clustbench_types.h"
 #include "clustbench_config.h"
+#include "clustbench_plugin_operations.h"
 #include "parse_arguments.h"
 
 #define MESSAGE_BEGIN_LENGTH 0
@@ -21,8 +23,27 @@
 
 #define BENCHMARK_DIR CLUSTBENCH_BENCHMARKS_DIR "/interconnect"
 
-const char default_file_name_prefix[512];
+static char default_file_name_prefix[512];
 
+
+int print_benchmark_help_message (clustbench_benchmark_parameters_t *parameters) 
+{
+    clustbench_benchmark_pointers_t pointers;
+
+    if(clustbench_open_benchmark(parameters->path_to_benchmark_code_dir, parameters->benchmark_name,&pointers))
+    {
+        fprintf(stderr,"print_individual_benchmark_parameters: can't get pointers for '%s'\n",
+                parameters->benchmark_name);
+        return 1;
+    }
+    
+    int ret = pointers.print_help(parameters);
+    
+    clustbench_close_benchmark_lib(&pointers);
+    
+    return ret;
+}
+    
 
 int print_network_test_help_message(clustbench_benchmark_parameters_t *parameters)
 {
@@ -38,11 +59,11 @@ int print_network_test_help_message(clustbench_benchmark_parameters_t *parameter
            "\t\t\t[{ -e | --end } <message_length> ]\n"
            "\t\t\t[{ -s | --step } <step> ]\n"
            "\t\t\t[{ -n | --num-iterations } <number of iterations> ]\n"
-           "\t\t\t[{ -d | --dump } <list of types of statistics>]"
+           "\t\t\t[{ -d | --dump } <list of types of statistics>]\n"
            "\t\t\t[{ -l | --list-benchmarks}]\n"
            "\t\t\t[{ -p | --path-to-benchmark} <path> ]\n"
            "\t\t\t[{ -h | --help } [<benchmark_name>]]\n"
-           "\t\t\t[{ -v | --version }]\n","network_test2");
+           "\t\t\t[{ -v | --version }]\n","interconnect_benchmark");
 #else
 
     printf("\nCommand line format for this program is:\n"
@@ -52,13 +73,13 @@ int print_network_test_help_message(clustbench_benchmark_parameters_t *parameter
            "\t\t\t[ -e <message_length> ]\n"
            "\t\t\t[ -s <step> ]\n"
            "\t\t\t[ -n <number of iterations> ]\n"
-           "\t\t\t[ -d <list of types of statistics> ]"
+           "\t\t\t[ -d <list of types of statistics> ]\n"
            "\t\t\t[ -l ] - print list of benchmarks\n"
            "\t\t\t[ -p  <path_to_benchmark> ]\n"
            "\t\t\t[ -h [<benchmark_name>] ]  - print help to program or help to benchmark\n"
-           "\t\t\t[ -v ] - print version\n","network_test2");
+           "\t\t\t[ -v ] - print version\n","interconnect_benchmark");
 #endif
-    printf("\n\nValues of parametrs:\n"
+    /*printf("\n\nValues of parametrs:\n"
            "file\t\t - default  prefix for files with test results is %s/network\n", CLUSTBENCH_DATA_DIR);
     printf("type\t\t - by this parametr user sets benchmark that will be run\n"
            "\t\t\ton multiprocessor system.\n"
@@ -79,7 +100,7 @@ int print_network_test_help_message(clustbench_benchmark_parameters_t *parameter
     printf("\n"
            "help\t\t - this text or help text for benchmark\n"
            "version\t\t - types clustbench version\n\n\n"
-           "clustbench version: %s\n\n\n",CLUSTBENCH_VERSION);
+           "clustbench version: %s\n\n\n",CLUSTBENCH_VERSION);*/
 
     return 0;
 }
@@ -99,7 +120,8 @@ int parse_network_test_arguments(clustbench_benchmark_parameters_t *parameters,
     /*
      * We set default file_name prefix to format delays-TZ-YYYY-MM-DD
      */
-    time_dump = local_time(time(NULL));
+    time_t tmp_time = time(NULL);
+    time_dump = localtime(&tmp_time);
     strcpy(default_file_name_prefix,"delays-");
     len = strlen("delays-");
     strftime(default_file_name_prefix+len,512-len,"%Z-%Y-%m-%d",time_dump);
@@ -113,8 +135,10 @@ int parse_network_test_arguments(clustbench_benchmark_parameters_t *parameters,
     parameters->file_name_prefix           =  default_file_name_prefix;
     parameters->path_to_benchmark_code_dir =  BENCHMARK_DIR;
     parameters->benchmark_parameters       =  NULL;
-    parameters->statistics_save            =  CLUSTBENCH_MIN     | CLUSTBENCH_DISPERSION | 
-                                              CLUSTBENCH_AVERAGE | CLUSTBENCH_MEDIAN;
+    parameters->statistics_save            =  CLUSTBENCH_MIN     | 
+                                              CLUSTBENCH_DEVIATION | 
+                                              CLUSTBENCH_AVERAGE | 
+                                              CLUSTBENCH_MEDIAN;
 
 #ifdef _GNU_SOURCE
 
@@ -135,13 +159,17 @@ int parse_network_test_arguments(clustbench_benchmark_parameters_t *parameters,
     };
 #endif
 
+    int individual_options_flag = 0;
+    opterr = 0;
+
     for ( ; ; )
     {
+        if (individual_options_flag == 1) break;
 #ifdef _GNU_SOURCE
-        arg_val = getopt_long(argc,argv,"t:f:n:b:e:s:l:p:h:v",options,NULL);
+        arg_val = getopt_long(argc,argv,"t:f:n:b:e:s:d:lp:h:v",options,NULL);
 #else
 
-        arg_val = getopt(argc,argv,"t:f:n:b:e:s:l:p:h:v");
+        arg_val = getopt(argc,argv,"t:f:n:b:e:s:d:lp:h:v");
 #endif
 
         if(arg_val == -1)
@@ -156,7 +184,7 @@ int parse_network_test_arguments(clustbench_benchmark_parameters_t *parameters,
             {
                 if(!mpi_rank)
                 {
-                    printf(stderr,"parse_parameters: Parse parameter with name 'begin' failed: '%s'",
+                    fprintf(stderr,"parse_parameters: Parse parameter with name 'begin' failed: '%s'",
                         strerror(errno));
                 }
                 return ERROR_FLAG;
@@ -168,7 +196,7 @@ int parse_network_test_arguments(clustbench_benchmark_parameters_t *parameters,
             {
                 if(!mpi_rank)
                 {
-                    printf(stderr,"parse_parameters: Parse parameter with name 'end' failed: '%s'",
+                    fprintf(stderr,"parse_parameters: Parse parameter with name 'end' failed: '%s'",
                         strerror(errno));
                 }
                 return ERROR_FLAG;
@@ -180,7 +208,7 @@ int parse_network_test_arguments(clustbench_benchmark_parameters_t *parameters,
             {
                 if(!mpi_rank)
                 {
-                    printf(stderr,"parse_parameters: Parse parameter with name 'step' failed: '%s'",
+                    fprintf(stderr,"parse_parameters: Parse parameter with name 'step' failed: '%s'",
                         strerror(errno));
                 }
                 return ERROR_FLAG;
@@ -192,7 +220,7 @@ int parse_network_test_arguments(clustbench_benchmark_parameters_t *parameters,
             {
                 if(!mpi_rank)
                 {
-                    printf(stderr,"parse_parameters: Parse parameter with name 'num repeats' failed: '%s'",
+                    fprintf(stderr,"parse_parameters: Parse parameter with name 'num repeats' failed: '%s'",
                         strerror(errno));
                 }
                 return ERROR_FLAG;
@@ -209,10 +237,10 @@ int parse_network_test_arguments(clustbench_benchmark_parameters_t *parameters,
             break;
         case 'd':
             {
-                char *tmp
+                parameters->statistics_save = 0;
+                char *tmp;
                 for(tmp = optarg; *tmp != '\0'; ++tmp)
                 {
-                    parameters->statistics_save=0;
                     if(*tmp == 'l') /* min */
                     {
                         parameters->statistics_save |= CLUSTBENCH_MIN;
@@ -241,7 +269,7 @@ int parse_network_test_arguments(clustbench_benchmark_parameters_t *parameters,
                     
                     if(!mpi_rank)
                     {
-                        fprtintf(stderr,"for option statistics_save - unknown type of statistics '%c'\n",*tmp);
+                        fprintf(stderr,"for option statistics_save - unknown type of statistics '%c'\n",*tmp);
                     }
                     return ERROR_FLAG;
                 }
@@ -258,15 +286,6 @@ int parse_network_test_arguments(clustbench_benchmark_parameters_t *parameters,
             return  VERSION_FLAG;
             break;
         case ':':
-            if(optopt == 'h')
-            {
-                if(!mpi_rank)
-                {
-                    print_network_test_help_message(NULL);
-                }
-                return HELP_FLAG;
-            }
-            
             if(!mpi_rank)
             {
                 fprintf(stderr, "option -%c is missing a required argument.\n\n"
@@ -276,29 +295,46 @@ int parse_network_test_arguments(clustbench_benchmark_parameters_t *parameters,
             break;
         case 'h':
             parameters->benchmark_name = optarg;
-                return_flag = HELP_FLAG;
+            return_flag = HELP_FLAG;
             break;
         case '?':
-            if(!mpi_rank)
+            if(optopt == 'h')
             {
-                print_network_test_help_message(NULL);
+                if(!mpi_rank)
+                {
+                    print_network_test_help_message(NULL);
+                }
+                return HELP_FLAG;
+            } else {
+                individual_options_flag = 1;
             }
-            return ERROR_FLAG;
             break;
         }        
     } /* end for */
-
-    if(parse_individual_benchmark_parameters(parameters,argc-optind,argv+optind,mpi_rank))
+    
+    if(return_flag == HELP_FLAG)
     {
-        return ERROR_FLAG;
-    }
-
-    if((mpi_rank == 0) && (return_flag == HELP_FLAG))
-    {
-        if(print_network_test_help_message(parameters))
+        if(mpi_rank == 0 && print_network_test_help_message(parameters))
         {
             return ERROR_FLAG;
         }
+        return return_flag;
+    }
+
+    int tmp_optind = optind;
+    optind = 0;
+    int res = parse_individual_benchmark_parameters(parameters, 
+        (argc - tmp_optind == 0) ? 0 : argc - tmp_optind + 2, 
+        argv + (tmp_optind - 2),
+        mpi_rank);
+    if (res != 0) 
+    {
+        if (res == UNKNOWN_FLAG)
+        {
+            printf("Unknown option found.\n");
+            print_network_test_help_message(parameters);
+        }
+        return ERROR_FLAG;
     }
 
     return return_flag;
@@ -306,7 +342,13 @@ int parse_network_test_arguments(clustbench_benchmark_parameters_t *parameters,
 
 int print_network_test_parameters(clustbench_benchmark_parameters_t *parameters)
 {
-    printf("Benchmark common parameters:");
+    /*if (parameters == NULL) 
+    {
+        printf("Parameters not specified\n");
+        return 1;
+    }*/
+    
+    printf("Benchmark common parameters:\n");
     printf("\tbenchmark name = \"%s\"\n", parameters->benchmark_name);
     printf("\tpath to benchmark directory = \"%s\"\n\n",parameters->path_to_benchmark_code_dir);
     printf("\tnumber proceses = %d\n", parameters->num_procs);
@@ -330,9 +372,9 @@ int print_network_test_parameters(clustbench_benchmark_parameters_t *parameters)
         printf("\tresult file median = \t\t\"%s_median.nc\"\n",parameters->file_name_prefix);
     }
     
-    if(parameters->statistics_save & CLUSTBENCH_DIVIATION)
+    if(parameters->statistics_save & CLUSTBENCH_DEVIATION)
     {
-        printf("\tresult file deviation = \t\t\"%s_deviation.nc\"\n",parameters->file_name_prefix);
+        printf("\tresult file deviation = \t\"%s_deviation.nc\"\n",parameters->file_name_prefix);
     }
     printf("\tresult file hosts\t\t\"%s_hosts.txt\"\n\n",parameters->file_name_prefix);
 
@@ -356,9 +398,9 @@ int print_individual_benchmark_parameters(clustbench_benchmark_parameters_t *par
         return 1;
     }
 
-    ret=pointers->print_parameters(parameters);
+    ret = pointers.print_parameters(parameters);
 
-    clustbench_close_benchmark_lib(pointers); 
+    clustbench_close_benchmark_lib(&pointers); 
    
     return ret;
 }
@@ -367,7 +409,7 @@ int parse_individual_benchmark_parameters(clustbench_benchmark_parameters_t *par
                                           int argc, char **argv,int mpi_rank)
 {
     
-    int ret=0;
+    int ret = 0;
 
     clustbench_benchmark_pointers_t pointers;
 
@@ -380,13 +422,12 @@ int parse_individual_benchmark_parameters(clustbench_benchmark_parameters_t *par
         return 1;
     }
 
-    if((argc==0) || (argv == NULL) )
+    if((argc == 0) || (argv == NULL) )
     {
         if(!mpi_rank)
         {
-            printf("No individula parameters for benchmark '%s'\n",parameters->benchmark_name);
+            printf("No individual parameters for benchmark '%s'\n",parameters->benchmark_name);
         }
-        return 0;
     }
 
     if(clustbench_open_benchmark(parameters->path_to_benchmark_code_dir, parameters->benchmark_name,&pointers))
@@ -396,8 +437,8 @@ int parse_individual_benchmark_parameters(clustbench_benchmark_parameters_t *par
         return 1;
     }
 
-    ret=pointers->parse_parameters(parameters,argc,argv,mpi_rank);
-    clustbench_close_benchmark_lib(pointers);         
+    ret = pointers.parse_parameters(parameters,argc,argv,mpi_rank);
+    clustbench_close_benchmark_lib(&pointers);         
    
     return ret;
 }
