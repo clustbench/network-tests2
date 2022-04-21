@@ -26,7 +26,12 @@ AX_ARG_ENABLE([qt-gui], [" network_viewer_qt_v2 "], [""], [
 ])
 
 # Explicitly enables build for network_test component.
-AX_ARG_ENABLE([network-test], [" network_test "], [" network_test "], [
+#AX_ARG_ENABLE([network-test], [" network_test "], [" network_test "], [
+#	Enable testing (enabled by default)
+#])
+
+#Explicitly enables build for network_test component.
+AX_ARG_ENABLE([interconnect_benchmark], [" interconnect_benchmark "], [" interconnect_benchmark "], [
 	Enable testing (enabled by default)
 ])
 
@@ -38,7 +43,7 @@ AX_ARG_ENABLE([clustering], [" clustering "], [""], [
 # Enables build for all components of the project.
 AC_ARG_ENABLE([all], [AS_HELP_STRING([--enable-all], [Enable all modules])], [
 	AS_CASE(["${enableval}"],
-		[yes], [AC_SUBST([GOALS], ["network_test network_viewer_qt_v2 clustering"])],
+		[yes], [AC_SUBST([GOALS], ["interconnect_benchmark network_viewer_qt_v2 clustering"])],
 		[no],  [],
 		[AC_MSG_ERROR([Bad value ${enableval} for --enable-all])]
 	)
@@ -92,7 +97,7 @@ do
 			# TODO: Add checks for libraries.
 			# -lqwt-qt4 -lGLU -lQtOpenGL -lQtGui -lQtCore -lGL -lpthread
 		],
-		[*"network_test"*], [
+		[*"interconnect_benchmark"*], [
 			# Checks for tools and libraries required by network_test
 			AX_CHECK_LIB([netcdf], [nc_open nc_get_var_int nc_get_vara_double \
 				nc_inq_dimid nc_inq_dimlen nc_inq_varid
