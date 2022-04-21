@@ -204,7 +204,7 @@ void CntrlrDeviation::GetColRaster (const int col, MatrixRaster* &res1, MatrixRa
 	catch (...) { res2=NULL; free(add_matr2); delete res1; res1=NULL; }
 }
 
-void CntrlrDeviation::GetPairRaster (const int row, const int col, double* &x_points, double* &y_points, 
+void CntrlrDeviation::GetPairRaster (const int row, const int col, double* &x_points, double* &y_points,
 									 double* &y_points_aux, unsigned int &num_points) const {
 	const int step=this->source->GetStepLength();
 	const int offset=row*this->source->GetNumProcessors()+col;

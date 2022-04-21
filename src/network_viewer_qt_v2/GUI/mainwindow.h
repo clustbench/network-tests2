@@ -44,13 +44,13 @@ class MainWindow: public QMainWindow {
 		  ui=NULL;
 		  app_tr=qt_tr=NULL;
 	  }
-	  
+	
 	  // must be called once after constructor
 	  void Init (void);
-	  
+	
 	  // destructor
 	  ~MainWindow ();
-	  
+	
 	  // prints user message 'msg' to 'ui->TE_Log';
 	  // 'msg' is allowed to be in rich text format;
 	  // 'sign' - short string describing the sender of 'msg'; 'sign' will be shown in square brackets
@@ -69,14 +69,14 @@ class MainWindow: public QMainWindow {
 
   private slots:
 	  void ShowAbout (void);
-	  
+	
 	  void CloseTab (const int);
-	  
+	
 	  void Load (void);
-	  
+	
 	  void ToggleWidgetsIn_2D_3D (const int);
 	  void ToggleLog (const bool);
-	  
+	
 	  void SwitchLanguageToEng (const bool);
 	  void SwitchLanguageToRus (const bool);
 };

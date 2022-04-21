@@ -19,7 +19,7 @@ QString ErrMsgs::err_msgs[NV::LastCode]; // see declaration in 'err_msgs.h'
 void MainWindow::Init (void) {
 	setAttribute(Qt::WA_QuitOnClose,true);
 
-/*	QTextCodec::setCodecForTr(QTextCodec::codecForName(
+	QTextCodec::setCodecForLocale(QTextCodec::codecForName(
 #ifdef Q_WS_WIN
 	"Windows-1251"
 #else
@@ -192,7 +192,7 @@ void MainWindow::Load (void) {
 		else file=NULL;
 		if (file==NULL)
 		{
-			/* insert spaces into 'data_fname' and 'hosts_fname' 
+			/* insert spaces into 'data_fname' and 'hosts_fname'
 			   to split long file names in message box */
 			QString data_fn(data_fname);
 			if (data_fname.indexOf('/')>=0)
@@ -243,7 +243,7 @@ void MainWindow::Load (void) {
 				data_file1=new Data_Text(data_fname,err);
 		}
 		catch (...) {
-			// Hmmm, there is not enough memory, but we want to show a message, 
+			// Hmmm, there is not enough memory, but we want to show a message,
 			// that is to allocate memory! So we have to hope that everything will be OK:)
 			AddMsgToLog(Error,"2D",ErrMsgs::ToString(NV::NoMem));
 			return;
@@ -338,7 +338,7 @@ void MainWindow::Load (void) {
 }
 
 void MainWindow::ToggleLog (const bool show) {
-	ui->dockWidget->setVisible(show && ((ui->tabWidget->currentIndex()==0) || 
+	ui->dockWidget->setVisible(show && ((ui->tabWidget->currentIndex()==0) ||
 										(dynamic_cast<TabViewer*>(ui->tabWidget->currentWidget())!=NULL)));
 }
 

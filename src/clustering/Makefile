@@ -19,10 +19,10 @@ $(EXTERN_OBJS):
 
 
 %.o: %.cpp
-	$(CCC) $(CCC_FLAGS) $(CCC_INCLUDE) $(NETCDF_INCLUDE) -c -o $@  $^
+	$(CXX) $(CXX_FLAGS) $(CXX_INCLUDE) $(NETCDF_INCLUDE) -c -o $@  $^
  	
 $(EXECS): $(OBJS) $(EXTERN_OBJS)
-	$(CCLINKER) $(CCLINKER_FLAGS) -o $@ $^ $(NETCDF_LIBS)
+	$(CXXLINKER) $(CXXLINKER_FLAGS) -o $@ $^ $(NETCDF_LIBS)
 	
 install: $(EXECS)
 	cp -rf $^ $(INSTALL_DIR)/bin

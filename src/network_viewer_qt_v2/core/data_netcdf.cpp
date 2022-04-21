@@ -2,6 +2,8 @@
 #include <netcdf.h>
 #include "data_text.h"
 
+#include <iostream>
+
 Data_NetCDF::Data_NetCDF (const QString &f_name, const QString &hosts_fname, NV::ErrCode &err) {
 	this->source_fname=f_name;
 	data_var=-1;
@@ -17,10 +19,10 @@ Data_NetCDF::Data_NetCDF (const QString &f_name, const QString &hosts_fname, NV:
 	int id;
 	int tmp_str;
 
-	if ((nc_inq_varid(source_file,"test_type",&id)==NC_NOERR) && 
+	if ((nc_inq_varid(source_file,"test_type",&id)==NC_NOERR) &&
 		(nc_get_var1_int(source_file,id,NULL,&tmp_str)==NC_NOERR))
 		this->test_type.setNum(tmp_str);
-	if ((nc_inq_varid(source_file,"data_type",&id)==NC_NOERR) && 
+	if ((nc_inq_varid(source_file,"data_type",&id)==NC_NOERR) &&
 		(nc_get_var1_int(source_file,id,NULL,&tmp_str)==NC_NOERR))
 		this->data_type.setNum(tmp_str);
 	
@@ -151,7 +153,7 @@ NV::ErrCode Data_NetCDF::GetDataAndMove (double *buf) {
 
 NV::ErrCode Data_NetCDF::GetSingleValue (const int mes_len, const int row, const int col, double &v)
 {
-	const size_t st[]={(this->step_length<1)? 0u : 
+	const size_t st[]={(this->step_length<1)? 0u :
 					   static_cast<size_t>((mes_len-this->begin_message_length)/this->step_length),
 					   static_cast<size_t>(row),static_cast<size_t>(col)};
 	const size_t cnt[]={1u,1u,1u};

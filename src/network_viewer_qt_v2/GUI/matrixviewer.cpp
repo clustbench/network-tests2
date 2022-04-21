@@ -2,13 +2,17 @@
 #include <QFileDialog>
 #include <QDebug>
 #include <cfloat>
-#include <qwt_picker_machine.h>
+#include <QTextCodec>
+#include <QLibraryInfo>
+#include <QCoreApplication>
+#include <QTranslator>
+#include <QMessageBox>
 
 void MatrixViewer::Init (const QString &title, MatrixRaster* data[2]) {
 	try {
 #if QT_VERSION > 0x040500
         ui=new Ui_MatrixViewer;
-#else        
+#else
 		ui=new Ui::ui_MatrixViewer;
 #endif
 	}
@@ -41,28 +45,28 @@ void MatrixViewer::Init (const QString &title, MatrixRaster* data[2]) {
 	QwtColorMap *c_map=_cntrl->AllocMainCMap(0.0,1.0);
 
 	QwtPlotSpectrogram *dt=new QwtPlotSpectrogram;
-    dt->setData(data[0]);
+	dt->setData(data[0]);
 	dt->attach(ui->Plot);
-    dt->setColorMap(c_map);
+	dt->setColorMap(c_map);
 	_cntrl->FreeMainCMap(c_map);
     _data[0]=dt;
 	dt->show();
 
-    const QwtInterval tmp_range=_data[0]->data()->interval(Qt::XAxis);
-    ui->S_Left->setScale(tmp_range.minValue(),tmp_range.maxValue());
-    ui->S_Left->setValue(ui->S_Left->lowerBound());
-    ui->S_Right->setScale(ui->S_Left->lowerBound(),ui->S_Left->upperBound());
-    ui->S_Right->setValue(ui->S_Right->upperBound());
+	// const QwtInterval tmp_range=_data[0]->data()->interval();
+	// ui->S_Left->setRange(tmp_range.minValue(),tmp_range.maxValue());
+	// ui->S_Left->setValue(ui->S_Left->minValue());
+	// ui->S_Right->setRange(ui->S_Left->minValue(),ui->S_Left->maxValue());
+	// ui->S_Right->setValue(ui->S_Right->maxValue());
 
 	if (data[1]!=NULL)
 	{
 		// then _cntrl->AllocAuxCMap()!=NULL too
 
 		dt=new QwtPlotSpectrogram;
-        dt->setData(data[1]);
+		dt->setData(data[1]);
 		dt->attach(ui->Plot);
 		c_map=_cntrl->AllocAuxCMap();
-        dt->setColorMap(c_map);
+		dt->setColorMap(c_map);
 		_cntrl->FreeAuxCMap(c_map);
 		_data[1]=dt;
 		dt->show();
@@ -79,7 +83,7 @@ void MatrixViewer::Init (const QString &title, MatrixRaster* data[2]) {
 	const double data_y[]={0.0,1.0,0.5,0.5,0.5};
 	cursor=new QwtPlotCurve;
 	cursor->setPen(pen);
-    cursor->setSamples(data_x,data_y,5);
+	cursor->setRawSamples(data_x,data_y,5);
 	cursor->attach(ui->Plot);
 	cursor->show();
 
@@ -89,8 +93,7 @@ void MatrixViewer::Init (const QString &title, MatrixRaster* data[2]) {
 	selection_rect->attach(ui->Plot);
 
 	zoomer=new QwtPlotPicker(ui->Plot->canvas());
-    QwtPickerDragRectMachine *machine = new QwtPickerDragRectMachine();
-    zoomer->setStateMachine(machine);
+	// zoomer->setSelectionFlags(QwtPicker::RectSelection | QwtPicker::CornerToCorner | QwtPicker::DragSelection);
 	zoomer->setRubberBand(QwtPicker::RectRubberBand);
 	zoomer->setRubberBandPen(QPen(pen.color(),1,Qt::DashLine));
 	zoomer->setEnabled(true);
@@ -115,9 +118,13 @@ void MatrixViewer::Init (const QString &title, MatrixRaster* data[2]) {
 
     connect(ui->pic_save,SIGNAL(clicked()),this,SLOT(SaveImage()));
 
+    connect(ui->RB_normalizeLocal, SIGNAL(toggled(bool)), this, SLOT(LocalNormalization(bool)));
+    connect(ui->RB_normalizeCurrWindow, SIGNAL(toggled(bool)), this, SLOT(WindowNormalization(bool)));
+
 	ShowInfo();
 
 	DrawSelectionRect();
+		ui->retranslateUi(this);
 }
 
 void MatrixViewer::SetLength (const QPoint &len) {
@@ -175,13 +182,13 @@ void MatrixViewer::ShowInfo () {
 }
 
 void MatrixViewer::SetAim () {
-	const double x=ui->SB_xFrom->value()+0.5-static_cast<const double>(_p_from.x());
-	const double y=ui->SB_yFrom->value()+0.5-static_cast<const double>(_p_from.y());
+	double x=ui->SB_xFrom->value()+0.5-static_cast<double>(_p_from.x());
+	double y=ui->SB_yFrom->value()+0.5-static_cast<double>(_p_from.y());
 	const double data_x[]={x,x,x,x-0.5,x+0.5};
 	const double data_y[]={y-0.5,y+0.5,y,y,y};
 
 	cursor->show();
-    cursor->setSamples(data_x,data_y,5);
+	cursor->setRawSamples(data_x,data_y,5);
 	ui->Plot->replot();
 }
 
@@ -202,9 +209,9 @@ void MatrixViewer::DrawSelectionRect () {
 
 	ui->B_zoom->setDisabled(same_val_x && same_val_y);
 
-    const MatrixRaster *da=static_cast<const MatrixRaster*>(_data[0]->data());
-    ui->LE_valFrom->setText(QString::number(da->value(val1_x-0.5,val1_y-0.5)));
-    ui->LE_valTo->setText(QString::number(da->value(val2_x-0.5,val2_y-0.5)));
+	const MatrixRaster *da=static_cast<const MatrixRaster*>(_data[0]->data());
+	ui->LE_valFrom->setText(QString::number(da->value(val1_x-0.5,val1_y-0.5)));
+	ui->LE_valTo->setText(QString::number(da->value(val2_x-0.5,val2_y-0.5)));
 
 	if (same_val_x || same_val_y)
 		// selection rectangle collapsed to single line or point
@@ -213,47 +220,47 @@ void MatrixViewer::DrawSelectionRect () {
 
 	const double x_rect[]={val1_x,val2_x,val2_x,val1_x,val1_x};
 	const double y_rect[]={val1_y,val1_y,val2_y,val2_y,val1_y};
-    selection_rect->setSamples(x_rect,y_rect,5);
+	selection_rect->setRawSamples(x_rect,y_rect,5);
 		
 	ui->Plot->replot();
 }
 
-void MatrixViewer::SetRightSldrMinVal (const double val) {
-    ui->S_Right->setScale(val,ui->S_Right->upperBound());
+// void MatrixViewer::SetRightSldrMinVal (const double val) {
+// 	// ui->S_Right->setRange(val,ui->S_Right->maxValue());
 
-    const double left_min=ui->S_Left->lowerBound();
-    const double tmp_range=ui->S_Right->upperBound()-left_min;
+// 	// const double left_min=ui->S_Left->minValue();
+// 	// const double tmp_range=ui->S_Right->maxValue()-left_min;
 
-	if (tmp_range<DBL_EPSILON) return;
+// 	// if (tmp_range<DBL_EPSILON) return;
 
-	QwtColorMap *c_map=_cntrl->AllocMainCMap((ui->S_Left->value()-left_min)/tmp_range,
-											 (ui->S_Right->value()-left_min)/tmp_range);
-    _data[0]->setColorMap(c_map);
-	_cntrl->FreeMainCMap(c_map);
+// 	QwtColorMap *c_map=_cntrl->AllocMainCMap((ui->S_Left->value()-left_min)/tmp_range,
+// 											 (ui->S_Right->value()-left_min)/tmp_range);
+// 	_data[0]->setColorMap(c_map);
+// 	_cntrl->FreeMainCMap(c_map);
 
-	//connect(this, SIGNAL(SetNormalizeToWinActive(bool)), ui->RB_normalizeCurrWindow, SLOT(setEnabled(bool)));
-	// the line above is incorrect, may be this line is correct:
-	//connect(ui->RB_normalizeCurrWindow,SIGNAL(clicked(bool)),this,SLOT(SetNormalizeToWin(const bool)));
+// 	//connect(this, SIGNAL(SetNormalizeToWinActive(bool)), ui->RB_normalizeCurrWindow, SLOT(setEnabled(bool)));
+// 	// the line above is incorrect, may be this line is correct:
+// 	//connect(ui->RB_normalizeCurrWindow,SIGNAL(clicked(bool)),this,SLOT(SetNormalizeToWin(const bool)));
 
-	ui->Plot->replot();
-}
+// 	ui->Plot->replot();
+// }
 
-void MatrixViewer::SetLeftSldrMaxVal (const double val) {
-    const double left_min=ui->S_Left->lowerBound();
+// void MatrixViewer::SetLeftSldrMaxVal (const double val) {
+// 	// const double left_min=ui->S_Left->minValue();
 
-    ui->S_Left->setScale(left_min,val);
+// 	// ui->S_Left->setRange(left_min,val);
 
-    const double tmp_range=ui->S_Right->upperBound()-left_min;
+// 	// const double tmp_range=ui->S_Right->maxValue()-left_min;
 
-	if (tmp_range<DBL_EPSILON) return;
+// 	if (tmp_range<DBL_EPSILON) return;
 
-	QwtColorMap *c_map=_cntrl->AllocMainCMap((ui->S_Left->value()-left_min)/tmp_range,
-											 (ui->S_Right->value()-left_min)/tmp_range);
-    _data[0]->setColorMap(c_map);
-	_cntrl->FreeMainCMap(c_map);
+// 	QwtColorMap *c_map=_cntrl->AllocMainCMap((ui->S_Left->value()-left_min)/tmp_range,
+// 											 (ui->S_Right->value()-left_min)/tmp_range);
+// 	_data[0]->setColorMap(c_map);
+// 	_cntrl->FreeMainCMap(c_map);
 
-	ui->Plot->replot();
-}
+// 	ui->Plot->replot();
+// }
 
 void MatrixViewer::ShowZoom () {
 	MatrixRaster* tmp_m_r_list[2];
@@ -266,7 +273,7 @@ void MatrixViewer::ShowZoom () {
 	const int c_low=from_x-_p_from.x(),c_high=to_x-from_x;
 	int cols,r;
 
-    tmp_m_r=static_cast<const MatrixRaster*>(_data[0]->data());
+	tmp_m_r=static_cast<const MatrixRaster*>(_data[0]->data());
 	cols=tmp_m_r->GetCols();
 	tmp_mtr=static_cast<double*>(malloc(r_high*c_high*sizeof(double)));
 	if (tmp_mtr==NULL) return;
@@ -277,7 +284,7 @@ void MatrixViewer::ShowZoom () {
 	tmp_m_r_list[0]=new MatrixRaster(tmp_mtr,r_high,c_high);
 	if (_data[1]!=NULL)
 	{
-        tmp_m_r=static_cast<const MatrixRaster*>(_data[1]->data());
+		tmp_m_r=static_cast<const MatrixRaster*>(_data[1]->data());
 		cols=tmp_m_r->GetCols();
 		tmp_mtr=static_cast<double*>(malloc(r_high*c_high*sizeof(double)));
 		if (tmp_mtr==NULL)
@@ -298,7 +305,7 @@ void MatrixViewer::ShowZoom () {
 	QString z_title=(zoomed_ind>0)? title.left(zoomed_ind) : title;
 	(z_title+=tr(": zoomed"))+=QString(" (%1,%2)-(%3,%4)").arg(from_x).arg(from_y).arg(to_x-1).arg(to_y-1);
 
-	MatrixViewer *tmp_m_v=new MatrixViewer(static_cast<QMdiArea*>(parentWidget()),_cntrl,inv);
+	MatrixViewer *tmp_m_v=new MatrixViewer(static_cast<QMdiArea*>(parentWidget()),_cntrl, inv);
 	tmp_m_v->Init(z_title,tmp_m_r_list);
 	tmp_m_v->SetLength(_length);
 	tmp_m_v->SetPointFrom(QPoint(from_x,from_y));
@@ -314,7 +321,7 @@ void MatrixViewer::ShowZoom () {
 
 void MatrixViewer::SaveImage() {
     QString fileName;
-
+   // std::cout << minw << ' ' << maxw << std::endl;
     fileName = QFileDialog::getSaveFileName(this, tr("Name of file for saving"), QString(),"Graphic files (*.png )");
 
     if ( !fileName.isEmpty() )
@@ -334,6 +341,42 @@ void MatrixViewer::SaveImage() {
         }
     }
 }
+
+// void MatrixViewer::LocalNormalization(bool checked) {
+// 	if (checked) {
+// 		const QwtInterval tmp_range=_data[0]->data().range();
+
+// 		ui->S_Left->setRange(tmp_range.minValue(),tmp_range.maxValue());
+// 		ui->S_Left->setValue(ui->S_Left->minValue());
+// 		ui->S_Right->setRange(ui->S_Left->minValue(),ui->S_Left->maxValue());
+// 		ui->S_Right->setValue(ui->S_Right->maxValue());
+// 		//double range = ui->S_Right->maxValue() - ui->S_Left->minValue();
+// // 		double left = ui->S_Left->minValue();
+// 		//if (range<DBL_EPSILON) return;
+
+// 		QwtColorMap *c_map=_cntrl->AllocMainCMap(0,1.0);
+// 		_data[0]->setColorMap(*c_map);
+// 		_cntrl->FreeMainCMap(c_map);
+// 		ui->Plot->replot();
+// 	}
+// }
+
+// void MatrixViewer::WindowNormalization(bool checked) {
+// 	if (checked) {
+// 	   //	double range = maxw - minw;
+// 		//double left = minw;
+// 		ui->S_Left->setRange(this->minw, this->maxw);
+// 		ui->S_Left->setValue(this->minw);
+// 		ui->S_Right->setRange(ui->S_Left->minValue(),ui->S_Left->maxValue());
+// 		ui->S_Right->setValue(ui->S_Right->maxValue());
+// 	//	if (range<DBL_EPSILON) return;
+
+// 		QwtColorMap *c_map=_cntrl->AllocMainCMap(0,1.0);
+// 		_data[0]->setColorMap(c_map);
+// 		_cntrl->FreeMainCMap(c_map);
+// 		ui->Plot->replot();
+// 	}
+// }
 
 MatrixViewer::~MatrixViewer () {
 	delete _data[0];

@@ -30,17 +30,17 @@ FILES=
 #FILES_COMMON= linealge.o simple_list.o px_log_print.o\
 #              network_speed.o my_time.o my_malloc.o
 
-FILES_COMMON=network_speed.o\
-	     my_time.o\
-	     my_malloc.o\
-	     linealge.o\
-	     str_operation.o\
-	     string_id_converters.o\
-	     easy_matrices.o\
-	     data_write_operations.o
+FILES_COMMON=\
+	network_speed.o\
+	my_time.o\
+	my_malloc.o\
+	linealge.o\
+	str_operation.o\
+	string_id_converters.o\
+	easy_matrices.o\
+	data_write_operations.o
 
 
-              
 EXECS= libparus_network.a
 
 all: $(EXECS)
@@ -66,9 +66,13 @@ install: libparus_network.a
 clean:
 	rm -f *.o libparus_network.a
 
-.c.o:
-	 $(MPI_cc) $(MPI_cc_FLAGS) $(MPI_cc_INCLUDE) $(NETCDF_INCLUDE) -I ../..  -c $*.c -o $*.o  
+%.c: %.h
+%.cpp: %.h
 
-   
-.cpp.o:
-	 $(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) $(NETCDF_INCLUDE) -I ../..  -c $*.cpp -o $*.o
+%.o: %.c
+	 $(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) $(NETCDF_INCLUDE) -I ../..  -c $< -o $@
+
+%.o: %.cpp
+	 $(MPI_CXX) $(MPI_CXX_FLAGS) $(MPI_CXX_INCLUDE) $(NETCDF_INCLUDE) -I ../..  -c $< -o $@
+
+

@@ -40,8 +40,8 @@ FORMS += GUI/mainwindow.ui \
 		 GUI/tabviewer.ui \
 		 GUI/matrixviewer.ui \
 		 GUI/topoviewer.ui
-INCLUDEPATH += /usr/include/qwt
-DEPENDPATH += /usr/include/qwt
+INCLUDEPATH += /usr/local/qwt-6.2.0/include
+DEPENDPATH += /usr/local/qwt-6.2.0/include
 LIBS += -L/usr/lib \
 		-lnetcdf \
                 -lGLU \
@@ -49,7 +49,7 @@ LIBS += -L/usr/lib \
 RESOURCES += resources.qrc
 TRANSLATIONS = translations/nv_tr_ru.ts
 # ------------------------------------------
-# If these two variables are not empty in 
+# If these two variables are not empty in
 # '../../config', add new files and folders
 # ------------------------------------------
 OPENCL_LIB_FLD:OPENCL_INCL {
@@ -57,3 +57,5 @@ OPENCL_LIB_FLD:OPENCL_INCL {
     INCLUDEPATH += $$OPENCL_INCL
     LIBS += -L$$OPENCL_LIB_FLD -lOpenCL
 }
+
+include ( /usr/local/qwt-6.2.0/features/qwt.prf )

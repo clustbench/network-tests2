@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 
 #include "string_id_converters.h"
 

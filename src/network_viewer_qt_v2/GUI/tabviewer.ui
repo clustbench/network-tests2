@@ -61,10 +61,10 @@
            <property name="basicstep" stdset="0">
             <double>1.000000000000000</double>
            </property>
-           <property name="minValue" stdset="0">
+           <property name="Minimum">
             <double>0.000000000000000</double>
            </property>
-           <property name="maxValue" stdset="0">
+           <property name="Maximum">
             <double>100.000000000000000</double>
            </property>
           </widget>
@@ -78,11 +78,11 @@
             <enum>Qt::Horizontal</enum>
            </property>
            <property name="scalePosition">
-            <enum>QwtSlider::NoScale</enum>
+            <enum>QwtSlider::TrailingScale</enum>
            </property>
-           <property name="thumbLength" stdset="0">
+           <!-- <property name="thumbLength">
             <number>16</number>
-           </property>
+           </property> -->
           </widget>
          </item>
          <item>
@@ -365,10 +365,10 @@
                   <property name="basicstep" stdset="0">
                    <double>1.000000000000000</double>
                   </property>
-                  <property name="minValue" stdset="0">
+                  <property name="Minimum">
                    <double>0.000000000000000</double>
                   </property>
-                  <property name="maxValue" stdset="0">
+                  <property name="Maximum">
                    <double>100.000000000000000</double>
                   </property>
                  </widget>
@@ -390,10 +390,10 @@
                   <property name="basicstep" stdset="0">
                    <double>1.000000000000000</double>
                   </property>
-                  <property name="minValue" stdset="0">
+                  <property name="Minimum">
                    <double>0.000000000000000</double>
                   </property>
-                  <property name="maxValue" stdset="0">
+                  <property name="Maximum">
                    <double>100.000000000000000</double>
                   </property>
                  </widget>
