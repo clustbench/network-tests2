@@ -53,6 +53,9 @@ clean_core:
 
 network_test:
 	$(MAKE) -C ./src/network_test
+	
+interconnect_benchmark:
+	$(MAKE) -C ./src/interconnect_benchmark
 
 network_viewer_qt_v2:
 	$(MAKE) -C ./src/network_viewer_qt_v2
