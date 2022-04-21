@@ -49,7 +49,7 @@ void MatrixViewer::Init (const QString &title, MatrixRaster* data[2]) {
 	dt->attach(ui->Plot);
 	dt->setColorMap(c_map);
 	_cntrl->FreeMainCMap(c_map);
-    _data[0]=dt;
+	_data[0]=dt;
 	dt->show();
 
 	// const QwtInterval tmp_range=_data[0]->data()->interval();
@@ -104,7 +104,7 @@ void MatrixViewer::Init (const QString &title, MatrixRaster* data[2]) {
 	connect(ui->SB_xFrom,SIGNAL(valueChanged(int)),this,SLOT(SetAim()));
 	connect(ui->SB_yFrom,SIGNAL(valueChanged(int)),this,SLOT(SetAim()));
 
-    connect(zoomer,SIGNAL(selected(const QRectF&)),this,SLOT(RectSelected(const QRectF&)));
+	connect(zoomer,SIGNAL(selected(const QwtDoubleRect&)),this,SLOT(RectSelected(const QwtDoubleRect&)));
 
 	connect(ui->SB_xFrom,SIGNAL(valueChanged(int)),this,SLOT(DrawSelectionRect()));
 	connect(ui->SB_yFrom,SIGNAL(valueChanged(int)),this,SLOT(DrawSelectionRect()));

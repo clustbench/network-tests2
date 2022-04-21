@@ -9,7 +9,7 @@ bool TabViewer::Init (void) {
 			SLOT(AddMsgToLog(const MainWindow::MsgType,const QString&,const QString&)));
 	
 	try {
-        ui=new Ui::TabViewer;
+		ui=new Ui::ui_TabViewer;
 	}
 	catch (...) {
 		ui=NULL;
@@ -172,8 +172,8 @@ void TabViewer::ShowMesLen () {
 
 	NewMatrix_mes(new_m_v);
 
-    delete matr_raster[0];
-    if (matr_raster[1]!=NULL) delete matr_raster[1];
+	delete matr_raster[0];
+	if (matr_raster[1]!=NULL) delete matr_raster[1];
 }
 
 void TabViewer::NewMatrix_mes (MatrixViewer *m_v) {

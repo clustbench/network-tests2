@@ -1,5 +1,4 @@
 QT += opengl
-QT += widgets
 CONFIG += qt
 TARGET = network_viewer_qt_v2
 TEMPLATE = app
@@ -44,10 +43,10 @@ INCLUDEPATH += /usr/local/qwt-6.2.0/include
 DEPENDPATH += /usr/local/qwt-6.2.0/include
 LIBS += -L/usr/lib \
 		-lnetcdf \
-                -lGLU \
-                -lqwt-qt5
+		-lGLU
 RESOURCES += resources.qrc
 TRANSLATIONS = translations/nv_tr_ru.ts
+
 # ------------------------------------------
 # If these two variables are not empty in
 # '../../config', add new files and folders

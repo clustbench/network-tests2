@@ -28,8 +28,8 @@
 #include <QPen>
 #include <qwt_plot.h>
 #include <qwt_plot_curve.h>
-#include <qwt_plot_legenditem.h>
 #include <qwt_legend.h>
+// #include <qwt_legend_item.h>
 #include <qwt_text.h>
 
 class PairViewer: public QMdiSubWindow {
@@ -122,7 +122,7 @@ class PairViewer: public QMdiSubWindow {
 				//   leg_item3.setIdentifierMode(QwtLegendItem::ShowText);
 				//   legend.insert(&curve3,&leg_item3);
 			  }
-              legend.show();
+			  legend.show();
 			  plot.insertLegend(&legend,QwtPlot::RightLegend);
 		  }
 		

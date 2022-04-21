@@ -25,7 +25,7 @@ void MainWindow::Init (void) {
 #else
 	"UTF-8"
 #endif
-    )); */
+	));
 	
 	try {
 		ui=new Ui::MainWindow;

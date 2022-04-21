@@ -96,7 +96,7 @@ class TabViewer: public QMainWindow {
 	  void SendMessToLog (const MainWindow::MsgType, const QString &msg, const QString &stat);
 	  void MinMaxWindow (const double, const double);
 
-  private slots:
+  private Q_SLOTS:
 	  void Initialize ();
 	
 	  void ShowMesLen ();
@@ -126,7 +126,7 @@ class TabViewer: public QMainWindow {
 		  }
 	  }
 
-  public slots:
+  public Q_SLOTS:
 	  void SetProgressBarValue (const int val) {
 		  if (val==-1) ui->progressBar->hide();
 		  else

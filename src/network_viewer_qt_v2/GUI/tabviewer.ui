@@ -1,20 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>TabViewer</class>
+ <class>ui_TabViewer</class>
  <widget class="QMainWindow" name="TabViewer">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
     <width>800</width>
-    <height>620</height>
+    <height>600</height>
    </rect>
-  </property>
-  <property name="sizePolicy">
-   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-    <horstretch>0</horstretch>
-    <verstretch>0</verstretch>
-   </sizepolicy>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
@@ -30,16 +24,7 @@
        <enum>QFrame::Raised</enum>
       </property>
       <layout class="QGridLayout" name="gridLayout_2">
-       <property name="leftMargin">
-        <number>0</number>
-       </property>
-       <property name="topMargin">
-        <number>0</number>
-       </property>
-       <property name="rightMargin">
-        <number>0</number>
-       </property>
-       <property name="bottomMargin">
+       <property name="margin">
         <number>0</number>
        </property>
        <item row="0" column="0" colspan="2">
@@ -71,12 +56,6 @@
          </item>
          <item>
           <widget class="QwtSlider" name="S_WindowNumber">
-           <property name="layoutDirection">
-            <enum>Qt::LeftToRight</enum>
-           </property>
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
            <property name="scalePosition">
             <enum>QwtSlider::TrailingScale</enum>
            </property>
@@ -211,8 +190,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>355</width>
-     <height>555</height>
+     <width>292</width>
+     <height>498</height>
     </size>
    </property>
    <property name="floating">
@@ -527,16 +506,7 @@
          <string>Data</string>
         </attribute>
         <layout class="QGridLayout" name="gridLayout_4">
-         <property name="leftMargin">
-          <number>0</number>
-         </property>
-         <property name="topMargin">
-          <number>0</number>
-         </property>
-         <property name="rightMargin">
-          <number>0</number>
-         </property>
-         <property name="bottomMargin">
+         <property name="margin">
           <number>0</number>
          </property>
          <item row="0" column="0">
@@ -549,16 +519,7 @@
          <string>Hosts</string>
         </attribute>
         <layout class="QGridLayout" name="gridLayout_5">
-         <property name="leftMargin">
-          <number>0</number>
-         </property>
-         <property name="topMargin">
-          <number>0</number>
-         </property>
-         <property name="rightMargin">
-          <number>0</number>
-         </property>
-         <property name="bottomMargin">
+         <property name="margin">
           <number>0</number>
          </property>
          <item row="0" column="0">
@@ -595,8 +556,8 @@
    <slot>setVisible(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>788</x>
-     <y>40</y>
+     <x>607</x>
+     <y>39</y>
     </hint>
     <hint type="destinationlabel">
      <x>99</x>
