@@ -16,6 +16,7 @@
 #include "err_msgs.h"
 
 #include <iostream>
+#include <typeinfo>
 
 const QString TopologyViewer::my_sign("Topo");
 
@@ -638,65 +639,6 @@ void TopologyViewer::Execute (void) {
     }
     printf("\nEND\n\n");
 
-    /*printf("WRITE FILE\n\n");
-
-    if (txt_files==NULL)
-    {
-		const int file1=ncdf_files->v_file,matr1=ncdf_files->matr_v;
-		size_t start[3]={0u,0u,0u}; // 2nd and 3rd components are always 0
-		const size_t count[3]={1u,main_wdg.x_num,main_wdg.x_num};
-
-		nc_get_vara_double(file1,matr1,start,count,matr);
-    }
-    else
-    {
-		const char float_pt=txt_files->flt_pt;
-		const char non_flt_pt=(float_pt=='.')? ',' : '.';
-		FILE *file1=txt_files->v_file;
-		const fpos_t matr1=txt_files->matr_v_pos;
-		unsigned int i,j;
-		const unsigned int x_num1=main_wdg.x_num-1u;
-		Data_Text::Line l1;
-		char *line1,*splitter,*pt_pos;
-
-		fsetpos(file1,&matr1);
-		for (j=0u; j!=main_wdg.x_num; ++j)
-		{
-		    Data_Text::readline(file1,l1);
-		    line1=l1.Give_mdf();
-		    for (i=0u; i!=x_num1; ++i)
-		    {
-		    	*(splitter=strchr(line1,'\t'))='\0';
-		    	if ((pt_pos=strchr(line1,non_flt_pt))!=NULL)
-				    *pt_pos=float_pt;
-				matr[j*main_wdg.x_num+i]=atof(line1);
-				line1=splitter+1;
-			}
-			if ((pt_pos=strchr(line1,non_flt_pt))!=NULL)
-				*pt_pos=float_pt;
-			matr[j*main_wdg.x_num+i]=atof(line1);
-		}
-    }
-    FILE *ff=fopen("11.gv","w");
-    fprintf(ff,"graph topology {\n");
-    for (unsigned i=0u; i!=main_wdg.x_num; ++i)
-    	fprintf(ff,"\tv%u [label=\"%s\"];\n",i,main_wdg.host_names[i].toLocal8Bit().constData());
-    for (unsigned int i=0u; i!=main_wdg.x_num; ++i)
-    {
-    	for (unsigned int j=0u; j!=main_wdg.x_num; ++j)
-    	{
-    		if (main_wdg.edge_counts[i*main_wdg.x_num+j]>0u)
-	    		fprintf(ff,"\tv%u -- v%u [label=\"%g\"];\n",i,j,0.5*(matr[i*main_wdg.x_num+j]+matr[j*main_wdg.x_num+i]));//((double)edge_counts[i*x_num+j])*100.0/(double)z_num);
-    	}
-    }
-    fprintf(ff,"}\n");
-    fclose(ff);
-    ff=NULL;
-
-    printf("WRITTEN\n\n");//return;
-    */
-
-
 	printf("BUILD GRAPH\n\n");
 
 	if (!GetMatrixByValsForEdgsVar(matr))
@@ -712,9 +654,9 @@ void TopologyViewer::Execute (void) {
 
     unsigned int edg_num=0u; // number of all edges
 	unsigned int edg50_num=0u; // number of edges with length error not less than 50%
-	unsigned int edg99_num=0u; // number of edges with length error not less than 99%
+	unsigned int edg98_num=0u; // number of edges with length error not less than 98%
 
-    if (!main_wdg.MapGraphInto3D(matr,m_d_impact,edg_num,edg50_num,edg99_num))
+    if (!main_wdg.MapGraphInto3D(matr,m_d_impact,edg_num,edg50_num,edg98_num))
     {
     	free(matr);
 		NOT_ENOUGH_MEM_CLOSE;
@@ -729,11 +671,11 @@ void TopologyViewer::Execute (void) {
 						.arg(static_cast<double>(edg50_num)*r_edg_num,0,'f',2);
 		mes+=tr("of edges have %1% length error or greater").arg(50); // 'arg(const)' is used to minimize
 																	  // the number of translated strings
-		if (edg99_num!=0u)
+		if (edg98_num!=0u)
 		{
 			mes+=QString("<br>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <b>%1%</b> ").\
-						 arg(static_cast<double>(edg99_num)*r_edg_num,0,'f',2);
-			mes+=tr("of edges have %1% length error or greater").arg(99);
+						 arg(static_cast<double>(edg98_num)*r_edg_num,0,'f',2);
+			mes+=tr("of edges have %1% length error or greater").arg(98);
 		}
 		(mes+="<br><br>")+=tr("(the graph has <b>%1</b> edges in all)<br>").arg(edg_num);
 		emit SendMessToLog(MainWindow::Info,my_sign,mes);
@@ -770,7 +712,15 @@ template <typename T> class _Delete_arr_MeOnReturn {
 
 bool TopologyViewer::RetrieveTopology (double *matr) {
 	clock_t st=clock();
-
+	QLabel l(&main_wdg);
+	l.setFixedSize(200,50);
+	l.move((width()-l.width())/2,(height()-l.height())/2);
+	l.setAutoFillBackground(true);
+	l.show();
+	l.setText(QString("Retrieving topology from file..."));
+	
+	// immediate processing of all paint events and such
+	// QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents,1);
 	// array of vertices; each vertex stores an array of adjacent vertices
     std::vector<unsigned int> *vertices=new(std::nothrow) std::vector<unsigned int>[main_wdg.x_num];
     if (vertices==NULL) { NOT_ENOUGH_MEM_RET(false); }
@@ -1089,7 +1039,7 @@ bool TopologyViewer::RetrieveTopology (double *matr) {
 
 	st=clock()-st;
 	printf(", %g мс\n",static_cast<float>(st*1000u)/static_cast<float>(CLOCKS_PER_SEC));
-
+	l.hide();
 	return true;
 }
 
@@ -1433,52 +1383,13 @@ double stress_part_i (double *x, double *y, double *z, double *matr, int n, int 
 	return res;
 }
 
-double stress_fun(double *x, double *y, double *z, double *matr, int n)
-{
-	double stress = 0.0, d_ij, val;
-	for (int i = 0; i < n; ++i) {
-		for (int j = i + 1; j < n; ++j) {
-			val = dist(x, y, z, i, j);
-			d_ij = matr[i * n + j];
-			stress += (val - d_ij) * (val - d_ij);
-		}
-	}
-	return stress;
-}
-
 bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
-							   unsigned int &edg_n, unsigned int &edg50_n, unsigned int &edg99_n) {
-	clock_t st=clock();
-
+							   unsigned int &edg_n, unsigned int &edg50_n, unsigned int &edg98_n) {
+	
 	unsigned int i,j,v,k,k1;
 	double *mtr1=matr;
 	double val;
 	double min_val=DBL_MAX;
-
-	// for (i=0u,k=0u; i!=x_num; ++i,k+=x_num)
-	// {
-	// 	j=i+1u;
-	// 	k1=j*x_num+i;
-	// 	for (mtr1+=j; j!=x_num; ++j,++mtr1,k1+=x_num)
-	// 	{
-	// 		v=edge_counts[k+j]+edge_counts[k1];
-	// 		if (v==0u)
-	// 			*mtr1=0.0; // assign something
-	// 		else
-	// 		{
-	// 			// magic formula!
-	// 			val=matr[k1];
-	// 			std::cout << "i = " << i << " j = " << j << " ";
-	// 			std::cout << "k1 = " << k1 << " " << std::endl;
-	// 			std::cout << k << " " << edge_counts[k+j] << " " << edge_counts[k1] << std::endl;
-	// 			std::cout << *mtr1<< " " << val << std::endl;
-	// 			val=val+(*mtr1-val)*static_cast<double>(edge_counts[k+j])/static_cast<double>(v);
-	// 			val=(val<1.0e-15)? 1.0e-15 : val;
-	// 			min_val=(val<min_val)? val : min_val;
-	// 			*mtr1=val;
-	// 		}
-	// 	}
-	// }
 
 	for (i = 0; i < x_num; ++i) {
 		for (k = i; k < x_num; ++k) {
@@ -1491,79 +1402,15 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 			val += matr[k * x_num + i] * edge_counts[k * x_num + i];
 			if (v != 0) {
 				val /= static_cast<double>(v);
+				val = (val<1.0e-10)? 1.0e-10 : val;
 				min_val = (val < min_val)? val : min_val;
 			}
-			val = (val<1.0e-15)? 1.0e-15 : val;
 			matr[i * x_num + k] = val;
 			matr[k * x_num + i] = val;
 		}
 	}
-	min_val = (min_val < 1)? min_val : 1;
+	std::cout << std::endl;
 	std::cout << "min_val = " << min_val << std::endl;
-	// for (i=0u,k=0u; i!=x_num; ++i,k+=x_num)
-	// {
-	// 	j=i+1u;
-	// 	k1=j*x_num+i;
-	// 	for (mtr1+=j; j!=x_num; ++j,++mtr1,k1+=x_num)
-	// 	{
-	// 		v=edge_counts[k+j]+edge_counts[k1];
-	// 		if (v==0u)
-	// 			*mtr1=0.0; // assign something
-	// 		else
-	// 		{
-	// 			// magic formula!
-	// 			val=matr[k1];
-	// 			val=val+(*mtr1-val)*static_cast<double>(edge_counts[k+j])/static_cast<double>(v);
-	// 			val=(val<1.0e-15)? 1.0e-15 : val;
-	// 			min_val=(val<min_val)? val : min_val;
-	// 			*mtr1=val;
-	// 		}
-	// 	}
-	// }
-	// mtr1 = matr;
-	
-	// for (int i = 0; i != x_num; ++i) {
-	// 	for (int j = 0; j != x_num; ++j) {
-	// 		std::cout << *mtr1 << " ";
-	// 		mtr1++;
-	// 	}
-	// 	std::cout << std::endl;
-	// }
-	// const unsigned int *edg = edge_counts;
-	// for (int i = 0; i != x_num; ++i) {
-	// 	for (int j = 0; j != x_num; ++j) {
-	// 		std::cout << *edg << " ";
-	// 		edg++;
-	// 	}
-	// 	std::cout << std::endl;
-	// }
-
-	// min_val=1.0/(min_val*min_val);
-
-	for (i = 0; i < x_num; ++i) {
-		for (j = i; j < x_num; ++j) {
-			if (i == j) {
-				std::cout <<i << " " << matr[i*x_num + j] << std::endl;
-			}
-			else {
-				std::cout << i << " " << j << " ";
-				std::cout << matr[i*x_num + j] << " " << matr[j*x_num + i] << std::endl;
-			}
-		}
-	}
-
-	for (i = 0u; i < x_num; ++i)
-	{
-		for (j = i + 1; j != x_num; ++j,++mtr1)
-		{
-			v = edge_counts[i * x_num + k] + edge_counts[k * x_num + i];
-			// normalize 
-			if (v != 0) {
-				matr[i * x_num + j] /= min_val;
-				matr[j * x_num + i] /= min_val;
-			}
-		}
-	}
 
 	// for (i = 0; i < x_num; ++i) {
 	// 	for (j = i; j < x_num; ++j) {
@@ -1577,19 +1424,18 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 	// 	}
 	// }
 
-
-	// for (i=0u; i<x_num; ++i)
-	// {
-	// 	j=i+1u;
-	// 	for (mtr1+=j; j!=x_num; ++j,++mtr1)
-	// 	{
-	// 		// normalize and raise to the power of 2
-	// 		val=*mtr1;
-	// 		*mtr1=val*val*min_val;
-	// 	}
-	// }
-
-	//! only the upper triangle of 'matr' is valid now!
+	for (i = 0u; i < x_num; ++i)
+	{
+		for (j = i + 1; j != x_num; ++j,++mtr1)
+		{
+			v = edge_counts[i * x_num + k] + edge_counts[k * x_num + i];
+			// normalize 
+			if (v != 0) {
+				matr[i * x_num + j] /= min_val;
+				matr[j * x_num + i] /= min_val;
+			}
+		}
+	}
 
 	double *xx=static_cast<double*>(malloc(x_num*sizeof(double)));
 	if (xx==NULL) return false;
@@ -1626,181 +1472,15 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 		zz[i]=static_cast<double>(i)*(1.0+static_cast<double>(rand())/static_cast<double>(RAND_MAX));
 	}
 
-	/* temporary add lower triangle to upper triangle;
-	   this action makes access to 'edge_counts' in the descent cache friendly
-	   (and speeds up each iteration by the ratio of 2 and greater when 'x_num'>2000)
-	   do not forget to rollback these changes */
-	for (i=0u,k=0u; i!=x_num1; ++i)
-	{
-		j=i+1u;
-		k+=j;
-		v=j*x_num+i;
-		for ( ; j!=x_num; ++j,++k,v+=x_num)
-			edge_counts[k]+=edge_counts[v];
-	}
-	/* move all necessary values in 'matr' closer
-	   to the beginning to improve cache friendliness */
-	// mtr=mtr1=matr; // first row is OK
-	// edg_cnt=edge_counts;
-	// for (i=0u; i!=x_num1; ++i)
-	// {
-	// 	j=i+1u;
-	// 	mtr+=j;
-	// 	edg_cnt+=j;
-	// 	for ( ; j!=x_num; ++j,++mtr,++edg_cnt)
-	// 	{
-	// 		if (*edg_cnt!=0u)
-	// 		{
-	// 			*mtr1=*mtr;
-	// 			++mtr1;
-	// 		}
-	// 	}
-	// }
-
-	// f=0.0;
-	// mtr=matr;
-	// edg_cnt=edge_counts;
-	// for (i=0u,k=0u; i!=x_num1; ++i)
-	// {
-	// 	x_i=xx[i]; y_i=yy[i]; z_i=zz[i];
-	// 	j=i+1u;
-	// 	for (edg_cnt+=j; j!=x_num; ++j,++edg_cnt)
-	// 	{
-	// 		dx=x_i-xx[j]; dy=y_i-yy[j]; dz=z_i-zz[j];
-	// 		val=dx*dx+dy*dy+dz*dz;
-	// 		if (*edg_cnt==0u)
-	// 			f+=((val<eps)? m_d_impact : ((val<1.0)? (m_d_impact/val) : 0.0));
-	// 		else
-	// 		{
-	// 			val-=*mtr;
-	// 			f+=(val*val);
-	// 			++mtr;
-	// 		}
-	// 	}
-	// }
-	// f*=0.5;
-	// f_prev=f;
-
 	QLabel l(this);
 	l.setFixedSize(200,50);
 	l.move((width()-l.width())/2,(height()-l.height())/2);
 	l.setAutoFillBackground(true);
 	l.show();
 
-	// clock_t st1;
-	// for (k=0u; k!=max_iter; ++k)
-	// {
-	// 	if ((k & 0x1f)==0u)
-	// 	{
-	// 		l.setText(QString("<div align=\"center\">iter %1 / %2</div><br><div align=\"left\">func: %3</div>").
-	// 				  arg(k).arg(max_iter).arg(f,0,'g',12));
-	// 		// immediate processing of all paint events and such
-	// 		QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents,1);
-	// 	}
-	// 	st1=clock();
-	// 	memset(gradx,0,x_num*sizeof(double));
-	// 	memset(grady,0,x_num*sizeof(double));
-	// 	memset(gradz,0,x_num*sizeof(double));
-	// 	f=0.0;
-	// 	t=-t; // temporary
-	// 	mtr=matr;
-	// 	edg_cnt=edge_counts;
-	// 	for (i=0u; i<x_num1; ++i)
-	// 	{
-	// 		x_i=xx[i]; y_i=yy[i]; z_i=zz[i];
-	// 		grx=gry=grz=0.0;
-	// 		j=i+1u;
-	// 		for (edg_cnt+=j; j<x_num; ++j,++edg_cnt)
-	// 		{
-	// 			dx=x_i-xx[j]; dy=y_i-yy[j]; dz=z_i-zz[j];
-	// 			val=dx*dx+dy*dy+dz*dz;
-	// 			if (*edg_cnt==0u)
-	// 			{
-	// 				if (!(val<1.0)) continue;
-	// 				if (val<eps)
-	// 				{
-	// 					dx=dy=dz=-half_m_d_impact;
-	// 				}
-	// 				else
-	// 				{
-	// 					val=-m_d_impact/(val*val);
-	// 					dx*=val; dy*=val; dz*=val;
-	// 				}
-	// 			}
-	// 			else
-	// 			{
-	// 				(val-=*mtr)*=2.0;
-	// 				++mtr;
-	// 				dx*=val; dy*=val; dz*=val;
-	// 			}
-	// 			grx+=dx; gry+=dy; grz+=dz;
-	// 			gradx[j]-=dx; grady[j]-=dy; gradz[j]-=dz;
-	// 		}
-	// 		gradx[i]+=grx; grady[i]+=gry; gradz[i]+=grz;
-	// 	}
-	// 	for (i=0u; i<x_num; ++i)
-	// 	{
-	// 		gradx[i]*=t;
-	// 		xx[i]+=gradx[i];
-	// 		grady[i]*=t;
-	// 		yy[i]+=grady[i];
-	// 		gradz[i]*=t;
-	// 		zz[i]+=gradz[i];
-	// 	}
-	// 	mtr=matr;
-	// 	edg_cnt=edge_counts;
-	// 	for (i=0u; i<x_num1; ++i)
-	// 	{
-	// 		x_i=xx[i]; y_i=yy[i]; z_i=zz[i];
-	// 		j=i+1u;
-	// 		for (edg_cnt+=j; j<x_num; ++j,++edg_cnt)
-	// 		{
-	// 			dx=x_i-xx[j]; dy=y_i-yy[j]; dz=z_i-zz[j];
-	// 			val=dx*dx+dy*dy+dz*dz;
-	// 			if (*edg_cnt==0u)
-	// 				f+=((val<eps)? m_d_impact : ((val<1.0)? (m_d_impact/val) : 0.0));
-	// 			else
-	// 			{
-	// 				val-=*mtr;
-	// 				f+=(val*val);
-	// 				++mtr;
-	// 			}
-	// 		}
-	// 	}
-	// 	f*=0.5;
-	// 	t=-t;
-	// 	st1=clock()-st1;
-	// 	printf("  %u: prev=%.12g cur=%.12g t=%g, %g мс\n",k,f_prev,f,t,
-	// 			static_cast<double>(st1*1000u)/static_cast<double>(CLOCKS_PER_SEC));
-	// 	if (f>f_prev)
-	// 	{
-	// 		if (f<f_prev+small_var) break;
-	// 		for (i=0u; i!=x_num; ++i) // return old values
-	// 	   	{
-	// 	   		xx[i]-=gradx[i];
-	// 			yy[i]-=grady[i];
-	// 			zz[i]-=gradz[i];
-	// 		}
-	// 		t*=dec_step; // decrease the step
-	// 		if (t<eps) break; // the step is too small
-	// 	}
-	// 	else
-	// 	{
-	// 		if (f_prev<f+small_var) break;
-	// 		f_prev=f;
-	// 		t*=inc_step; // increase the step
-	// 	}
-	// }
-	// f=(f>f_prev)? f_prev : f;
-	// free(gradz);
-	// free(grady);
-	// free(gradx);
-
 	double stress = 0.0, new_stress = 0.0, d_ij;
-	std::cout << "****" << std::endl;
 	for (int i = 0; i < x_num; ++i) {
 		for (int j = i + 1; j < x_num; ++j) {
-			// std::cout << "QQ" << std::endl;
 			val = dist(xx, yy, zz, i, j);
 			d_ij = matr[i * x_num + j];
 			// std::cout << "val = " << val << " d_ij = " << d_ij << std::endl;
@@ -1813,17 +1493,18 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 	double prev_part_i, cur_part_i;
 	bool stop = false;
 
-	for (i = 0; i < x_num; ++i) {
-		for (j = i; j < x_num; ++j) {
-			if (i == j) {
-				std::cout <<i << " " << matr[i*x_num + j] << std::endl;
-			}
-			else {
-				std::cout << i << " " << j << " ";
-				std::cout << matr[i*x_num + j] << " " << matr[j*x_num + i] << std::endl;
-			}
-		}
-	}
+	// for (i = 0; i < x_num; ++i) {
+	// 	for (j = i; j < x_num; ++j) {
+	// 		if (i == j) {
+	// 			std::cout <<i << " " << matr[i*x_num + j] << std::endl;
+	// 		}
+	// 		else {
+	// 			std::cout << i << " " << j << " ";
+	// 			std::cout << matr[i*x_num + j] << " " << matr[j*x_num + i] << std::endl;
+	// 		}
+	// 	}
+	// }
+
 	// for (i = 0; i < x_num; ++i) {
 	// 	for (j = i; j < x_num; ++j) {
 	// 		if (i == j) {
@@ -1838,6 +1519,13 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 	std::cout << "stress = " << stress << std::endl;
 	for (int k = 0; k != max_iter; ++k) {
 		// std::cout << "k = " << k << std::endl;
+		if ((k & 0x1f)==0u)
+		{
+			l.setText(QString("<div align=\"center\">iter %1 / %2</div><br><div align=\"left\">func: %3</div>").
+					  arg(k).arg(max_iter).arg(stress,0,'g',12));
+			// immediate processing of all paint events and such
+			QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents,1);
+		}
 		for (int i = 0; i < x_num; ++i) {
 			double new_x = 0.0, new_y = 0.0, new_z = 0.0;
 			prev_part_i = stress_part_i(xx, yy, zz, matr, x_num, i);
@@ -1877,51 +1565,33 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 
 	l.hide();
 
-	// st=clock()-st;
-
-	// printf("\nReached optimum: %.12g\n\n",f);
-
-	// printf("\nEND BUILD GRAPH: %g мс\n\n",static_cast<double>(st*1000u)/static_cast<double>(CLOCKS_PER_SEC));
-
 	/* count errors */
 	unsigned int edg_num=0u; // number of all edges
 	unsigned int edg50_num=0u; // number of edges with length error not less than 50%
-	unsigned int edg99_num=0u; // number of edges with length error not less than 99%
+	unsigned int edg98_num=0u; // number of edges with length error not less than 98%
 
-	mtr=matr;
-	for (i=0u,v=0u; i!=x_num1; ++i)
+	for (i = 0; i < x_num1; ++i)
 	{
-		x_i=xx[i]; y_i=yy[i]; z_i=zz[i];
-		j=i+1u;
-		for (v+=j; j!=x_num; ++j,++v)
+		// x_i=xx[i]; y_i=yy[i]; z_i=zz[i];
+		for (j = i + 1; j < x_num; ++j)
 		{
-			if (edge_counts[v]==0u)
+			v = edge_counts[i * x_num + j] + edge_counts[j * x_num + i];
+			if (v == 0)
 				continue;
 			++edg_num;
-			dx=x_i-xx[j]; dy=y_i-yy[j]; dz=z_i-zz[j];
-			val=fabs(dx*dx+dy*dy+dz*dz-*mtr);
-			if (val>=*mtr*0.25) // squares are compared, that's why 0.25 instead of 0.5
+			double d_ij = matr[i * x_num + j];
+			val = fabs(dist(xx, yy, zz, i, j) - d_ij);
+			if (val >= d_ij * 0.5) 
 			{
 				++edg50_num;
-				if (val>=*mtr*0.9801)
-					++edg99_num;
+				if (val >= d_ij * 0.9801)
+					++edg98_num;
 			}
-			++mtr;
 		}
 	}
 	edg_n=edg_num;
 	edg50_n=edg50_num;
-	edg99_n=edg99_num;
-
-	// rollback the changes
-	for (i=0u,k=0u; i!=x_num1; ++i)
-	{
-		j=i+1u;
-		k+=j;
-		v=j*x_num+i;
-		for ( ; j!=x_num; ++j,++k,v+=x_num)
-			edge_counts[k]-=edge_counts[v];
-	}
+	edg98_n=edg98_num;
 
 	/* centre the graph */
 	double min_x=DBL_MAX,max_x=1.0-DBL_MAX,min_y=DBL_MAX,max_y=1.0-DBL_MAX,min_z=DBL_MAX,max_z=1.0-DBL_MAX;
@@ -2870,9 +2540,9 @@ void TopologyViewer::CompareTopologies (void) {
 
 	unsigned int edg_num=0u; // number of all edges
 	unsigned int edg50_num=0u; // number of edges with length error not less than 50%
-	unsigned int edg99_num=0u; // number of edges with length error not less than 99%
+	unsigned int edg98_num=0u; // number of edges with length error not less than 98%
 
-	if (!ideal_topo_view->MapGraphInto3D(matr,m_d_impact,edg_num,edg50_num,edg99_num))
+	if (!ideal_topo_view->MapGraphInto3D(matr,m_d_impact,edg_num,edg50_num,edg98_num))
 	{
 		free(matr);
 		delete ideal_topo_view;
@@ -2896,11 +2566,11 @@ void TopologyViewer::CompareTopologies (void) {
 					.arg(static_cast<double>(edg50_num)*r_edg_num,0,'f',2);
 		mes+=tr("of edges have %1% length error or greater").arg(50); // 'arg(const)' is used to minimize
 																	  // the number of translated strings
-		if (edg99_num!=0u)
+		if (edg98_num!=0u)
 		{
 			mes+=QString("<br>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <b>%1%</b> ")\
-						.arg(static_cast<double>(edg99_num)*r_edg_num,0,'f',2);
-			mes+=tr("of edges have %1% length error or greater").arg(99);
+						.arg(static_cast<double>(edg98_num)*r_edg_num,0,'f',2);
+			mes+=tr("of edges have %1% length error or greater").arg(98);
 		}
 		(mes+="<br><br>")+=tr("(the graph has <b>%1</b> edges in all)<br>").arg(edg_num);
 		emit SendMessToLog(MainWindow::Info,my_sign,mes);
@@ -3229,8 +2899,9 @@ void TVWidget::paintGL () {
 			glDisable(GL_LIGHTING);
 			glColor3fv(mat_clr_spec); // 'mat_clr_spec' consists of zeroes
 			coef=vert_rad*1.3f;
-			for (i=0u; i!=x_num; ++i)
+			for (i=0u; i!=x_num; ++i) {
 				renderText(points_x[i]+coef,points_y[i]+coef,points_z[i]+coef,host_names[i]);
+			}
 			glEnable(GL_LIGHTING);
 			//glEnable(GL_DEPTH_TEST);
 		}

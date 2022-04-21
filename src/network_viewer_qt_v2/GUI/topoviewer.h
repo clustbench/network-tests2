@@ -102,11 +102,11 @@ class TVWidget: public QGLWidget {
   	  // 'm_d_impact' - TopologyViewer's variable of the same name
   	  // 'edg_num' - number of all edges
   	  // 'edg50_num' - number of edges with length error not less than 50%
-  	  // 'edg99_num' - number of edges with length error not less than 99%
+  	  // 'edg98_num' - number of edges with length error not less than 98%
   	  //
       // returns 'false' if there was not enough memory
       bool MapGraphInto3D (double *matr, const double m_d_impact,
-      					   unsigned int &edg_num, unsigned int &edg50_num, unsigned int &edg99_num);
+      					   unsigned int &edg_num, unsigned int &edg50_num, unsigned int &edg98_num);
   	
   	  void ApplyTransform (void);
 
