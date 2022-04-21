@@ -131,7 +131,7 @@ class TVWidget: public QGLWidget {
       virtual void keyPressEvent (QKeyEvent*);
 
       // processes left mouse button's presses:
-      // initializes mouse position to rotate the graph (in future)
+      // initializes mouse position to rotate the graph
       virtual void mousePressEvent (QMouseEvent*);
 
       // processes mouse movements: gets mouse movement vector to compute rotation angles

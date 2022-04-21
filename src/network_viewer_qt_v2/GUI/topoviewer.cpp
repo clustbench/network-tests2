@@ -1343,6 +1343,7 @@ bool TopologyViewer::GetMatrixByValsForEdgsVar (double *matr) {
     }
     return true;
 }
+
 void TVWidget::SaveImageMenu (){
     QWidget *window = new QWidget;
 
@@ -1377,7 +1378,6 @@ double stress_part_i (double *x, double *y, double *z, double *matr, int n, int 
 		}
 		val = dist(x, y, z, i, j);
 		d_ij = matr[i * n + j];
-		// std::cout << "val = " << val << " d_ij = " << d_ij << std::endl;
 		res += (val - d_ij) * (val - d_ij);
 	}
 	return res;
@@ -2895,15 +2895,16 @@ void TVWidget::paintGL () {
 		// vertices' labels
 		if (show_host_names)
 		{
-			//glDisable(GL_DEPTH_TEST);
+			// glDisable(GL_DEPTH_TEST);
 			glDisable(GL_LIGHTING);
 			glColor3fv(mat_clr_spec); // 'mat_clr_spec' consists of zeroes
 			coef=vert_rad*1.3f;
+			glEnable(GL_DEPTH_TEST);
 			for (i=0u; i!=x_num; ++i) {
-				renderText(points_x[i]+coef,points_y[i]+coef,points_z[i]+coef,host_names[i]);
+				renderText(points_x[i]+coef,points_y[i]+coef,points_z[i]+coef+0.1,host_names[i]);
 			}
 			glEnable(GL_LIGHTING);
-			//glEnable(GL_DEPTH_TEST);
+			// glEnable(GL_DEPTH_TEST);
 		}
 	}
 	else
