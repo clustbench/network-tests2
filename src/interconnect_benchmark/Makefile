@@ -39,13 +39,15 @@ make_common:
 	$(MAKE) -C ../common
 
 interconnect_benchmark: $(FILES_IB) make_common
-	$(MPI_CCLINKER) $(MPI_CCLINKER_FLAGS) $(MPI_LIB_PATH) $(NETCDF_INCLUDE) -L ../core -L ../common -o $(EXECS) $(FILES_IB) ../common/clustbench_plugin_operations.o ../common/benchmarks_common.o ../common/clustbench_data_write_operations.o -lparus_network -lm -ldl $(MPI_LIBS)
-	mv $(EXECS) $(INSTALL_DIR)
+	$(MPI_CCLINKER) $(MPI_CCLINKER_FLAGS) $(MPI_LIB_PATH) $(NETCDF_INCLUDE) -L ../core -L ../common -o $(EXECS) $(FILES_IB) ../common/clustbench_plugin_operations.o ../common/benchmarks_common.o ../common/clustbench_data_write_operations.o ../common/clustbench_easy_matrices.o ../core/string_id_converters.o -lm -ldl $(MPI_LIBS)
 	
 clean:
 	rm  -f ./*.o
 	rm  -f $(EXECS)
 	$(MAKE) clean -C ../common
+	
+install: all
+	cp -rf $(EXECS) $(INSTALL_DIR)/bin/
 	
 %.o: %.c
 	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -ldl -I ../core -I ../.. -I ../common -c $^ -o $@

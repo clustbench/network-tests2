@@ -135,8 +135,10 @@ int parse_network_test_arguments(clustbench_benchmark_parameters_t *parameters,
     parameters->file_name_prefix           =  default_file_name_prefix;
     parameters->path_to_benchmark_code_dir =  BENCHMARK_DIR;
     parameters->benchmark_parameters       =  NULL;
-    parameters->statistics_save            =  CLUSTBENCH_MIN     | CLUSTBENCH_DEVIATION | 
-                                              CLUSTBENCH_AVERAGE | CLUSTBENCH_MEDIAN;
+    parameters->statistics_save            =  CLUSTBENCH_MIN     | 
+                                              CLUSTBENCH_DEVIATION | 
+                                              CLUSTBENCH_AVERAGE | 
+                                              CLUSTBENCH_MEDIAN;
 
 #ifdef _GNU_SOURCE
 

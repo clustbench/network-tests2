@@ -354,7 +354,7 @@ int all_to_all_parse_parameters (clustbench_benchmark_parameters_t* parameters,i
             {
                 all_to_all_print_help(NULL);
             }
-            return 3; /* flag of the unknown option */
+            return UNKNOWN_FLAG; /* flag of the unknown option */
             break;
         }
     }

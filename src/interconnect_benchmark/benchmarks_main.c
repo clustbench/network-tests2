@@ -325,7 +325,7 @@ int main(int argc,char **argv)
             flag = easy_mtr_create(&mtr_mi,comm_size,comm_size);
             if( flag==-1 )
             {
-                fprintf(stderr,"Can not to create min values matrix to story  the test results\n");
+                fprintf(stderr,"Can not to create min values matrix to store the test results\n");
                 MPI_Abort(MPI_COMM_WORLD,1);
                 return 1;
             }
@@ -338,23 +338,23 @@ int main(int argc,char **argv)
             }
         }
 
-        /*if(test_parameters.statistics & CLUSTBENCH_ALL_VALUES)
+        if(test_parameters.statistics_save & CLUSTBENCH_ALL_VALUES)
         {
             flag = easy_mtr_create_3d(&mtr_all,comm_size,comm_size,test_parameters.num_repeats);
             if( flag==-1 )
             {
-                fprintf(stderr,"Can not to create min values matrix to story  the test results\n");
+                fprintf(stderr,"Can not to create all values matrix to story  the test results\n");
                 MPI_Abort(MPI_COMM_WORLD,1);
                 return 1;
             }
 
-            if(create_netcdf_header(ALL_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_all,&netcdf_var_all))
+            if(create_netcdf_header(ALL_DELAYS_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_mi,&netcdf_var_mi,pointers.define_netcdf_vars,pointers.put_netcdf_vars))
             {
                 fprintf(stderr,"Can not to create file with name \"%s_all.nc\"\n",test_parameters.file_name_prefix);
                 MPI_Abort(MPI_COMM_WORLD,1);
                 return 1;
             }
-        }*/
+        }
 
         if(clustbench_create_hosts_file(&test_parameters,host_names))    	
         {
