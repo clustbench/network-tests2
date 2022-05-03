@@ -656,7 +656,7 @@ void TopologyViewer::Execute (void) {
 	unsigned int edg50_num=0u; // number of edges with length error not less than 50%
 	unsigned int edg98_num=0u; // number of edges with length error not less than 98%
 
-    if (!main_wdg.MapGraphInto3D(matr,m_d_impact,edg_num,edg50_num,edg98_num))
+    if (!main_wdg.MapGraphInto3D(matr, edg_num, edg50_num, edg98_num))
     {
     	free(matr);
 		NOT_ENOUGH_MEM_CLOSE;
@@ -1363,12 +1363,14 @@ void TVWidget::SaveImageMenu (){
     window->show();
 }
 
+//euclidean distance between i-th and j-th nodes
 double dist(double *x, double *y, double *z, int i, int j)
 {
 	double res = (x[i] - x[j])*(x[i] - x[j]) + (y[i] - y[j]) * (y[i] - y[j]) + (z[i] - z[j]) * (z[i] - z[j]);
 	return std::sqrt(res);
 }
 
+//part of the i-th vertex in the stress function
 double stress_part_i (double *x, double *y, double *z, double *matr, int n, int i)
 {
 	double res = 0.0, val, d_ij;
@@ -1383,16 +1385,17 @@ double stress_part_i (double *x, double *y, double *z, double *matr, int n, int 
 	return res;
 }
 
-bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
-							   unsigned int &edg_n, unsigned int &edg50_n, unsigned int &edg98_n) {
+bool TVWidget::MapGraphInto3D (double *matr, unsigned int &edg_n, 
+								unsigned int &edg50_n, unsigned int &edg98_n) {
 	
-	unsigned int i,j,v,k,k1;
-	double *mtr1=matr;
+	unsigned int i, j, v, k;
 	double val;
 	double min_val=DBL_MAX;
 
+	//the matrix values changed according to the probabilities of the existence of edges
 	for (i = 0; i < x_num; ++i) {
 		for (k = i; k < x_num; ++k) {
+			//diagonal elements are zeros
 			if (i == k) {
 				matr[i * x_num + k] = 0.0;
 				continue;
@@ -1405,28 +1408,16 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 				val = (val<1.0e-10)? 1.0e-10 : val;
 				min_val = (val < min_val)? val : min_val;
 			}
+			//the matrix is made symmetrical
 			matr[i * x_num + k] = val;
 			matr[k * x_num + i] = val;
 		}
 	}
-	std::cout << std::endl;
-	std::cout << "min_val = " << min_val << std::endl;
 
-	// for (i = 0; i < x_num; ++i) {
-	// 	for (j = i; j < x_num; ++j) {
-	// 		if (i == j) {
-	// 			std::cout <<i << " " << matr[i*x_num + j] << std::endl;
-	// 		}
-	// 		else {
-	// 			std::cout << i << " " << j << " ";
-	// 			std::cout << matr[i*x_num + j] << " " << matr[j*x_num + i] << std::endl;
-	// 		}
-	// 	}
-	// }
-
+	//elements normalization
 	for (i = 0u; i < x_num; ++i)
 	{
-		for (j = i + 1; j != x_num; ++j,++mtr1)
+		for (j = i + 1; j != x_num; ++j)
 		{
 			v = edge_counts[i * x_num + k] + edge_counts[k * x_num + i];
 			// normalize 
@@ -1434,36 +1425,29 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 				matr[i * x_num + j] /= min_val;
 				matr[j * x_num + i] /= min_val;
 			}
+			//the elements of the matrix that correspond to unexisting edges are set to 1
 		}
 	}
 
 	double *xx=static_cast<double*>(malloc(x_num*sizeof(double)));
-	if (xx==NULL) return false;
+	if (xx==NULL) 
+		return false;
 	double *yy=static_cast<double*>(malloc(x_num*sizeof(double)));
-	if (yy==NULL) { free(xx); return false; }
+	if (yy==NULL) {
+		free(xx); 
+		return false; 
+	}
 	double *zz=static_cast<double*>(malloc(x_num*sizeof(double)));
-	if (zz==NULL) { free(yy); free(xx); return false; }
+	if (zz==NULL) {
+		free(yy); 
+		free(xx); 
+		return false; 
+	}
 
-	/* do gradient descent */
-	// static const double eps=1.0e-100; // precision for distances and for the step
-	static const double eps=1.0e-10; // precision for distances and for the step
-	static const double small_var=1.0e-6; // lower threshold of difference between
-										  // previous and current value of minimizing function
-	static const double dec_step=1.0/16.0,inc_step=1.5; // adjusting of the step
+	static const double eps=1.0e-10; // precision
 	static const unsigned int max_iter=300000u; // maximum number of iterations
-	double *gradx=static_cast<double*>(malloc(x_num*sizeof(double)));
-	if (gradx==NULL) { free(zz); free(yy); free(xx); return false; }
-	double *grady=static_cast<double*>(malloc(x_num*sizeof(double)));
-	if (grady==NULL) { free(gradx); free(zz); free(yy); free(xx); return false; }
-	double *gradz=static_cast<double*>(malloc(x_num*sizeof(double)));
-	if (gradz==NULL) { free(grady); free(gradx); free(zz); free(yy); free(xx); return false; }
-	const unsigned int x_num1=x_num-1u;
-	const double *mtr;
-	const unsigned int *edg_cnt;
-	double t=1.0e-7,f_prev,f;
-	double x_i,y_i,z_i,dx,dy,dz,grx,gry,grz;
-	const double half_m_d_impact=0.5*m_d_impact;
 
+	//random initialization
 	srand(x_num);
 	for (i=0u; i!=x_num; ++i)
 	{
@@ -1478,47 +1462,21 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 	l.setAutoFillBackground(true);
 	l.show();
 
+	//stress function is computed
 	double stress = 0.0, new_stress = 0.0, d_ij;
-	for (int i = 0; i < x_num; ++i) {
-		for (int j = i + 1; j < x_num; ++j) {
+	for (i = 0; i < x_num; ++i) {
+		for (j = i + 1; j < x_num; ++j) {
 			val = dist(xx, yy, zz, i, j);
 			d_ij = matr[i * x_num + j];
-			// std::cout << "val = " << val << " d_ij = " << d_ij << std::endl;
 			stress += (val - d_ij) * (val - d_ij);
-			// std::cout << "STRESS = " << stress << std::endl;
 		}
 	}
-	std::cout << "stress = " << stress << std::endl;
-	// std::cout << "stress = " << stress_fun(xx, yy, zz, matr, x_num) << std::endl;
 	double prev_part_i, cur_part_i;
 	bool stop = false;
-
-	// for (i = 0; i < x_num; ++i) {
-	// 	for (j = i; j < x_num; ++j) {
-	// 		if (i == j) {
-	// 			std::cout <<i << " " << matr[i*x_num + j] << std::endl;
-	// 		}
-	// 		else {
-	// 			std::cout << i << " " << j << " ";
-	// 			std::cout << matr[i*x_num + j] << " " << matr[j*x_num + i] << std::endl;
-	// 		}
-	// 	}
-	// }
-
-	// for (i = 0; i < x_num; ++i) {
-	// 	for (j = i; j < x_num; ++j) {
-	// 		if (i == j) {
-	// 			std::cout <<i << " " << edge_counts[i*x_num + j] << std::endl;
-	// 		}
-	// 		else {
-	// 			std::cout << i << " " << j << " ";
-	// 			std::cout << edge_counts[i*x_num + j] << " " << edge_counts[j*x_num + i] << std::endl;
-	// 		}
-	// 	}
-	// }
-	std::cout << "stress = " << stress << std::endl;
-	for (int k = 0; k != max_iter; ++k) {
-		// std::cout << "k = " << k << std::endl;
+	/* stress majorization implemented
+	you can find the formula in the article 
+	E. R. Gansner, Y. Koren. 'Graph Drawing by Stress Majorization' */
+	for (k = 0; k != max_iter; ++k) {
 		if ((k & 0x1f)==0u)
 		{
 			l.setText(QString("<div align=\"center\">iter %1 / %2</div><br><div align=\"left\">func: %3</div>").
@@ -1526,10 +1484,12 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 			// immediate processing of all paint events and such
 			QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents,1);
 		}
-		for (int i = 0; i < x_num; ++i) {
+		for (i = 0; i < x_num; ++i) {
 			double new_x = 0.0, new_y = 0.0, new_z = 0.0;
+			//previous part of the i-th vertex in the stress function
 			prev_part_i = stress_part_i(xx, yy, zz, matr, x_num, i);
-			for (int j = 0; j < x_num; ++j) {
+			//new coordinates for i-th node
+			for (j = 0; j < x_num; ++j) {
 				if (i == j) {
 					continue;
 				}
@@ -1546,22 +1506,22 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 			xx[i] = new_x / (x_num - 1);
 			yy[i] = new_y / (x_num - 1);
 			zz[i] = new_z / (x_num - 1);
+			//current part of the i-th vertex in the stress function
 			cur_part_i = stress_part_i(xx, yy, zz, matr, x_num, i);
-			// std::cout << prev_part_i << " " << cur_part_i << std::endl;
 			new_stress = stress - prev_part_i + cur_part_i;
-			// std::cout << "new_stress = " << new_stress << std::endl;
-			// std::cout << (stress - new_stress) / stress << std::endl;
+			//stop condition
 			if ((stress - new_stress) / stress < eps) {
 				stop = true;
 				break;
 			}
 			stress = new_stress;
-			// std::cout << "stress = " << stress << std::endl;
+			printf("stress = %f\n", stress);
 		}
 		if (stop) {
 			break;
 		}
 	}
+	printf("%u iterations\n", k);
 
 	l.hide();
 
@@ -1570,9 +1530,8 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 	unsigned int edg50_num=0u; // number of edges with length error not less than 50%
 	unsigned int edg98_num=0u; // number of edges with length error not less than 98%
 
-	for (i = 0; i < x_num1; ++i)
+	for (i = 0; i < x_num - 1; ++i)
 	{
-		// x_i=xx[i]; y_i=yy[i]; z_i=zz[i];
 		for (j = i + 1; j < x_num; ++j)
 		{
 			v = edge_counts[i * x_num + j] + edge_counts[j * x_num + i];
@@ -1594,51 +1553,52 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 	edg98_n=edg98_num;
 
 	/* centre the graph */
-	double min_x=DBL_MAX,max_x=1.0-DBL_MAX,min_y=DBL_MAX,max_y=1.0-DBL_MAX,min_z=DBL_MAX,max_z=1.0-DBL_MAX;
-	for (i=0u; i!=x_num; ++i)
+	double min_x = DBL_MAX, max_x = 1.0-DBL_MAX, min_y = DBL_MAX;
+	double max_y = 1.0-DBL_MAX, min_z = DBL_MAX, max_z = 1.0-DBL_MAX;
+	for (i = 0u; i != x_num; ++i)
 	{
-		min_x=(xx[i]<min_x)? xx[i] : min_x;
-		max_x=(xx[i]>max_x)? xx[i] : max_x;
-		min_y=(yy[i]<min_y)? yy[i] : min_y;
-		max_y=(yy[i]>max_y)? yy[i] : max_y;
-		min_z=(zz[i]<min_z)? zz[i] : min_z;
-		max_z=(zz[i]>max_z)? zz[i] : max_z;
+		min_x = (xx[i]<min_x)? xx[i] : min_x;
+		max_x = (xx[i]>max_x)? xx[i] : max_x;
+		min_y = (yy[i]<min_y)? yy[i] : min_y;
+		max_y = (yy[i]>max_y)? yy[i] : max_y;
+		min_z = (zz[i]<min_z)? zz[i] : min_z;
+		max_z = (zz[i]>max_z)? zz[i] : max_z;
 	}
-	min_x=-(min_x+max_x)*0.5;
-	min_y=-(min_y+max_y)*0.5;
-	geom_c_z=(min_z+max_z)*0.5;
-	min_z=5.0-min_z; // the nearest (to viewer) z-coordinate should be equal to 5
-	geom_c_z+=min_z;
-	for (i=0u; i!=x_num; ++i)
+	min_x = -(min_x + max_x) * 0.5;
+	min_y = -(min_y + max_y) * 0.5;
+	geom_c_z = (min_z + max_z) * 0.5;
+	min_z = 5.0 - min_z; // the nearest (to viewer) z-coordinate should be equal to 5
+	geom_c_z += min_z;
+	for (i = 0u; i != x_num; ++i)
 	{
-		xx[i]+=min_x;
-		yy[i]+=min_y;
-		zz[i]+=min_z;
+		xx[i] += min_x;
+		yy[i] += min_y;
+		zz[i] += min_z;
 	}
 
-	/* convert coordinates from double to float */
+	/* convert coordinates from double to float for opengl drawing*/
 	double *arr_end;
 	float *arr;
 
 	/* there is enough memory for these 3 arrays
 	   because 'gradx', 'grady' and 'gradz' were free'd */
-	arr=static_cast<float*>(malloc(x_num*sizeof(float)));
-	points_z=arr;
-	for (arr_end=zz+x_num; zz!=arr_end; ++zz,++arr)
+	arr = static_cast<float*>(malloc(x_num*sizeof(float)));
+	points_z = arr;
+	for (arr_end = zz + x_num; zz != arr_end; ++zz,++arr)
 		*arr=static_cast<float>(*zz);
-	zz-=x_num;
+	zz -= x_num;
 	free(zz);
-	arr=static_cast<float*>(malloc(x_num*sizeof(float)));
-	points_y=arr;
-	for (arr_end=yy+x_num; yy!=arr_end; ++yy,++arr)
+	arr = static_cast<float*>(malloc(x_num*sizeof(float)));
+	points_y = arr;
+	for (arr_end = yy + x_num; yy != arr_end; ++yy,++arr)
 		*arr=static_cast<float>(*yy);
-	yy-=x_num;
+	yy -= x_num;
 	free(yy);
-	arr=static_cast<float*>(malloc(x_num*sizeof(float)));
-	points_x=arr;
-	for (arr_end=xx+x_num; xx!=arr_end; ++xx,++arr)
-		*arr=static_cast<float>(*xx);
-	xx-=x_num;
+	arr = static_cast<float*>(malloc(x_num*sizeof(float)));
+	points_x = arr;
+	for (arr_end = xx + x_num; xx != arr_end; ++xx,++arr)
+		*arr = static_cast<float>(*xx);
+	xx -= x_num;
 	free(xx);
 
 	return true;
@@ -2542,7 +2502,7 @@ void TopologyViewer::CompareTopologies (void) {
 	unsigned int edg50_num=0u; // number of edges with length error not less than 50%
 	unsigned int edg98_num=0u; // number of edges with length error not less than 98%
 
-	if (!ideal_topo_view->MapGraphInto3D(matr,m_d_impact,edg_num,edg50_num,edg98_num))
+	if (!ideal_topo_view->MapGraphInto3D(matr, edg_num, edg50_num, edg98_num))
 	{
 		free(matr);
 		delete ideal_topo_view;
