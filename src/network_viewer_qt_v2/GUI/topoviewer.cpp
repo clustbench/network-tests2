@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cfloat>
 #include <set>
+#include <memory>
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QMessageBox>
@@ -15,8 +16,6 @@
 #include <QTimer>
 #include "err_msgs.h"
 
-#include <iostream>
-#include <typeinfo>
 
 const QString TopologyViewer::my_sign("Topo");
 
@@ -425,7 +424,6 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 		    QMessageBox::warning(this,tr("Warning"),tr("<p align=center>This test was not finished.<br>"
 		    					 "Expected %1 instead of %2<br>as end message length value.</p>")\
 		    					 .arg(wright_end_message_length-step_length).arg(end_message_length),QMessageBox::Ok);
-		    //end_message_length=wright_end_message_length;
 		}
 
 		if (txt_files->d_file!=NULL)
@@ -656,7 +654,7 @@ void TopologyViewer::Execute (void) {
 	unsigned int edg50_num=0u; // number of edges with length error not less than 50%
 	unsigned int edg98_num=0u; // number of edges with length error not less than 98%
 
-    if (!main_wdg.MapGraphInto3D(matr,m_d_impact,edg_num,edg50_num,edg98_num))
+    if (!main_wdg.MapGraphInto3D(matr, edg_num, edg50_num, edg98_num))
     {
     	free(matr);
 		NOT_ENOUGH_MEM_CLOSE;
@@ -686,32 +684,8 @@ void TopologyViewer::Execute (void) {
 }
 
 
-// garbage collectors;
-// make instances of these classes AFTER allocations of memory for managed pointers
-// TODO: replace these 2 classes with std::unique_ptr when C++11 will be fully supported
-class _FreeMeOnReturn {
-	private:
-		void *const ptr;
-
-		_FreeMeOnReturn (const _FreeMeOnReturn&); // denied
-		void operator= (const _FreeMeOnReturn&); // denied
-	public:
-		explicit _FreeMeOnReturn (void *p): ptr(p) {}
-		~_FreeMeOnReturn (void) { free(ptr); }
-};
-template <typename T> class _Delete_arr_MeOnReturn {
-	private:
-		T *const arr;
-
-		_Delete_arr_MeOnReturn (const _Delete_arr_MeOnReturn&); // denied
-		void operator= (const _Delete_arr_MeOnReturn&); // denied
-	public:
-		explicit _Delete_arr_MeOnReturn (T *a): arr(a) {}
-		~_Delete_arr_MeOnReturn (void) { delete[] arr; }
-};
-
 bool TopologyViewer::RetrieveTopology (double *matr) {
-	clock_t st=clock();
+	clock_t st = clock();
 	QLabel l(&main_wdg);
 	l.setFixedSize(200,50);
 	l.move((width()-l.width())/2,(height()-l.height())/2);
@@ -720,34 +694,37 @@ bool TopologyViewer::RetrieveTopology (double *matr) {
 	l.setText(QString("Retrieving topology from file..."));
 	
 	// immediate processing of all paint events and such
-	// QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents,1);
+	QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents,1);
+
 	// array of vertices; each vertex stores an array of adjacent vertices
-    std::vector<unsigned int> *vertices=new(std::nothrow) std::vector<unsigned int>[main_wdg.x_num];
-    if (vertices==NULL) { NOT_ENOUGH_MEM_RET(false); }
-    _Delete_arr_MeOnReturn<std::vector<unsigned int> > _for_vertices(vertices); // calls "delete[] vertices"
-    																			// when function returns
+    std::vector<unsigned int> vertices[main_wdg.x_num];
+    if (vertices == nullptr) { 
+		NOT_ENOUGH_MEM_RET(false); 
+	}
 
     // distances between vertices; the structure is the same as the structure of 'vertices'
-    std::vector<double> *edges=new(std::nothrow) std::vector<double>[main_wdg.x_num];
-    if (edges==NULL) { NOT_ENOUGH_MEM_RET(false); }
-    _Delete_arr_MeOnReturn<std::vector<double> > _for_edges(edges); // calls "delete[] edges" when function returns
+    std::vector<double> edges[main_wdg.x_num];
+    if (edges == nullptr) { 
+		NOT_ENOUGH_MEM_RET(false); 
+	}
 
-    // array of flags; a flag is 'true' when corresponding vertex is "viewed" or "done"
-    bool *vert_done=static_cast<bool*>(calloc(main_wdg.x_num,sizeof(bool)));
-    if (vert_done==NULL) { NOT_ENOUGH_MEM_RET(false); }
-    _FreeMeOnReturn _for_vert_done(vert_done); // calls "free(vert_done)" when function returns
-
+    // unique_ptr to an array of flags; 
+	//a flag is 'true' when corresponding vertex is "viewed" or "done"
+	auto vert_done = std::make_unique<bool[]>(main_wdg.x_num);
+    if (vert_done == nullptr) { 
+		NOT_ENOUGH_MEM_RET(false); 
+	}
+	
     std::set<unsigned int> on_sh_mem; // processors on shared memory;
     								  // distances between such processors are not differ much
 
-    unsigned int i,j=main_wdg.x_num+1u;
-    unsigned int bigi=main_wdg.x_num*(main_wdg.x_num+1u); // saves a value of "<some_var>*main_wdg.x_num"
+    unsigned int i,j = main_wdg.x_num + 1u;
+	// 'bigi' saves a value of "<some_var>*main_wdg.x_num"
+    unsigned int bigi = main_wdg.x_num * (main_wdg.x_num + 1u); 
     double glob_min; // minimum value in 'matr'
     unsigned int gl_min_s,gl_min_e; // row and column index of 'glob_min' correspondently
     double *cur; // an iterator for 'matr'
-    std::vector<unsigned int> *verts,*verts_end; // iterators for 'vertices'
-	std::vector<double> *edgs; // an iterator for 'edges'
-    bool main_break=false; // becomes 'true' when we need to exit the main cycle
+    bool main_break = false; // becomes 'true' when we need to exit the main cycle
 
     /* 1st part: retrieve spanning subgraph */
 
@@ -757,88 +734,94 @@ bool TopologyViewer::RetrieveTopology (double *matr) {
 
 	// start: find minimum value among values of the whole matrix;
 	// it's clear that two corresponding vertices are linked
-	glob_min=DBL_MAX;
-	gl_min_s=0u;
-	gl_min_e=0u;
-	cur=matr;
-	for (i=0u; i!=main_wdg.x_num; ++i)
+	glob_min = DBL_MAX;
+	gl_min_s = 0u;
+	gl_min_e = 0u;
+	cur = matr;
+	for (i = 0u; i != main_wdg.x_num; ++i)
 	{
-		for (j=0u; j!=main_wdg.x_num; ++j,++cur)
+		for (j = 0u; j != main_wdg.x_num; ++j,++cur)
 		{
-			if (*cur<glob_min)
+			if (*cur < glob_min)
 			{
-				glob_min=*cur;
-				gl_min_s=i;
-				gl_min_e=j;
+				glob_min = *cur;
+				gl_min_s = i;
+				gl_min_e = j;
 			}
 		}
 	}
-	vert_done[gl_min_s]=true;
+	vert_done[gl_min_s] = true;
 	try {
 		vertices[gl_min_s].push_back(gl_min_e);
 		edges[gl_min_s].push_back(glob_min);
 	}
-	catch (...) { NOT_ENOUGH_MEM_RET(false); }
-	matr[gl_min_s*main_wdg.x_num+gl_min_e]=DBL_MAX;
+	catch (...) { 
+		NOT_ENOUGH_MEM_RET(false); 
+	}
+	matr[gl_min_s * main_wdg.x_num + gl_min_e] = DBL_MAX;
 	// check if edge 'gl_min_s'<->'gl_min_e' is a duplex channel (with tolerance 'shmem_eps' (!))
-	glob_min*=shmem_eps;
-	cur=matr+(gl_min_e*main_wdg.x_num+gl_min_s);
-	if (*cur<glob_min)
+	glob_min *= shmem_eps;
+	cur = matr + (gl_min_e * main_wdg.x_num + gl_min_s);
+	if (*cur < glob_min)
 	{
 		try {
 			vertices[gl_min_e].push_back(gl_min_s);
 			edges[gl_min_e].push_back(*cur);
 		}
-		catch (...) { NOT_ENOUGH_MEM_RET(false); }
-		*cur=DBL_MAX;
+		catch (...) { 
+			NOT_ENOUGH_MEM_RET(false); 
+		}
+		*cur = DBL_MAX;
 	}
 	try {
 		on_sh_mem.insert(gl_min_e);
 	}
-	catch (...) { NOT_ENOUGH_MEM_RET(false); }
+	catch (...) { 
+		NOT_ENOUGH_MEM_RET(false); 
+	}
 	for ( ; ; )
 	{
 		// collect (and link) processors placed on shared memory;
 		// the tolerance is 'shmem_eps'
 		while (!on_sh_mem.empty())
 		{
-			gl_min_e=*(on_sh_mem.begin());
+			gl_min_e = *(on_sh_mem.begin());
 			on_sh_mem.erase(on_sh_mem.begin());
-			cur=matr+gl_min_e*main_wdg.x_num;
-			vert_done[gl_min_e]=true;
-			verts=vertices+gl_min_e;
-			edgs=edges+gl_min_e;
-			for (j=0u; j!=main_wdg.x_num; ++j,++cur)
+			cur = matr + gl_min_e * main_wdg.x_num;
+			vert_done[gl_min_e] = true;
+			for (j = 0u; j != main_wdg.x_num; ++j,++cur)
 			{
-				if (*cur<glob_min)
+				if (*cur < glob_min)
 				{
 					try {
-						verts->push_back(j);
-						edgs->push_back(*cur);
+						vertices[gl_min_e].push_back(j);
+						edges[gl_min_e].push_back(*cur);
 						if (!vert_done[j])
 							on_sh_mem.insert(j);
 					}
-					catch (...) { NOT_ENOUGH_MEM_RET(false); }
-					*cur=DBL_MAX;
+					catch (...) { 
+						NOT_ENOUGH_MEM_RET(false); 
+					}
+					*cur = DBL_MAX;
 				}
 			}
-			cur=matr+gl_min_e;
-			edgs=edges;
-			for (verts=vertices,verts_end=vertices+main_wdg.x_num; verts!=verts_end; ++verts,++edgs)
+			cur = matr + gl_min_e;
+			for (i = 0; i != main_wdg.x_num; ++i)
 			{
-				if (*cur<glob_min)
+				if (*cur < glob_min)
 				{
 					try {
-						verts->push_back(gl_min_e);
-						edgs->push_back(*cur);
+						vertices[i].push_back(gl_min_e);
+						edges[i].push_back(*cur);
 					}
-					catch (...) { NOT_ENOUGH_MEM_RET(false); }
-					*cur=DBL_MAX;
+					catch (...) { 
+						NOT_ENOUGH_MEM_RET(false); 
+					}
+					*cur = DBL_MAX;
 				}
-				cur+=main_wdg.x_num;
+				cur += main_wdg.x_num;
 			}
 		}
-
 
 		for ( ; ; )
 		{
@@ -846,51 +829,54 @@ bool TopologyViewer::RetrieveTopology (double *matr) {
 			// this is called "ascent to cardboards";
 			// find minimum value among values which correspond to
 			// pairs of "visited"-"not visited" processors
-			glob_min=DBL_MAX;
-			gl_min_s=gl_min_e=0u;
-			cur=matr;
-			for (i=0u; i!=main_wdg.x_num; ++i)
+			glob_min = DBL_MAX;
+			gl_min_s = gl_min_e = 0u;
+			cur = matr;
+			for (i = 0u; i != main_wdg.x_num; ++i)
 			{
 				if (!vert_done[i])
 				{
-					cur+=main_wdg.x_num;
+					cur += main_wdg.x_num;
 					continue;
 				}
-				for (j=0u; j!=main_wdg.x_num; ++j,++cur)
+				for (j = 0u; j != main_wdg.x_num; ++j,++cur)
 				{
-					if (!vert_done[j] && (*cur<glob_min))
+					if (!vert_done[j] && (*cur < glob_min))
 					{
-						glob_min=*cur;
-						gl_min_s=i;
-						gl_min_e=j;
+						glob_min = *cur;
+						gl_min_s = i;
+						gl_min_e = j;
 					}
 				}
 			}
-			if (gl_min_s==gl_min_e)
+			if (gl_min_s == gl_min_e)
 			{
 				// this means that all processors are marked as "visited"
-				main_break=true;
+				main_break = true;
 				break;
 			}
-			//vert_done[gl_min_s]=true;
 			try {
 				vertices[gl_min_s].push_back(gl_min_e);
 				edges[gl_min_s].push_back(glob_min);
 			}
-			catch (...) { NOT_ENOUGH_MEM_RET(false); }
-			matr[gl_min_s*main_wdg.x_num+gl_min_e]=DBL_MAX;
+			catch (...) { 
+				NOT_ENOUGH_MEM_RET(false); 
+			}
+			matr[gl_min_s * main_wdg.x_num + gl_min_e] = DBL_MAX;
 			// check if edge 'gl_min_s'<->'gl_min_e' is
 			// a duplex channel (with tolerance 'duplex_eps')
-			bigi=gl_min_e*main_wdg.x_num;
-			cur=matr+(bigi+gl_min_s);
-			if (*cur<glob_min*duplex_eps)
+			bigi = gl_min_e * main_wdg.x_num;
+			cur = matr + (bigi + gl_min_s);
+			if (*cur < glob_min * duplex_eps)
 			{
 				try {
 					vertices[gl_min_e].push_back(gl_min_s);
 					edges[gl_min_e].push_back(*cur);
 				}
-				catch (...) { NOT_ENOUGH_MEM_RET(false); }
-				*cur=DBL_MAX;
+				catch (...) { 
+					NOT_ENOUGH_MEM_RET(false); 
+				}
+				*cur = DBL_MAX;
 			}
 			// the cycle of "descent to processor cores":
 			// 1) find edge with minimum length which begins in 'gl_min_e';
@@ -902,26 +888,27 @@ bool TopologyViewer::RetrieveTopology (double *matr) {
 			// found edges should form a chain
 			for ( ; ; )
 			{
-				gl_min_s=gl_min_e;
-				gl_min_e=main_wdg.x_num;
-				//glob_min=DBL_MAX; // new 'glob_min' must be strongly less than current one!
-				cur=matr+bigi;
-				for (j=0u; j!=main_wdg.x_num; ++j,++cur)
+				gl_min_s = gl_min_e;
+				gl_min_e = main_wdg.x_num;
+				cur = matr + bigi;
+				for (j = 0u; j != main_wdg.x_num; ++j,++cur)
 				{
-					if (*cur<glob_min)
+					if (*cur < glob_min)
 					{
-						glob_min=*cur;
-						gl_min_e=j;
+						glob_min = *cur;
+						gl_min_e = j;
 					}
 				}
-				if (gl_min_e==main_wdg.x_num)
+				if (gl_min_e == main_wdg.x_num)
 				{
 					if (!vert_done[gl_min_s])
 					{
 						try {
 							on_sh_mem.insert(gl_min_s);
 						}
-						catch (...) { NOT_ENOUGH_MEM_RET(false); }
+						catch (...) { 
+							NOT_ENOUGH_MEM_RET(false); 
+						}
 					}
 					break;
 				}
@@ -930,114 +917,125 @@ bool TopologyViewer::RetrieveTopology (double *matr) {
 					vertices[gl_min_s].push_back(gl_min_e);
 					edges[gl_min_s].push_back(glob_min);
 				}
-				catch (...) { NOT_ENOUGH_MEM_RET(false); }
-				matr[bigi+gl_min_e]=DBL_MAX;
-				glob_min*=shmem_eps;
-				bigi=gl_min_e*main_wdg.x_num;
-				cur=matr+(bigi+gl_min_s);
-				if (*cur<glob_min)
+				catch (...) { 
+					NOT_ENOUGH_MEM_RET(false); 
+				}
+				matr[bigi+gl_min_e] = DBL_MAX;
+				glob_min *= shmem_eps;
+				bigi = gl_min_e * main_wdg.x_num;
+				cur = matr + (bigi + gl_min_s);
+				if (*cur < glob_min)
 				{
 					try {
 						vertices[gl_min_e].push_back(gl_min_s);
 						edges[gl_min_e].push_back(*cur);
 					}
-					catch (...) { NOT_ENOUGH_MEM_RET(false); }
-					*cur=DBL_MAX;
+					catch (...) { 
+						NOT_ENOUGH_MEM_RET(false); 
+					}
+					*cur = DBL_MAX;
 				}
 			}
-			if (!on_sh_mem.empty()) break;
+			if (!on_sh_mem.empty()) 
+				break;
 		}
-		if (main_break) break; // first part of the algorithm is done
+		if (main_break) 
+			break; // first part of the algorithm is done
 	}
-
-	st=clock()-st;
+	st = clock()-st;
 	printf("\n%g мс",static_cast<float>(st*1000u)/static_cast<float>(CLOCKS_PER_SEC));
-	st=clock();
+	st = clock();
 
 	/* 2nd part: retrieve "good" cycles */
 
 	// a "good" cycle is a cycle 1->2, 2->3, ... (k-1)->k, 1->k (direction is important),
 	// where |12| + |23| + ... +|k-1,k|> |1k| (|| is a length of an edge)
 	std::vector<unsigned int>::const_iterator it,it_end;
-	double *d=static_cast<double*>(malloc(main_wdg.x_num*sizeof(double)));
+	auto d = std::make_unique<double[]>(main_wdg.x_num);
 
-	if (d!=NULL)
+	if (d != nullptr)
 	{
-		_FreeMeOnReturn _for_d(d); // calls "free(d)" at the end of scope
-
-		verts=vertices;
-		edgs=edges;
-		for (i=0u,bigi=0u; i!=main_wdg.x_num; ++i,bigi+=main_wdg.x_num,++verts,++edgs)
+		int cnt = 0;
+		// Dijkstra algorithm for every vertex (found in Wikipedia)
+		for (i = 0u, bigi = 0u; i != main_wdg.x_num; ++i, bigi += main_wdg.x_num, ++cnt)
 		{
-			// Dijkstra algorithm for every vertex (found in Wikipedia)
-			memset(vert_done,0,main_wdg.x_num*sizeof(bool));
-			for (j=0u; j!=main_wdg.x_num; ++j)
-				d[j]=DBL_MAX;
-			d[i]=0.0;
-			vert_done[i]=true;
-			gl_min_e=1u; // counter of "visited" vertices
-			for (it=verts->begin(),it_end=verts->end(); it!=it_end; ++it)
-			{
-				glob_min=(*edgs)[it-verts->begin()];
-				j=*it;
-				if (glob_min<d[j]) d[j]=glob_min;
+			//initialization of vert_done
+			for (j = 0u; j < main_wdg.x_num; ++j) {
+				vert_done[j] = false;
 			}
-			for ( ; gl_min_e!=main_wdg.x_num; ++gl_min_e)
+			for (j = 0u; j != main_wdg.x_num; ++j)
+				d[j] = DBL_MAX;
+			d[i] = 0.0;
+			vert_done[i] = true;
+			gl_min_e = 1u; // counter of "visited" vertices
+			for (it = vertices[cnt].begin(); it != vertices[cnt].end(); ++it)
 			{
-				for (j=0u; vert_done[j]; ++j) ;
-				glob_min=d[j];
-				gl_min_s=j;
-				for (++j; j!=main_wdg.x_num; ++j)
+				glob_min = edges[cnt][it-vertices[cnt].begin()];
+				j = *it;
+				if (glob_min < d[j]) 
+					d[j] = glob_min;
+			}
+			for ( ; gl_min_e != main_wdg.x_num; ++gl_min_e)
+			{
+				for (j = 0u; vert_done[j]; ++j) ;
+				glob_min = d[j];
+				gl_min_s = j;
+				for (++j; j != main_wdg.x_num; ++j)
 				{
-					if (vert_done[j]) continue;
-					if (d[j]<glob_min)
+					if (vert_done[j]) 
+						continue;
+					if (d[j] < glob_min)
 					{
-						glob_min=d[j];
-						gl_min_s=j;
+						glob_min = d[j];
+						gl_min_s = j;
 					}
 				}
-				if (glob_min==DBL_MAX) break; // some vertices are unreachable
-				vert_done[gl_min_s]=true;
-				const std::vector<unsigned int> &v_gl_min_s=vertices[gl_min_s];
-				const std::vector<double> &e_gl_min_s=edges[gl_min_s];
-				for (it=v_gl_min_s.begin(),it_end=v_gl_min_s.end(); it!=it_end; ++it)
+				if (glob_min == DBL_MAX) 
+					break; // some vertices are unreachable
+				vert_done[gl_min_s] = true;
+				const std::vector<unsigned int> &v_gl_min_s = vertices[gl_min_s];
+				const std::vector<double> &e_gl_min_s = edges[gl_min_s];
+				for (it = v_gl_min_s.begin(), it_end = v_gl_min_s.end(); it!=it_end; ++it)
 				{
-					j=*it;
-					if (vert_done[j]) continue;
-					glob_min=d[gl_min_s]+e_gl_min_s[it-v_gl_min_s.begin()];
-					if (glob_min<d[j]) d[j]=glob_min;
+					j = *it;
+					if (vert_done[j]) 
+						continue;
+					glob_min = d[gl_min_s] + e_gl_min_s[it - v_gl_min_s.begin()];
+					if (glob_min < d[j]) 
+						d[j] = glob_min;
 				}
 			}
-			cur=matr+bigi;
-			for (j=0u; j!=main_wdg.x_num; ++j,++cur)
+			cur = matr + bigi;
+			for (j = 0u; j != main_wdg.x_num; ++j,++cur)
 			{
-				if ((d[j]!=DBL_MAX) && (*cur<d[j]))
+				if ((d[j] != DBL_MAX) && (*cur < d[j]))
 				{
-					//if (std::find(verts->begin(),verts->end(),j)!=verts->end()) exit(0);
 					try {
-						verts->push_back(j);
-						edgs->push_back(*cur);
+						vertices[cnt].push_back(j);
+						edges[cnt].push_back(*cur);
 					}
-					catch (...) { NOT_ENOUGH_MEM_RET(false); }
-					*cur=DBL_MAX;
+					catch (...) { 
+						NOT_ENOUGH_MEM_RET(false);
+					}
+					*cur = DBL_MAX;
 				}
 			}
 		}
 	}
 
-	st=clock()-st;
+	st = clock()-st;
 	printf(", %g мс",static_cast<float>(st*1000u)/static_cast<float>(CLOCKS_PER_SEC));
-	st=clock();
+	st = clock();
 
 	/* 3rd part: add new edges */
 	unsigned int *edg_cs=main_wdg.edge_counts;
-	for (verts=vertices,verts_end=vertices+main_wdg.x_num; verts!=verts_end; ++verts,edg_cs+=main_wdg.x_num)
+	for (i = 0; i != main_wdg.x_num; ++i, edg_cs += main_wdg.x_num)
 	{
-		for (it=verts->begin(),it_end=verts->end(); it!=it_end; ++it)
+		for (it = vertices[i].begin(); it!=vertices[i].end(); ++it)
 			++*(edg_cs+*it);
 	}
 
-	st=clock()-st;
+	st = clock()-st;
 	printf(", %g мс\n",static_cast<float>(st*1000u)/static_cast<float>(CLOCKS_PER_SEC));
 	l.hide();
 	return true;
@@ -1363,12 +1361,14 @@ void TVWidget::SaveImageMenu (){
     window->show();
 }
 
+//euclidean distance between i-th and j-th nodes
 double dist(double *x, double *y, double *z, int i, int j)
 {
 	double res = (x[i] - x[j])*(x[i] - x[j]) + (y[i] - y[j]) * (y[i] - y[j]) + (z[i] - z[j]) * (z[i] - z[j]);
 	return std::sqrt(res);
 }
 
+//part of the i-th vertex in the stress function
 double stress_part_i (double *x, double *y, double *z, double *matr, int n, int i)
 {
 	double res = 0.0, val, d_ij;
@@ -1383,16 +1383,17 @@ double stress_part_i (double *x, double *y, double *z, double *matr, int n, int 
 	return res;
 }
 
-bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
-							   unsigned int &edg_n, unsigned int &edg50_n, unsigned int &edg98_n) {
+bool TVWidget::MapGraphInto3D (double *matr, unsigned int &edg_n, 
+								unsigned int &edg50_n, unsigned int &edg98_n) {
 	
-	unsigned int i,j,v,k,k1;
-	double *mtr1=matr;
+	unsigned int i, j, v, k;
 	double val;
 	double min_val=DBL_MAX;
 
+	//the matrix values changed according to the probabilities of the existence of edges
 	for (i = 0; i < x_num; ++i) {
 		for (k = i; k < x_num; ++k) {
+			//diagonal elements are zeros
 			if (i == k) {
 				matr[i * x_num + k] = 0.0;
 				continue;
@@ -1405,28 +1406,16 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 				val = (val<1.0e-10)? 1.0e-10 : val;
 				min_val = (val < min_val)? val : min_val;
 			}
+			//the matrix is made symmetrical
 			matr[i * x_num + k] = val;
 			matr[k * x_num + i] = val;
 		}
 	}
-	std::cout << std::endl;
-	std::cout << "min_val = " << min_val << std::endl;
 
-	// for (i = 0; i < x_num; ++i) {
-	// 	for (j = i; j < x_num; ++j) {
-	// 		if (i == j) {
-	// 			std::cout <<i << " " << matr[i*x_num + j] << std::endl;
-	// 		}
-	// 		else {
-	// 			std::cout << i << " " << j << " ";
-	// 			std::cout << matr[i*x_num + j] << " " << matr[j*x_num + i] << std::endl;
-	// 		}
-	// 	}
-	// }
-
+	//elements normalization
 	for (i = 0u; i < x_num; ++i)
 	{
-		for (j = i + 1; j != x_num; ++j,++mtr1)
+		for (j = i + 1; j != x_num; ++j)
 		{
 			v = edge_counts[i * x_num + k] + edge_counts[k * x_num + i];
 			// normalize 
@@ -1434,36 +1423,29 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 				matr[i * x_num + j] /= min_val;
 				matr[j * x_num + i] /= min_val;
 			}
+			//the elements of the matrix that correspond to unexisting edges are set to 1
 		}
 	}
 
 	double *xx=static_cast<double*>(malloc(x_num*sizeof(double)));
-	if (xx==NULL) return false;
+	if (xx==NULL) 
+		return false;
 	double *yy=static_cast<double*>(malloc(x_num*sizeof(double)));
-	if (yy==NULL) { free(xx); return false; }
+	if (yy==NULL) {
+		free(xx); 
+		return false; 
+	}
 	double *zz=static_cast<double*>(malloc(x_num*sizeof(double)));
-	if (zz==NULL) { free(yy); free(xx); return false; }
+	if (zz==NULL) {
+		free(yy); 
+		free(xx); 
+		return false; 
+	}
 
-	/* do gradient descent */
-	// static const double eps=1.0e-100; // precision for distances and for the step
-	static const double eps=1.0e-10; // precision for distances and for the step
-	static const double small_var=1.0e-6; // lower threshold of difference between
-										  // previous and current value of minimizing function
-	static const double dec_step=1.0/16.0,inc_step=1.5; // adjusting of the step
+	static const double eps=1.0e-10; // precision
 	static const unsigned int max_iter=300000u; // maximum number of iterations
-	double *gradx=static_cast<double*>(malloc(x_num*sizeof(double)));
-	if (gradx==NULL) { free(zz); free(yy); free(xx); return false; }
-	double *grady=static_cast<double*>(malloc(x_num*sizeof(double)));
-	if (grady==NULL) { free(gradx); free(zz); free(yy); free(xx); return false; }
-	double *gradz=static_cast<double*>(malloc(x_num*sizeof(double)));
-	if (gradz==NULL) { free(grady); free(gradx); free(zz); free(yy); free(xx); return false; }
-	const unsigned int x_num1=x_num-1u;
-	const double *mtr;
-	const unsigned int *edg_cnt;
-	double t=1.0e-7,f_prev,f;
-	double x_i,y_i,z_i,dx,dy,dz,grx,gry,grz;
-	const double half_m_d_impact=0.5*m_d_impact;
 
+	//random initialization
 	srand(x_num);
 	for (i=0u; i!=x_num; ++i)
 	{
@@ -1478,47 +1460,21 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 	l.setAutoFillBackground(true);
 	l.show();
 
+	//stress function is computed
 	double stress = 0.0, new_stress = 0.0, d_ij;
-	for (int i = 0; i < x_num; ++i) {
-		for (int j = i + 1; j < x_num; ++j) {
+	for (i = 0; i < x_num; ++i) {
+		for (j = i + 1; j < x_num; ++j) {
 			val = dist(xx, yy, zz, i, j);
 			d_ij = matr[i * x_num + j];
-			// std::cout << "val = " << val << " d_ij = " << d_ij << std::endl;
 			stress += (val - d_ij) * (val - d_ij);
-			// std::cout << "STRESS = " << stress << std::endl;
 		}
 	}
-	std::cout << "stress = " << stress << std::endl;
-	// std::cout << "stress = " << stress_fun(xx, yy, zz, matr, x_num) << std::endl;
 	double prev_part_i, cur_part_i;
 	bool stop = false;
-
-	// for (i = 0; i < x_num; ++i) {
-	// 	for (j = i; j < x_num; ++j) {
-	// 		if (i == j) {
-	// 			std::cout <<i << " " << matr[i*x_num + j] << std::endl;
-	// 		}
-	// 		else {
-	// 			std::cout << i << " " << j << " ";
-	// 			std::cout << matr[i*x_num + j] << " " << matr[j*x_num + i] << std::endl;
-	// 		}
-	// 	}
-	// }
-
-	// for (i = 0; i < x_num; ++i) {
-	// 	for (j = i; j < x_num; ++j) {
-	// 		if (i == j) {
-	// 			std::cout <<i << " " << edge_counts[i*x_num + j] << std::endl;
-	// 		}
-	// 		else {
-	// 			std::cout << i << " " << j << " ";
-	// 			std::cout << edge_counts[i*x_num + j] << " " << edge_counts[j*x_num + i] << std::endl;
-	// 		}
-	// 	}
-	// }
-	std::cout << "stress = " << stress << std::endl;
-	for (int k = 0; k != max_iter; ++k) {
-		// std::cout << "k = " << k << std::endl;
+	/* stress majorization implemented
+	you can find the formula in the article 
+	E. R. Gansner, Y. Koren. 'Graph Drawing by Stress Majorization' */
+	for (k = 0; k != max_iter; ++k) {
 		if ((k & 0x1f)==0u)
 		{
 			l.setText(QString("<div align=\"center\">iter %1 / %2</div><br><div align=\"left\">func: %3</div>").
@@ -1526,10 +1482,12 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 			// immediate processing of all paint events and such
 			QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents,1);
 		}
-		for (int i = 0; i < x_num; ++i) {
+		for (i = 0; i < x_num; ++i) {
 			double new_x = 0.0, new_y = 0.0, new_z = 0.0;
+			//previous part of the i-th vertex in the stress function
 			prev_part_i = stress_part_i(xx, yy, zz, matr, x_num, i);
-			for (int j = 0; j < x_num; ++j) {
+			//new coordinates for i-th node
+			for (j = 0; j < x_num; ++j) {
 				if (i == j) {
 					continue;
 				}
@@ -1546,22 +1504,22 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 			xx[i] = new_x / (x_num - 1);
 			yy[i] = new_y / (x_num - 1);
 			zz[i] = new_z / (x_num - 1);
+			//current part of the i-th vertex in the stress function
 			cur_part_i = stress_part_i(xx, yy, zz, matr, x_num, i);
-			// std::cout << prev_part_i << " " << cur_part_i << std::endl;
 			new_stress = stress - prev_part_i + cur_part_i;
-			// std::cout << "new_stress = " << new_stress << std::endl;
-			// std::cout << (stress - new_stress) / stress << std::endl;
+			//stop condition
 			if ((stress - new_stress) / stress < eps) {
 				stop = true;
 				break;
 			}
 			stress = new_stress;
-			// std::cout << "stress = " << stress << std::endl;
+			printf("stress = %f\n", stress);
 		}
 		if (stop) {
 			break;
 		}
 	}
+	printf("%u iterations\n", k);
 
 	l.hide();
 
@@ -1570,9 +1528,8 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 	unsigned int edg50_num=0u; // number of edges with length error not less than 50%
 	unsigned int edg98_num=0u; // number of edges with length error not less than 98%
 
-	for (i = 0; i < x_num1; ++i)
+	for (i = 0; i < x_num - 1; ++i)
 	{
-		// x_i=xx[i]; y_i=yy[i]; z_i=zz[i];
 		for (j = i + 1; j < x_num; ++j)
 		{
 			v = edge_counts[i * x_num + j] + edge_counts[j * x_num + i];
@@ -1594,51 +1551,52 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 	edg98_n=edg98_num;
 
 	/* centre the graph */
-	double min_x=DBL_MAX,max_x=1.0-DBL_MAX,min_y=DBL_MAX,max_y=1.0-DBL_MAX,min_z=DBL_MAX,max_z=1.0-DBL_MAX;
-	for (i=0u; i!=x_num; ++i)
+	double min_x = DBL_MAX, max_x = 1.0-DBL_MAX, min_y = DBL_MAX;
+	double max_y = 1.0-DBL_MAX, min_z = DBL_MAX, max_z = 1.0-DBL_MAX;
+	for (i = 0u; i != x_num; ++i)
 	{
-		min_x=(xx[i]<min_x)? xx[i] : min_x;
-		max_x=(xx[i]>max_x)? xx[i] : max_x;
-		min_y=(yy[i]<min_y)? yy[i] : min_y;
-		max_y=(yy[i]>max_y)? yy[i] : max_y;
-		min_z=(zz[i]<min_z)? zz[i] : min_z;
-		max_z=(zz[i]>max_z)? zz[i] : max_z;
+		min_x = (xx[i]<min_x)? xx[i] : min_x;
+		max_x = (xx[i]>max_x)? xx[i] : max_x;
+		min_y = (yy[i]<min_y)? yy[i] : min_y;
+		max_y = (yy[i]>max_y)? yy[i] : max_y;
+		min_z = (zz[i]<min_z)? zz[i] : min_z;
+		max_z = (zz[i]>max_z)? zz[i] : max_z;
 	}
-	min_x=-(min_x+max_x)*0.5;
-	min_y=-(min_y+max_y)*0.5;
-	geom_c_z=(min_z+max_z)*0.5;
-	min_z=5.0-min_z; // the nearest (to viewer) z-coordinate should be equal to 5
-	geom_c_z+=min_z;
-	for (i=0u; i!=x_num; ++i)
+	min_x = -(min_x + max_x) * 0.5;
+	min_y = -(min_y + max_y) * 0.5;
+	geom_c_z = (min_z + max_z) * 0.5;
+	min_z = 5.0 - min_z; // the nearest (to viewer) z-coordinate should be equal to 5
+	geom_c_z += min_z;
+	for (i = 0u; i != x_num; ++i)
 	{
-		xx[i]+=min_x;
-		yy[i]+=min_y;
-		zz[i]+=min_z;
+		xx[i] += min_x;
+		yy[i] += min_y;
+		zz[i] += min_z;
 	}
 
-	/* convert coordinates from double to float */
+	/* convert coordinates from double to float for opengl drawing*/
 	double *arr_end;
 	float *arr;
 
 	/* there is enough memory for these 3 arrays
 	   because 'gradx', 'grady' and 'gradz' were free'd */
-	arr=static_cast<float*>(malloc(x_num*sizeof(float)));
-	points_z=arr;
-	for (arr_end=zz+x_num; zz!=arr_end; ++zz,++arr)
+	arr = static_cast<float*>(malloc(x_num*sizeof(float)));
+	points_z = arr;
+	for (arr_end = zz + x_num; zz != arr_end; ++zz,++arr)
 		*arr=static_cast<float>(*zz);
-	zz-=x_num;
+	zz -= x_num;
 	free(zz);
-	arr=static_cast<float*>(malloc(x_num*sizeof(float)));
-	points_y=arr;
-	for (arr_end=yy+x_num; yy!=arr_end; ++yy,++arr)
+	arr = static_cast<float*>(malloc(x_num*sizeof(float)));
+	points_y = arr;
+	for (arr_end = yy + x_num; yy != arr_end; ++yy,++arr)
 		*arr=static_cast<float>(*yy);
-	yy-=x_num;
+	yy -= x_num;
 	free(yy);
-	arr=static_cast<float*>(malloc(x_num*sizeof(float)));
-	points_x=arr;
-	for (arr_end=xx+x_num; xx!=arr_end; ++xx,++arr)
-		*arr=static_cast<float>(*xx);
-	xx-=x_num;
+	arr = static_cast<float*>(malloc(x_num*sizeof(float)));
+	points_x = arr;
+	for (arr_end = xx + x_num; xx != arr_end; ++xx,++arr)
+		*arr = static_cast<float>(*xx);
+	xx -= x_num;
 	free(xx);
 
 	return true;
@@ -2542,7 +2500,7 @@ void TopologyViewer::CompareTopologies (void) {
 	unsigned int edg50_num=0u; // number of edges with length error not less than 50%
 	unsigned int edg98_num=0u; // number of edges with length error not less than 98%
 
-	if (!ideal_topo_view->MapGraphInto3D(matr,m_d_impact,edg_num,edg50_num,edg98_num))
+	if (!ideal_topo_view->MapGraphInto3D(matr, edg_num, edg50_num, edg98_num))
 	{
 		free(matr);
 		delete ideal_topo_view;
@@ -2773,7 +2731,8 @@ void TVWidget::initializeGL () {
 void TVWidget::paintGL () {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	if (points_x==NULL) return;
+	if (points_x==NULL) 
+		return;
 
 	static const float vert_rad=0.025f,edg_rad=0.01f,rad_to_deg=180.0f/M_PI;
 	GLfloat mat_clr_diff[]={32.0f/51.0f,0.0f,0.0f};
@@ -2798,6 +2757,7 @@ void TVWidget::paintGL () {
 		bool arrow;
 
 		// vertices
+		glEnable(GL_DEPTH_TEST);
 		glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,mat_clr_diff);//glColor3ub(160u,0u,0u);
 		for (i=0u; i!=x_num; ++i)
 		{
@@ -2861,8 +2821,6 @@ void TVWidget::paintGL () {
 				// magic formula!
 				coef=static_cast<float>(static_cast<double>(*edgs**edgs+*edgs2**edgs2)/
 										static_cast<double>(z_num*(*edgs+*edgs2)));
-				//coef=static_cast<float>(*edgs2)/static_cast<float>(z_num);
-				//printf("%f\n",coef);
 				rb=backgr_clr*(1.0f-coef);
 				if (coef+rb+exist_eps<1.0f)
 				{
@@ -2901,7 +2859,7 @@ void TVWidget::paintGL () {
 			coef=vert_rad*1.3f;
 			glEnable(GL_DEPTH_TEST);
 			for (i=0u; i!=x_num; ++i) {
-				renderText(points_x[i]+coef,points_y[i]+coef,points_z[i]+coef+0.1,host_names[i]);
+				renderText(points_x[i]+coef,points_y[i]+coef,points_z[i]+coef,host_names[i]);
 			}
 			glEnable(GL_LIGHTING);
 			// glEnable(GL_DEPTH_TEST);

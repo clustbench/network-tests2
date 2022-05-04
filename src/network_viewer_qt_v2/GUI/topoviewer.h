@@ -99,14 +99,13 @@ class TVWidget: public QGLWidget {
   	  //
   	  // 'matr' - lengths of edges; must have at least x_num*x_num elements
   	  //          ATTENTION: values in 'matr' will be changed!
-  	  // 'm_d_impact' - TopologyViewer's variable of the same name
   	  // 'edg_num' - number of all edges
   	  // 'edg50_num' - number of edges with length error not less than 50%
   	  // 'edg98_num' - number of edges with length error not less than 98%
   	  //
       // returns 'false' if there was not enough memory
-      bool MapGraphInto3D (double *matr, const double m_d_impact,
-      					   unsigned int &edg_num, unsigned int &edg50_num, unsigned int &edg98_num);
+      bool MapGraphInto3D (double *matr, unsigned int &edg_num, 
+                            unsigned int &edg50_num, unsigned int &edg98_num);
   	
   	  void ApplyTransform (void);
 
@@ -154,6 +153,8 @@ class TVWidget: public QGLWidget {
             const int width =save_width->value();
             const int heigth = save_heigth->value();
 
+            // QRect size = QRect(0,0,width, height);
+            // QPixmap pixmap = this->grab(size);
             if ( pixmap.scaled(width,heigth).save(fileName, "png" )){
                 qDebug()<<"ok";
             }
