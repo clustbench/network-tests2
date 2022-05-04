@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cfloat>
 #include <set>
+#include <memory>
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QMessageBox>
@@ -15,8 +16,6 @@
 #include <QTimer>
 #include "err_msgs.h"
 
-#include <iostream>
-#include <typeinfo>
 
 const QString TopologyViewer::my_sign("Topo");
 
@@ -686,32 +685,8 @@ void TopologyViewer::Execute (void) {
 }
 
 
-// garbage collectors;
-// make instances of these classes AFTER allocations of memory for managed pointers
-// TODO: replace these 2 classes with std::unique_ptr when C++11 will be fully supported
-class _FreeMeOnReturn {
-	private:
-		void *const ptr;
-
-		_FreeMeOnReturn (const _FreeMeOnReturn&); // denied
-		void operator= (const _FreeMeOnReturn&); // denied
-	public:
-		explicit _FreeMeOnReturn (void *p): ptr(p) {}
-		~_FreeMeOnReturn (void) { free(ptr); }
-};
-template <typename T> class _Delete_arr_MeOnReturn {
-	private:
-		T *const arr;
-
-		_Delete_arr_MeOnReturn (const _Delete_arr_MeOnReturn&); // denied
-		void operator= (const _Delete_arr_MeOnReturn&); // denied
-	public:
-		explicit _Delete_arr_MeOnReturn (T *a): arr(a) {}
-		~_Delete_arr_MeOnReturn (void) { delete[] arr; }
-};
-
 bool TopologyViewer::RetrieveTopology (double *matr) {
-	clock_t st=clock();
+	clock_t st = clock();
 	QLabel l(&main_wdg);
 	l.setFixedSize(200,50);
 	l.move((width()-l.width())/2,(height()-l.height())/2);
@@ -720,34 +695,37 @@ bool TopologyViewer::RetrieveTopology (double *matr) {
 	l.setText(QString("Retrieving topology from file..."));
 	
 	// immediate processing of all paint events and such
-	// QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents,1);
+	QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents,1);
+
 	// array of vertices; each vertex stores an array of adjacent vertices
-    std::vector<unsigned int> *vertices=new(std::nothrow) std::vector<unsigned int>[main_wdg.x_num];
-    if (vertices==NULL) { NOT_ENOUGH_MEM_RET(false); }
-    _Delete_arr_MeOnReturn<std::vector<unsigned int> > _for_vertices(vertices); // calls "delete[] vertices"
-    																			// when function returns
+    std::vector<unsigned int> vertices[main_wdg.x_num];
+    if (vertices == nullptr) { 
+		NOT_ENOUGH_MEM_RET(false); 
+	}
 
     // distances between vertices; the structure is the same as the structure of 'vertices'
-    std::vector<double> *edges=new(std::nothrow) std::vector<double>[main_wdg.x_num];
-    if (edges==NULL) { NOT_ENOUGH_MEM_RET(false); }
-    _Delete_arr_MeOnReturn<std::vector<double> > _for_edges(edges); // calls "delete[] edges" when function returns
+    std::vector<double> edges[main_wdg.x_num];
+    if (edges == nullptr) { 
+		NOT_ENOUGH_MEM_RET(false); 
+	}
 
-    // array of flags; a flag is 'true' when corresponding vertex is "viewed" or "done"
-    bool *vert_done=static_cast<bool*>(calloc(main_wdg.x_num,sizeof(bool)));
-    if (vert_done==NULL) { NOT_ENOUGH_MEM_RET(false); }
-    _FreeMeOnReturn _for_vert_done(vert_done); // calls "free(vert_done)" when function returns
-
+    // unique_ptr to an array of flags; 
+	//a flag is 'true' when corresponding vertex is "viewed" or "done"
+	auto vert_done = std::make_unique<bool[]>(main_wdg.x_num);
+    if (vert_done == nullptr) { 
+		NOT_ENOUGH_MEM_RET(false); 
+	}
+	
     std::set<unsigned int> on_sh_mem; // processors on shared memory;
     								  // distances between such processors are not differ much
 
-    unsigned int i,j=main_wdg.x_num+1u;
-    unsigned int bigi=main_wdg.x_num*(main_wdg.x_num+1u); // saves a value of "<some_var>*main_wdg.x_num"
+    unsigned int i,j = main_wdg.x_num + 1u;
+	// 'bigi' saves a value of "<some_var>*main_wdg.x_num"
+    unsigned int bigi = main_wdg.x_num * (main_wdg.x_num + 1u); 
     double glob_min; // minimum value in 'matr'
     unsigned int gl_min_s,gl_min_e; // row and column index of 'glob_min' correspondently
     double *cur; // an iterator for 'matr'
-    std::vector<unsigned int> *verts,*verts_end; // iterators for 'vertices'
-	std::vector<double> *edgs; // an iterator for 'edges'
-    bool main_break=false; // becomes 'true' when we need to exit the main cycle
+    bool main_break = false; // becomes 'true' when we need to exit the main cycle
 
     /* 1st part: retrieve spanning subgraph */
 
@@ -757,88 +735,94 @@ bool TopologyViewer::RetrieveTopology (double *matr) {
 
 	// start: find minimum value among values of the whole matrix;
 	// it's clear that two corresponding vertices are linked
-	glob_min=DBL_MAX;
-	gl_min_s=0u;
-	gl_min_e=0u;
-	cur=matr;
-	for (i=0u; i!=main_wdg.x_num; ++i)
+	glob_min = DBL_MAX;
+	gl_min_s = 0u;
+	gl_min_e = 0u;
+	cur = matr;
+	for (i = 0u; i != main_wdg.x_num; ++i)
 	{
-		for (j=0u; j!=main_wdg.x_num; ++j,++cur)
+		for (j = 0u; j != main_wdg.x_num; ++j,++cur)
 		{
-			if (*cur<glob_min)
+			if (*cur < glob_min)
 			{
-				glob_min=*cur;
-				gl_min_s=i;
-				gl_min_e=j;
+				glob_min = *cur;
+				gl_min_s = i;
+				gl_min_e = j;
 			}
 		}
 	}
-	vert_done[gl_min_s]=true;
+	vert_done[gl_min_s] = true;
 	try {
 		vertices[gl_min_s].push_back(gl_min_e);
 		edges[gl_min_s].push_back(glob_min);
 	}
-	catch (...) { NOT_ENOUGH_MEM_RET(false); }
-	matr[gl_min_s*main_wdg.x_num+gl_min_e]=DBL_MAX;
+	catch (...) { 
+		NOT_ENOUGH_MEM_RET(false); 
+	}
+	matr[gl_min_s * main_wdg.x_num + gl_min_e] = DBL_MAX;
 	// check if edge 'gl_min_s'<->'gl_min_e' is a duplex channel (with tolerance 'shmem_eps' (!))
-	glob_min*=shmem_eps;
-	cur=matr+(gl_min_e*main_wdg.x_num+gl_min_s);
-	if (*cur<glob_min)
+	glob_min *= shmem_eps;
+	cur = matr + (gl_min_e * main_wdg.x_num + gl_min_s);
+	if (*cur < glob_min)
 	{
 		try {
 			vertices[gl_min_e].push_back(gl_min_s);
 			edges[gl_min_e].push_back(*cur);
 		}
-		catch (...) { NOT_ENOUGH_MEM_RET(false); }
-		*cur=DBL_MAX;
+		catch (...) { 
+			NOT_ENOUGH_MEM_RET(false); 
+		}
+		*cur = DBL_MAX;
 	}
 	try {
 		on_sh_mem.insert(gl_min_e);
 	}
-	catch (...) { NOT_ENOUGH_MEM_RET(false); }
+	catch (...) { 
+		NOT_ENOUGH_MEM_RET(false); 
+	}
 	for ( ; ; )
 	{
 		// collect (and link) processors placed on shared memory;
 		// the tolerance is 'shmem_eps'
 		while (!on_sh_mem.empty())
 		{
-			gl_min_e=*(on_sh_mem.begin());
+			gl_min_e = *(on_sh_mem.begin());
 			on_sh_mem.erase(on_sh_mem.begin());
-			cur=matr+gl_min_e*main_wdg.x_num;
-			vert_done[gl_min_e]=true;
-			verts=vertices+gl_min_e;
-			edgs=edges+gl_min_e;
-			for (j=0u; j!=main_wdg.x_num; ++j,++cur)
+			cur = matr + gl_min_e * main_wdg.x_num;
+			vert_done[gl_min_e] = true;
+			for (j = 0u; j != main_wdg.x_num; ++j,++cur)
 			{
-				if (*cur<glob_min)
+				if (*cur < glob_min)
 				{
 					try {
-						verts->push_back(j);
-						edgs->push_back(*cur);
+						vertices[gl_min_e].push_back(j);
+						edges[gl_min_e].push_back(*cur);
 						if (!vert_done[j])
 							on_sh_mem.insert(j);
 					}
-					catch (...) { NOT_ENOUGH_MEM_RET(false); }
-					*cur=DBL_MAX;
+					catch (...) { 
+						NOT_ENOUGH_MEM_RET(false); 
+					}
+					*cur = DBL_MAX;
 				}
 			}
-			cur=matr+gl_min_e;
-			edgs=edges;
-			for (verts=vertices,verts_end=vertices+main_wdg.x_num; verts!=verts_end; ++verts,++edgs)
+			cur = matr + gl_min_e;
+			for (i = 0; i != main_wdg.x_num; ++i)
 			{
-				if (*cur<glob_min)
+				if (*cur < glob_min)
 				{
 					try {
-						verts->push_back(gl_min_e);
-						edgs->push_back(*cur);
+						vertices[i].push_back(gl_min_e);
+						edges[i].push_back(*cur);
 					}
-					catch (...) { NOT_ENOUGH_MEM_RET(false); }
-					*cur=DBL_MAX;
+					catch (...) { 
+						NOT_ENOUGH_MEM_RET(false); 
+					}
+					*cur = DBL_MAX;
 				}
-				cur+=main_wdg.x_num;
+				cur += main_wdg.x_num;
 			}
 		}
-
 
 		for ( ; ; )
 		{
@@ -846,51 +830,54 @@ bool TopologyViewer::RetrieveTopology (double *matr) {
 			// this is called "ascent to cardboards";
 			// find minimum value among values which correspond to
 			// pairs of "visited"-"not visited" processors
-			glob_min=DBL_MAX;
-			gl_min_s=gl_min_e=0u;
-			cur=matr;
-			for (i=0u; i!=main_wdg.x_num; ++i)
+			glob_min = DBL_MAX;
+			gl_min_s = gl_min_e = 0u;
+			cur = matr;
+			for (i = 0u; i != main_wdg.x_num; ++i)
 			{
 				if (!vert_done[i])
 				{
-					cur+=main_wdg.x_num;
+					cur += main_wdg.x_num;
 					continue;
 				}
-				for (j=0u; j!=main_wdg.x_num; ++j,++cur)
+				for (j = 0u; j != main_wdg.x_num; ++j,++cur)
 				{
-					if (!vert_done[j] && (*cur<glob_min))
+					if (!vert_done[j] && (*cur < glob_min))
 					{
-						glob_min=*cur;
-						gl_min_s=i;
-						gl_min_e=j;
+						glob_min = *cur;
+						gl_min_s = i;
+						gl_min_e = j;
 					}
 				}
 			}
-			if (gl_min_s==gl_min_e)
+			if (gl_min_s == gl_min_e)
 			{
 				// this means that all processors are marked as "visited"
-				main_break=true;
+				main_break = true;
 				break;
 			}
-			//vert_done[gl_min_s]=true;
 			try {
 				vertices[gl_min_s].push_back(gl_min_e);
 				edges[gl_min_s].push_back(glob_min);
 			}
-			catch (...) { NOT_ENOUGH_MEM_RET(false); }
-			matr[gl_min_s*main_wdg.x_num+gl_min_e]=DBL_MAX;
+			catch (...) { 
+				NOT_ENOUGH_MEM_RET(false); 
+			}
+			matr[gl_min_s * main_wdg.x_num + gl_min_e] = DBL_MAX;
 			// check if edge 'gl_min_s'<->'gl_min_e' is
 			// a duplex channel (with tolerance 'duplex_eps')
-			bigi=gl_min_e*main_wdg.x_num;
-			cur=matr+(bigi+gl_min_s);
-			if (*cur<glob_min*duplex_eps)
+			bigi = gl_min_e * main_wdg.x_num;
+			cur = matr + (bigi + gl_min_s);
+			if (*cur < glob_min * duplex_eps)
 			{
 				try {
 					vertices[gl_min_e].push_back(gl_min_s);
 					edges[gl_min_e].push_back(*cur);
 				}
-				catch (...) { NOT_ENOUGH_MEM_RET(false); }
-				*cur=DBL_MAX;
+				catch (...) { 
+					NOT_ENOUGH_MEM_RET(false); 
+				}
+				*cur = DBL_MAX;
 			}
 			// the cycle of "descent to processor cores":
 			// 1) find edge with minimum length which begins in 'gl_min_e';
@@ -902,26 +889,27 @@ bool TopologyViewer::RetrieveTopology (double *matr) {
 			// found edges should form a chain
 			for ( ; ; )
 			{
-				gl_min_s=gl_min_e;
-				gl_min_e=main_wdg.x_num;
-				//glob_min=DBL_MAX; // new 'glob_min' must be strongly less than current one!
-				cur=matr+bigi;
-				for (j=0u; j!=main_wdg.x_num; ++j,++cur)
+				gl_min_s = gl_min_e;
+				gl_min_e = main_wdg.x_num;
+				cur = matr + bigi;
+				for (j = 0u; j != main_wdg.x_num; ++j,++cur)
 				{
-					if (*cur<glob_min)
+					if (*cur < glob_min)
 					{
-						glob_min=*cur;
-						gl_min_e=j;
+						glob_min = *cur;
+						gl_min_e = j;
 					}
 				}
-				if (gl_min_e==main_wdg.x_num)
+				if (gl_min_e == main_wdg.x_num)
 				{
 					if (!vert_done[gl_min_s])
 					{
 						try {
 							on_sh_mem.insert(gl_min_s);
 						}
-						catch (...) { NOT_ENOUGH_MEM_RET(false); }
+						catch (...) { 
+							NOT_ENOUGH_MEM_RET(false); 
+						}
 					}
 					break;
 				}
@@ -930,114 +918,125 @@ bool TopologyViewer::RetrieveTopology (double *matr) {
 					vertices[gl_min_s].push_back(gl_min_e);
 					edges[gl_min_s].push_back(glob_min);
 				}
-				catch (...) { NOT_ENOUGH_MEM_RET(false); }
-				matr[bigi+gl_min_e]=DBL_MAX;
-				glob_min*=shmem_eps;
-				bigi=gl_min_e*main_wdg.x_num;
-				cur=matr+(bigi+gl_min_s);
-				if (*cur<glob_min)
+				catch (...) { 
+					NOT_ENOUGH_MEM_RET(false); 
+				}
+				matr[bigi+gl_min_e] = DBL_MAX;
+				glob_min *= shmem_eps;
+				bigi = gl_min_e * main_wdg.x_num;
+				cur = matr + (bigi + gl_min_s);
+				if (*cur < glob_min)
 				{
 					try {
 						vertices[gl_min_e].push_back(gl_min_s);
 						edges[gl_min_e].push_back(*cur);
 					}
-					catch (...) { NOT_ENOUGH_MEM_RET(false); }
-					*cur=DBL_MAX;
+					catch (...) { 
+						NOT_ENOUGH_MEM_RET(false); 
+					}
+					*cur = DBL_MAX;
 				}
 			}
-			if (!on_sh_mem.empty()) break;
+			if (!on_sh_mem.empty()) 
+				break;
 		}
-		if (main_break) break; // first part of the algorithm is done
+		if (main_break) 
+			break; // first part of the algorithm is done
 	}
-
-	st=clock()-st;
+	st = clock()-st;
 	printf("\n%g мс",static_cast<float>(st*1000u)/static_cast<float>(CLOCKS_PER_SEC));
-	st=clock();
+	st = clock();
 
 	/* 2nd part: retrieve "good" cycles */
 
 	// a "good" cycle is a cycle 1->2, 2->3, ... (k-1)->k, 1->k (direction is important),
 	// where |12| + |23| + ... +|k-1,k|> |1k| (|| is a length of an edge)
 	std::vector<unsigned int>::const_iterator it,it_end;
-	double *d=static_cast<double*>(malloc(main_wdg.x_num*sizeof(double)));
+	auto d = std::make_unique<double[]>(main_wdg.x_num);
 
-	if (d!=NULL)
+	if (d != nullptr)
 	{
-		_FreeMeOnReturn _for_d(d); // calls "free(d)" at the end of scope
-
-		verts=vertices;
-		edgs=edges;
-		for (i=0u,bigi=0u; i!=main_wdg.x_num; ++i,bigi+=main_wdg.x_num,++verts,++edgs)
+		int cnt = 0;
+		// Dijkstra algorithm for every vertex (found in Wikipedia)
+		for (i = 0u, bigi = 0u; i != main_wdg.x_num; ++i, bigi += main_wdg.x_num, ++cnt)
 		{
-			// Dijkstra algorithm for every vertex (found in Wikipedia)
-			memset(vert_done,0,main_wdg.x_num*sizeof(bool));
-			for (j=0u; j!=main_wdg.x_num; ++j)
-				d[j]=DBL_MAX;
-			d[i]=0.0;
-			vert_done[i]=true;
-			gl_min_e=1u; // counter of "visited" vertices
-			for (it=verts->begin(),it_end=verts->end(); it!=it_end; ++it)
-			{
-				glob_min=(*edgs)[it-verts->begin()];
-				j=*it;
-				if (glob_min<d[j]) d[j]=glob_min;
+			//initialization of vert_done
+			for (j = 0u; j < main_wdg.x_num; ++j) {
+				vert_done[j] = false;
 			}
-			for ( ; gl_min_e!=main_wdg.x_num; ++gl_min_e)
+			for (j = 0u; j != main_wdg.x_num; ++j)
+				d[j] = DBL_MAX;
+			d[i] = 0.0;
+			vert_done[i] = true;
+			gl_min_e = 1u; // counter of "visited" vertices
+			for (it = vertices[cnt].begin(); it != vertices[cnt].end(); ++it)
 			{
-				for (j=0u; vert_done[j]; ++j) ;
-				glob_min=d[j];
-				gl_min_s=j;
-				for (++j; j!=main_wdg.x_num; ++j)
+				glob_min = edges[cnt][it-vertices[cnt].begin()];
+				j = *it;
+				if (glob_min < d[j]) 
+					d[j] = glob_min;
+			}
+			for ( ; gl_min_e != main_wdg.x_num; ++gl_min_e)
+			{
+				for (j = 0u; vert_done[j]; ++j) ;
+				glob_min = d[j];
+				gl_min_s = j;
+				for (++j; j != main_wdg.x_num; ++j)
 				{
-					if (vert_done[j]) continue;
-					if (d[j]<glob_min)
+					if (vert_done[j]) 
+						continue;
+					if (d[j] < glob_min)
 					{
-						glob_min=d[j];
-						gl_min_s=j;
+						glob_min = d[j];
+						gl_min_s = j;
 					}
 				}
-				if (glob_min==DBL_MAX) break; // some vertices are unreachable
-				vert_done[gl_min_s]=true;
-				const std::vector<unsigned int> &v_gl_min_s=vertices[gl_min_s];
-				const std::vector<double> &e_gl_min_s=edges[gl_min_s];
-				for (it=v_gl_min_s.begin(),it_end=v_gl_min_s.end(); it!=it_end; ++it)
+				if (glob_min == DBL_MAX) 
+					break; // some vertices are unreachable
+				vert_done[gl_min_s] = true;
+				const std::vector<unsigned int> &v_gl_min_s = vertices[gl_min_s];
+				const std::vector<double> &e_gl_min_s = edges[gl_min_s];
+				for (it = v_gl_min_s.begin(), it_end = v_gl_min_s.end(); it!=it_end; ++it)
 				{
-					j=*it;
-					if (vert_done[j]) continue;
-					glob_min=d[gl_min_s]+e_gl_min_s[it-v_gl_min_s.begin()];
-					if (glob_min<d[j]) d[j]=glob_min;
+					j = *it;
+					if (vert_done[j]) 
+						continue;
+					glob_min = d[gl_min_s] + e_gl_min_s[it - v_gl_min_s.begin()];
+					if (glob_min < d[j]) 
+						d[j] = glob_min;
 				}
 			}
-			cur=matr+bigi;
-			for (j=0u; j!=main_wdg.x_num; ++j,++cur)
+			cur = matr + bigi;
+			for (j = 0u; j != main_wdg.x_num; ++j,++cur)
 			{
-				if ((d[j]!=DBL_MAX) && (*cur<d[j]))
+				if ((d[j] != DBL_MAX) && (*cur < d[j]))
 				{
-					//if (std::find(verts->begin(),verts->end(),j)!=verts->end()) exit(0);
 					try {
-						verts->push_back(j);
-						edgs->push_back(*cur);
+						vertices[cnt].push_back(j);
+						edges[cnt].push_back(*cur);
 					}
-					catch (...) { NOT_ENOUGH_MEM_RET(false); }
-					*cur=DBL_MAX;
+					catch (...) { 
+						NOT_ENOUGH_MEM_RET(false);
+					}
+					*cur = DBL_MAX;
 				}
 			}
 		}
 	}
 
-	st=clock()-st;
+	st = clock()-st;
 	printf(", %g мс",static_cast<float>(st*1000u)/static_cast<float>(CLOCKS_PER_SEC));
-	st=clock();
+	st = clock();
 
 	/* 3rd part: add new edges */
 	unsigned int *edg_cs=main_wdg.edge_counts;
-	for (verts=vertices,verts_end=vertices+main_wdg.x_num; verts!=verts_end; ++verts,edg_cs+=main_wdg.x_num)
+	for (i = 0; i != main_wdg.x_num; ++i, edg_cs += main_wdg.x_num)
 	{
-		for (it=verts->begin(),it_end=verts->end(); it!=it_end; ++it)
+		for (it = vertices[i].begin(); it!=vertices[i].end(); ++it)
 			++*(edg_cs+*it);
 	}
 
-	st=clock()-st;
+	st = clock()-st;
 	printf(", %g мс\n",static_cast<float>(st*1000u)/static_cast<float>(CLOCKS_PER_SEC));
 	l.hide();
 	return true;

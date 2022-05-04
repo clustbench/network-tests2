@@ -2,7 +2,6 @@
 #include <netcdf.h>
 #include "data_text.h"
 
-#include <iostream>
 
 Data_NetCDF::Data_NetCDF (const QString &f_name, const QString &hosts_fname, NV::ErrCode &err) {
 	this->source_fname=f_name;
