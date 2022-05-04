@@ -16,16 +16,33 @@ This software has folowing dependencies to compile it:
 2. For benchmarking requires:
     1. MPI-2 standard implementation: OpenMPI, IntelMPI and so one
 3. For GUI requires:
-    1. Qt version 4.5 but not Qt5. It requires qmake-qt4 tool.
-    2. Qwt5, libqwt5-qt4
+    1. Qt version 5.15 and greater
+    2. Qwt6 and greater
     3. OpenGL
     4. Support OpenMP in compiler and optionally OpenCL
 4. For clustering requires
-    1. NetCDF C++ interface.
+    1. NetCDF C++ interface
 
 To compile software you need to proceed folowing steps:
 
 0. Install software dependencies.
+   If you compile Qwt library from source code, add the following lines in
+   the Network_viewer_qt_v2.pro file (in this example the library was installed
+   in /usr/local/):
+   ```
+        INCLUDEPATH += /usr/local/qwt-6.2.0/include
+        DEPENDPATH += /usr/local/qwt-6.2.0/include
+   ```
+   At the end of Network_viewer_qt_v2.pro file add the path of qwt.prf file.
+   Example:
+   ```
+        include ( /usr/local/qwt-6.2.0/features/qwt.prf )
+   ```
+   Add path to the Qwt library to LD_LIBRARY_PATH variable.
+   Example:
+   ```
+        export LD_LIBRARY_PATH=/usr/local/qwt-6.2.0/lib
+   ```
 1. Change directory to directory with sources.
    Then generate configure script by files configure.ac and macros from
    ac-macros directory. This step is performed by runnig make_configure.sh

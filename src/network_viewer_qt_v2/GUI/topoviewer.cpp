@@ -424,7 +424,6 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 		    QMessageBox::warning(this,tr("Warning"),tr("<p align=center>This test was not finished.<br>"
 		    					 "Expected %1 instead of %2<br>as end message length value.</p>")\
 		    					 .arg(wright_end_message_length-step_length).arg(end_message_length),QMessageBox::Ok);
-		    //end_message_length=wright_end_message_length;
 		}
 
 		if (txt_files->d_file!=NULL)
@@ -2732,7 +2731,8 @@ void TVWidget::initializeGL () {
 void TVWidget::paintGL () {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	if (points_x==NULL) return;
+	if (points_x==NULL) 
+		return;
 
 	static const float vert_rad=0.025f,edg_rad=0.01f,rad_to_deg=180.0f/M_PI;
 	GLfloat mat_clr_diff[]={32.0f/51.0f,0.0f,0.0f};
@@ -2757,6 +2757,7 @@ void TVWidget::paintGL () {
 		bool arrow;
 
 		// vertices
+		glEnable(GL_DEPTH_TEST);
 		glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,mat_clr_diff);//glColor3ub(160u,0u,0u);
 		for (i=0u; i!=x_num; ++i)
 		{
@@ -2820,8 +2821,6 @@ void TVWidget::paintGL () {
 				// magic formula!
 				coef=static_cast<float>(static_cast<double>(*edgs**edgs+*edgs2**edgs2)/
 										static_cast<double>(z_num*(*edgs+*edgs2)));
-				//coef=static_cast<float>(*edgs2)/static_cast<float>(z_num);
-				//printf("%f\n",coef);
 				rb=backgr_clr*(1.0f-coef);
 				if (coef+rb+exist_eps<1.0f)
 				{
@@ -2860,7 +2859,7 @@ void TVWidget::paintGL () {
 			coef=vert_rad*1.3f;
 			glEnable(GL_DEPTH_TEST);
 			for (i=0u; i!=x_num; ++i) {
-				renderText(points_x[i]+coef,points_y[i]+coef,points_z[i]+coef+0.1,host_names[i]);
+				renderText(points_x[i]+coef,points_y[i]+coef,points_z[i]+coef,host_names[i]);
 			}
 			glEnable(GL_LIGHTING);
 			// glEnable(GL_DEPTH_TEST);
