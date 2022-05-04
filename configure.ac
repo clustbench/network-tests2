@@ -11,7 +11,7 @@ AC_CONFIG_MACRO_DIR([ac-macros])
 
 # Configure variables declaration.
 # TODO: Change the value for qmake for QT5 later
-AC_ARG_VAR([QMAKE], [Place where qmake-qt4 is installed])
+AC_ARG_VAR([QMAKE], [Place where qmake-qt5 is installed])
 AC_ARG_VAR([MPICC], [Path to MPI2 compatible C-compiler])
 AC_ARG_VAR([MPICXX], [Path to MPI2 compatible C++-compiler])
 AC_ARG_VAR([MPI_CFLAGS], [Flags for MPI C compiler by default same with CFLAGS])
@@ -47,8 +47,10 @@ AC_ARG_ENABLE([all], [AS_HELP_STRING([--enable-all], [Enable all modules])], [
 # Checks for non-default specific tools.
 AS_IF([test "x$MPICC" = "x"], [AC_SUBST([MPICC], [mpicc])])
 AS_IF([test "x$MPICXX" = "x"], [AC_SUBST([MPICXX], [mpicxx])])
-# TODO: Change the value for qmake for QT5 later
+
 AS_IF([test "x$QMAKE" = "x"], [AC_SUBST([QMAKE], [qmake])])
+
+AC_SUBST([QWT_PATH], ["/usr/local/qwt-6.2.0"])
 
 # Checks for programs.
 AC_PROG_CXX
@@ -83,14 +85,14 @@ do
 	AS_CASE(["$target"],
 		[*"network_viewer_qt"*], [
 			# Checks for tools and libraries required by network_viewer_qt_v2
-			AX_CHECK_PROG([QMAKE], [qmake-qt4 is required but has not been found])
+			AX_CHECK_PROG([QMAKE], [qmake-qt5 is required but has not been found])
 			AX_RAW_CHECK_PROG([lrelease], [lrelease is required but has not been found])
 			AX_CHECK_LIB([netcdf], [nc_open nc_inq_varid nc_get_var1 \
 				nc_inq_nvars nc_inq_varids nc_inq_varndims nc_inq_dimlen \
 				nc_inq_vardimid nc_get_vara_double nc_get_var1_int
 			])
 			# TODO: Add checks for libraries.
-			# -lqwt-qt4 -lGLU -lQtOpenGL -lQtGui -lQtCore -lGL -lpthread
+			# -lqwt-qt5 -lGLU -lQtOpenGL -lQtGui -lQtCore -lGL -lpthread
 		],
 		[*"network_test"*], [
 			# Checks for tools and libraries required by network_test
@@ -108,5 +110,5 @@ AS_IF([test "x$MPI_LDFLAGS" = "x"], [AC_SUBST([MPI_LDFLAGS], $LDFLAGS)])
 AS_IF([test "x$MPI_LIBS" = "x"], [AC_SUBST([MPI_LIBS], $LIBS)])
 
 # Define output files to be built from templates
-AC_CONFIG_FILES([config Makefile parus_config.h])
+AC_CONFIG_FILES([config Makefile parus_config.h src/network_viewer_qt_v2/Network_viewer_qt_v2.pro])
 AC_OUTPUT
