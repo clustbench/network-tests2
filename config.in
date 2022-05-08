@@ -31,6 +31,7 @@ CXXLINKER_FLAGS=
 LIB_PATH=
 LIBS=@LIBS@
 GOALS=@GOALS@
+QWT_PATH=@QWT_PATH@
 
 # full path to 'CL/opencl.h' (on Windows/UNIX) or 'OpenCL/opencl.h' (on Mac)
 # (WITHOUT 'CL/opencl.h' or 'OpenCL/opencl.h'!)

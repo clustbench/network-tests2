@@ -19,25 +19,20 @@ This software has folowing dependencies to compile it:
 3. For GUI requires:
     1. Qt version 5.15 and greater
     2. Qwt6 and greater
-    3. OpenGL
-    4. Support OpenMP in compiler and optionally OpenCL
+    3. qttools5-dev-tools package
+    4. OpenGL
+    5. Support OpenMP in compiler and optionally OpenCL
 4. For clustering requires
     1. NetCDF C++ interface
 
 To compile software you need to proceed folowing steps:
 
 0. Install software dependencies.
-   If you compile Qwt library from source code, add the following lines in
-   the Network_viewer_qt_v2.pro file (in this example the library was installed
+   If you compile Qwt library from source code, add the following line in
+   the configure.ac file (in this example the library was installed
    in /usr/local/):
    ```
-        INCLUDEPATH += /usr/local/qwt-6.2.0/include
-        DEPENDPATH += /usr/local/qwt-6.2.0/include
-   ```
-   At the end of Network_viewer_qt_v2.pro file add the path of qwt.prf file.
-   Example:
-   ```
-        include ( /usr/local/qwt-6.2.0/features/qwt.prf )
+        AC_SUBST([QWT_PATH], ["/usr/local/qwt-6.2.0"])
    ```
    Add path to the Qwt library to LD_LIBRARY_PATH variable.
    Example:
@@ -48,7 +43,7 @@ To compile software you need to proceed folowing steps:
    Then generate configure script by files configure.ac and macros from
    ac-macros directory. This step is performed by runnig make_configure.sh
    script.
-2. Learn fitures and so one in configure file
+2. Learn configuration options:
      ```
        ./configure --help
      ```
@@ -56,7 +51,7 @@ To compile software you need to proceed folowing steps:
     ```
         ./configure --prefix=$HOME/nt-2 --enable-qt-gui
     ```
-4. Run make to compile necesossary components
+4. Run make to compile necessary components
 5. Run make install to install all into the prefix directory. Please be
    carefully if prefix in configure was /usr or one of system catalogues. There
    is no correct uninstall script and you have to delete components manually.
