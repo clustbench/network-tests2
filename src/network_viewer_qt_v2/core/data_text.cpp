@@ -311,7 +311,7 @@ NV::ErrCode Data_Text::GetDataAndMove (double *buf) {
 
 NV::ErrCode Data_Text::GetSingleValue (const int mes_len, const int row, const int col, double &v)
 {
-	if ((mes_len<0) || (row<0) || (col<0) || (mes_len>this->GetRealEndMessageLength()) || 
+	if ((mes_len<0) || (row<0) || (col<0) || (mes_len>this->GetRealEndMessageLength()) ||
 		(row>=this->num_processors) || (col>=this->num_processors)) return NV::InvRead;
 	
 	fpos_t save_pos;

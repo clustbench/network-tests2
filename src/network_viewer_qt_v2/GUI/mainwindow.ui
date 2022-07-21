@@ -28,16 +28,7 @@
     <bool>true</bool>
    </property>
    <layout class="QGridLayout" name="gridLayout">
-    <property name="leftMargin">
-     <number>0</number>
-    </property>
-    <property name="topMargin">
-     <number>0</number>
-    </property>
-    <property name="rightMargin">
-     <number>0</number>
-    </property>
-    <property name="bottomMargin">
+    <property name="margin">
      <number>0</number>
     </property>
     <item row="0" column="0">
@@ -75,16 +66,7 @@
         <property name="spacing">
          <number>0</number>
         </property>
-        <property name="leftMargin">
-         <number>0</number>
-        </property>
-        <property name="topMargin">
-         <number>0</number>
-        </property>
-        <property name="rightMargin">
-         <number>0</number>
-        </property>
-        <property name="bottomMargin">
+        <property name="margin">
          <number>0</number>
         </property>
         <item>
@@ -322,17 +304,11 @@
                <layout class="QVBoxLayout" name="verticalLayout_12">
                 <item>
                  <widget class="QRadioButton" name="view2D">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
                   <property name="text">
                    <string notr="true">2D</string>
                   </property>
-                  <property name="checkable">
-                   <bool>false</bool>
-                  </property>
                   <property name="checked">
-                   <bool>false</bool>
+                   <bool>true</bool>
                   </property>
                   <property name="autoExclusive">
                    <bool>true</bool>
@@ -343,9 +319,6 @@
                  <widget class="QRadioButton" name="view3D">
                   <property name="text">
                    <string notr="true">3D</string>
-                  </property>
-                  <property name="checked">
-                   <bool>true</bool>
                   </property>
                  </widget>
                 </item>
@@ -469,7 +442,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>20</height>
+     <height>23</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuTools">
@@ -527,6 +500,9 @@
      <property name="shortcut">
       <string>Ctrl+L</string>
      </property>
+     <!-- <property name="softKeyRole">
+      <enum>QAction::NoSoftKey</enum>
+     </property> -->
     </action>
     <addaction name="actionShow_logs"/>
     <addaction name="separator"/>
@@ -576,16 +552,7 @@
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_2">
     <layout class="QGridLayout" name="gridLayout_2">
-     <property name="leftMargin">
-      <number>0</number>
-     </property>
-     <property name="topMargin">
-      <number>0</number>
-     </property>
-     <property name="rightMargin">
-      <number>0</number>
-     </property>
-     <property name="bottomMargin">
+     <property name="margin">
       <number>0</number>
      </property>
      <item row="0" column="0">

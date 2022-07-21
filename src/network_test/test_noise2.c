@@ -1,12 +1,12 @@
 /*
  *  This file is a part of the PARUS project.
- *  Copyright (C) 2006  Alexey N. Salnikov, Vera Y. Goritskaya 
- *  
+ *  Copyright (C) 2006  Alexey N. Salnikov, Vera Y. Goritskaya
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Alexey N. Salnikov (salnikov@cmc.msu.ru)
  * Vera Y. Goritskaya (vera@angel.cs.msu.su)
  *
@@ -50,7 +50,7 @@ int test_noise(Test_time_result_type *times, int mes_length, int num_repeats, in
 	MPI_Request recv_request;
 	
 	MPI_Request* requests_noise=NULL;
-	MPI_Status*  statuses_noise=NULL; 
+	MPI_Status*  statuses_noise=NULL;
 	
 	int sync_sum;
 
@@ -68,7 +68,7 @@ int test_noise(Test_time_result_type *times, int mes_length, int num_repeats, in
 
 	/*
 	 * Try get enough memory. If didn't, return -1. In send_request we got memory for both send and receive request
-	 */ 
+	 */
 	requests_noise=(MPI_Request *)malloc(2*num_noise_procs*sizeof(MPI_Request));
 	if(requests_noise == NULL )
 	{
@@ -105,7 +105,7 @@ int test_noise(Test_time_result_type *times, int mes_length, int num_repeats, in
 
 	if(comm_rank==0)
 	{
-		/* Uncomment to debug 
+		/* Uncomment to debug
 		printf("HELLO! I'm 0, press any key\n");
 		getchar();
 		*/
@@ -163,7 +163,7 @@ int test_noise(Test_time_result_type *times, int mes_length, int num_repeats, in
 					
 					/*
 					 *
-					 * command[0] -- current interation number in message passing repeats  
+					 * command[0] -- current interation number in message passing repeats
 					 * command[1] -- process leader in the pair
 					 *
 					 */
@@ -202,7 +202,7 @@ int test_noise(Test_time_result_type *times, int mes_length, int num_repeats, in
 
 				/*
 				 *
-				 * This reduce is used for processes syncronization. All must send 
+				 * This reduce is used for processes syncronization. All must send
 				 * their order number to the process with number 0
 				 *
 				 */
@@ -214,7 +214,7 @@ int test_noise(Test_time_result_type *times, int mes_length, int num_repeats, in
 		
 		/*
 		 *
-		 * Finishing work 
+		 * Finishing work
 		 *
 		 */
 		for(i=0;i<comm_size;i++)
@@ -260,7 +260,7 @@ int test_noise(Test_time_result_type *times, int mes_length, int num_repeats, in
 					
 					/*
 					 *
-					 * command[0] -- current interation number in message passing repeats  
+					 * command[0] -- current interation number in message passing repeats
 					 * command[1] -- process leader in the pair
 					 *
 					 */
@@ -320,7 +320,7 @@ int test_noise(Test_time_result_type *times, int mes_length, int num_repeats, in
  		
 		/*
 		 *
-		 * Function my_time_cmp is described in the file  'network_test.h' and 
+		 * Function my_time_cmp is described in the file  'network_test.h' and
 		 * is implemented in the file 'network_test.cpp'.
 		 *
 		 */

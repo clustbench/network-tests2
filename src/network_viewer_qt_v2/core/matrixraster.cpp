@@ -1,10 +1,11 @@
 #include "matrixraster.h"
 #include <cfloat>
-#include <qrect.h>
+#include <QSize>
+#include <QRectF>
 
-MatrixRaster::MatrixRaster (double* &matr, const int rws, const int cls): 
-  QwtRasterData(), data_array(matr), rows(rws), cols(cls) {
-    this->initRaster(QRectF(0.0,1.0,0.0,1.0),QSize(cls,rws));
+MatrixRaster::MatrixRaster (double* &matr, const int rws, const int cls):
+  										data_array(matr), rows(rws), cols(cls) {
+	this->initRaster(QRectF(0.0,1.0,0.0,1.0),QSize(cls,rws));
 
 	if ((matr==NULL) || (rws==0) || (cls==0))
 	{
@@ -13,7 +14,7 @@ MatrixRaster::MatrixRaster (double* &matr, const int rws, const int cls):
 	}
 	else
 	{
-		const unsigned int matr_size=static_cast<const unsigned int>(rws)*static_cast<const unsigned int>(cls);
+		unsigned int matr_size=static_cast<unsigned int>(rws)*static_cast<unsigned int>(cls);
 		double tmp;
 
 		to=from=matr[0];

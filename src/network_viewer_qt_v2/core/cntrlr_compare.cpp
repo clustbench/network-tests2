@@ -177,7 +177,7 @@ void CntrlrComparison::GetColRaster (const int col, MatrixRaster* &res1, MatrixR
 	catch (...) { free(add_matr); }
 }
 
-void CntrlrComparison::GetPairRaster (const int row, const int col, double* &x_points, double* &y_points, 
+void CntrlrComparison::GetPairRaster (const int row, const int col, double* &x_points, double* &y_points,
 									  double* &y_points_aux, unsigned int &num_points) const {
 	num_points=this->window_size>>1u;
 	x_points=(double*)malloc(num_points*sizeof(double));

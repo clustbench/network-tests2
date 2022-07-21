@@ -14,7 +14,7 @@
 #define SLDR_RANGE 200
 #define ONE_BY_SLDR_RANGE 0.005
 
-RenderOpts::RenderOpts (const int my_width, const int working_mode, bool &was_error): QWidget(NULL) {    
+RenderOpts::RenderOpts (const int my_width, const int working_mode, bool &was_error): QWidget(NULL) {
 	QWidget *tab;
 
 	setFixedWidth(my_width);
@@ -30,7 +30,7 @@ RenderOpts::RenderOpts (const int my_width, const int working_mode, bool &was_er
 	repr_spheres_info=new(std::nothrow) QPushButton(tab);
 	repr_lights=new(std::nothrow) QRadioButton(tab);
 	repr_lights_info=new(std::nothrow) QPushButton(tab);
-	if ((repr_cubes==NULL) || (repr_spheres==NULL) || (repr_spheres_info==NULL) || 
+	if ((repr_cubes==NULL) || (repr_spheres==NULL) || (repr_spheres_info==NULL) ||
 		(repr_lights==NULL) || (repr_lights_info==NULL)) { was_error=true; return; }
 
 	tab=new(std::nothrow) QWidget(NULL);
@@ -52,8 +52,8 @@ RenderOpts::RenderOpts (const int my_width, const int working_mode, bool &was_er
 	clr_stretching_max=new(std::nothrow) QSlider(tab);
 	l_clr_stretch2=new(std::nothrow) QLabel(tab);
 	clr_stch_max=new(std::nothrow) QLineEdit(tab);
-	if ((clr_stch_info==NULL) || (clr_stretching_min==NULL) || 
-		(l_clr_stretch1==NULL) || (clr_stch_min==NULL) || (clr_stretching_max==NULL) || 
+	if ((clr_stch_info==NULL) || (clr_stretching_min==NULL) ||
+		(l_clr_stretch1==NULL) || (clr_stch_min==NULL) || (clr_stretching_max==NULL) ||
 		(l_clr_stretch2==NULL) || (clr_stch_max==NULL)) { was_error=true; return; }
 
 	tab=new(std::nothrow) QWidget(NULL);
@@ -70,8 +70,8 @@ RenderOpts::RenderOpts (const int my_width, const int working_mode, bool &was_er
 	vol_building_max1=new(std::nothrow) QSlider(tab);
 	l_vol_build12=new(std::nothrow) QLabel(tab);
 	vol_bld_max1=new(std::nothrow) QLineEdit(tab);
-	if ((vol_bld_mode==NULL) || (vol_bld_info==NULL) || (l_vol_build01==NULL) || (line1==NULL) || 
-		(vol_building_min1==NULL) || (l_vol_build11==NULL) || (vol_bld_min1==NULL) || (vol_building_max1==NULL) || 
+	if ((vol_bld_mode==NULL) || (vol_bld_info==NULL) || (l_vol_build01==NULL) || (line1==NULL) ||
+		(vol_building_min1==NULL) || (l_vol_build11==NULL) || (vol_bld_min1==NULL) || (vol_building_max1==NULL) ||
 		(l_vol_build12==NULL) || (vol_bld_max1==NULL)) { was_error=true; return; }
 	if (working_mode!=0)
 	{
@@ -81,7 +81,7 @@ RenderOpts::RenderOpts (const int my_width, const int working_mode, bool &was_er
 		l_vol_build21=new(std::nothrow) QLabel(tab);
 		vol_building_max2=new(std::nothrow) QSlider(tab);
 		l_vol_build22=new(std::nothrow) QLabel(tab);
-		if ((l_vol_build02==NULL) || (line2==NULL) || (vol_building_min2==NULL) || (l_vol_build21==NULL) || 
+		if ((l_vol_build02==NULL) || (line2==NULL) || (vol_building_min2==NULL) || (l_vol_build21==NULL) ||
 			(vol_building_max2==NULL) || (l_vol_build22==NULL)) { was_error=true; return; }
 	}
 	else
@@ -101,7 +101,7 @@ RenderOpts::RenderOpts (const int my_width, const int working_mode, bool &was_er
 	was_error=false;
 }
 
-void RenderOpts::Init (FullViewer *par) {    
+void RenderOpts::Init (FullViewer *par) {
 	const QSize help_size(25,20);
 	const QString line("______________________");
 	QWidget *tab;
@@ -144,8 +144,8 @@ void RenderOpts::Init (FullViewer *par) {
 	tab=tabs->widget(depth_ctr_ind);
 	tab->setParent(this);
 	tab->setFixedHeight(50);
-	depth_constr->setRange(0,(parent->x_num>parent->y_num)? ((parent->x_num>parent->z_num)? parent->x_num : 
-																							parent->z_num) : 
+	depth_constr->setRange(0,(parent->x_num>parent->y_num)? ((parent->x_num>parent->z_num)? parent->x_num :
+																							parent->z_num) :
 	((parent->y_num>parent->z_num)? parent->y_num : parent->z_num));
 	depth_constr->setSingleStep(1);
 	depth_constr->setValue(depth_constr->maximum()); // initial value - no constraint

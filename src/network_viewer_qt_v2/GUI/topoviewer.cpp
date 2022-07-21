@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cfloat>
 #include <set>
+#include <memory>
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QMessageBox>
@@ -15,7 +16,15 @@
 #include <QTimer>
 #include "err_msgs.h"
 
+
 const QString TopologyViewer::my_sign("Topo");
+
+// light-gray color for widget's background
+const float TVWidget::backgr_clr = 0.9f;
+
+// "ignore" color (white)
+const GLfloat TVWidget::ignore_clr = 1.0f; /* 16.0f/51.0f */
+
 
 void TopoViewerOpts::keyPressEvent (QKeyEvent *e) {
 	if (e->key()==Qt::Key_Escape) return; // ignore pressing 'Esc'
@@ -64,7 +73,7 @@ TopologyViewer::TopologyViewer (QWidget *parent, const IData::Type f_type, bool 
 			SLOT(AddMsgToLog(const MainWindow::MsgType,const QString&,const QString&)));
     connect(this,SIGNAL(TitleChanged(QWidget*,const QString&)),parent,SLOT(ChangeTabTitle(QWidget*,const QString&)));
     connect(this,SIGNAL(CloseOnEscape(QWidget*)),parent,SLOT(CloseTab(QWidget*)));
-    
+
     ncdf_files=NULL;
     txt_files=NULL;
   	hor_layout=NULL;
@@ -88,7 +97,7 @@ TopologyViewer::TopologyViewer (QWidget *parent, const IData::Type f_type, bool 
 		  txt_files->v_file=txt_files->d_file=NULL;
 		  break;
     }
-    
+
 	was_error=false;
 }
 
@@ -102,7 +111,7 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
     int noise_message_num=-1;
     int noise_processors=-1;
     int num_repeats=-1;
-    
+
     int ind_of_slash=data_filename.lastIndexOf('/');
     if (ind_of_slash<0)
     {
@@ -110,11 +119,11 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
     	if (ind_of_slash<0) ind_of_slash=-1;
     }
     fname_for_tvwidget=data_filename.right(data_filename.length()-(ind_of_slash+1));
-    
+
     if (txt_files==NULL)
     {
 		// reading NetCDF file(s)...
-		
+
 		if (nc_open(data_filename.toLocal8Bit().constData(),NC_NOWRITE,&(ncdf_files->v_file))!=NC_NOERR)
 		{
 			ncdf_files->v_file=-1;
@@ -130,9 +139,9 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 				return false;
 			}
 		}
-	
+
 		int id;
-	
+
 		#define FORMATCHECK(var,var_name,error) \
 			if ((nc_inq_varid(ncdf_files->v_file,var_name,&id)!=NC_NOERR) || \
 			    (nc_get_var1(ncdf_files->v_file,id,NULL,&var)!=NC_NOERR)) \
@@ -146,12 +155,12 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 		FORMATCHECK(noise_message_num,"num_noise_mes",NoNoiseMesNum)
 		FORMATCHECK(noise_processors,"num_noise_proc",NoNoiseNumProc)
 		FORMATCHECK(num_repeats,"num_repeates",NoRpts)
-		
+
 		int n_vars,i;
 		int *varids;
 		size_t len;
 		int dim_id[3];
-		
+
 		nc_inq_nvars(ncdf_files->v_file,&n_vars);
 		varids=static_cast<int*>(malloc(n_vars*sizeof(int)));
 		if (varids==NULL) { NOT_ENOUGH_MEM_RET(false); }
@@ -168,9 +177,9 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 		    SEND_ERR_MSG1(No3DData,data_filename);
 		    return false;
 		}
-		
+
 		ncdf_files->matr_v=varids[i]; // defined!
-		
+
 		free(varids);
 		nc_inq_vardimid(ncdf_files->v_file,ncdf_files->matr_v,dim_id);
 		/* get initial sizes of 3D matrix */
@@ -194,7 +203,7 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 			SEND_ERR_MSG1(DiffWdHght,data_filename);
 		    return false;
 		}
-		
+
 		/* get real end message length */
 		const int right_end_message_length=static_cast<int>(main_wdg.z_num)*step_length+begin_message_length;
 		if (right_end_message_length!=end_message_length)
@@ -204,7 +213,7 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 								 .arg(right_end_message_length-step_length).arg(end_message_length),QMessageBox::Ok);
 	    	//end_message_length=right_end_message_length;
 		}
-		
+
 		if (ncdf_files->d_file!=-1)
 		{
 		    nc_inq_nvars(ncdf_files->d_file,&n_vars);
@@ -223,9 +232,9 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 				SEND_ERR_MSG1(No3DData,deviat_filename);
 				return false;
 		    }
-		    
+
 		    ncdf_files->matr_d=varids[i]; // defined!
-		    
+
 		    free(varids);
 		    nc_inq_vardimid(ncdf_files->d_file,ncdf_files->matr_d,dim_id);
 		    nc_inq_dimlen(ncdf_files->d_file,dim_id[0],&len);
@@ -247,11 +256,11 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 				return false;
 		    }
 		}
-		
+
 		if (!hosts_fname.isEmpty())
 		{
 	    	// reading hosts' names...
-	    	
+
 	    	FILE *tmp_host_f=fopen(hosts_fname.toLocal8Bit().constData(),"r");
 	    	if (tmp_host_f==NULL)
 	    		SEND_ERR_MSG1(NoHosts,hosts_fname);
@@ -260,7 +269,7 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 		    	Data_Text::Line l;
 				char *line;
 				unsigned int host_num=0u;
-				
+
 				main_wdg.host_names=new(std::nothrow) QString[main_wdg.x_num];
 				if (main_wdg.host_names==NULL) { NOT_ENOUGH_MEM_RET(false); }
 				for ( ; ; )
@@ -282,7 +291,7 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
     else
     {
 		// reading TXT file(s)...
-		
+
 		txt_files->v_file=fopen(data_filename.toLocal8Bit().constData(),"r");
 		if (txt_files->v_file==NULL)
 		{
@@ -298,10 +307,10 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 				return false;
 			}
 		}
-		
+
 		Data_Text::Line l;
 		const char *work_line;
-		
+
 		#define GETNEXTLINE \
 			for ( ; ; ) \
 			{ \
@@ -312,7 +321,7 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 			    } \
 			    if (!l.isallws()) break; \
 			}
-    	
+
 		#define READVAR(comment,offs,var,error) \
 			work_line=strstr(l.Give(),comment); \
 			if ((work_line==NULL) || (sscanf(work_line+offs,"%d",&var)<1)) \
@@ -321,7 +330,7 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 			{ \
 			    GETNEXTLINE \
 			}
-		    
+
 		GETNEXTLINE
 		work_line=strstr(l.Give(),"processors ");
 		if ((work_line==NULL) || (sscanf(work_line+11,"%d",&num_processors)<1))
@@ -334,9 +343,9 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 			SEND_ERR_MSG1(No3DData,data_filename);
 		    return false;
 		}
-		
+
 		main_wdg.x_num=static_cast<unsigned int>(num_processors);
-		
+
 		for ( ; ; )
 		{
 		    GETNEXTLINE
@@ -344,7 +353,7 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 		    if ((work_line!=NULL) && (sscanf(work_line+21,"%d",&begin_message_length)==1))
 		    	break;
 		}
-			
+
 		GETNEXTLINE
 		READVAR("end message length ",19,end_message_length,NoEndMesLen)
 		READVAR("step length ",12,step_length,NoStepLen)
@@ -352,15 +361,15 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 		READVAR("number of noise messages ",25,noise_message_num,NoNoiseMesNum)
 		READVAR("number of noise processes ",26,noise_processors,NoNoiseNumProc)
 		READVAR("number of repeates ",19,num_repeats,NoRpts)
-		
+
 		main_wdg.z_num=0u;
 		if (strstr(l.Give(),"hosts:")!=NULL)
 		{
 		    // reading hosts' names...
-		    
+
 		    unsigned int host_num=0u;
 		    int last_c;
-		    
+
 		    main_wdg.host_names=new(std::nothrow) QString[main_wdg.x_num];
 		    if (main_wdg.host_names==NULL) { NOT_ENOUGH_MEM_RET(false); }
 		    for ( ; ; )
@@ -394,15 +403,15 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 				if (!Data_Text::readline(txt_files->v_file,l)) break;
 		    }
 		}
-		
+
 		if (main_wdg.z_num==0u)
 		{
 			SEND_ERR_MSG1(No3DData,data_filename);
 		    return false;
 		}
-		
+
 		fgetpos(txt_files->v_file,&txt_files->matr_v_pos); // 'matr_v_pos' is set!
-		
+
 		/* get real end message length */
 		while (Data_Text::readline(txt_files->v_file,l))
 		{
@@ -415,13 +424,12 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 		    QMessageBox::warning(this,tr("Warning"),tr("<p align=center>This test was not finished.<br>"
 		    					 "Expected %1 instead of %2<br>as end message length value.</p>")\
 		    					 .arg(wright_end_message_length-step_length).arg(end_message_length),QMessageBox::Ok);
-		    //end_message_length=wright_end_message_length;
 		}
-		
+
 		if (txt_files->d_file!=NULL)
 		{
 		    int var;
-		    
+
 		    /* check if X and Y dimensions in 'v_file' and 'd_file' are equal */
 		    for ( ; ; )
 		    {
@@ -443,7 +451,7 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 				SEND_ERR_MSG(IncmpDat1Dat2);
 				return false;
 		    }
-		    
+
 		    /* check if Z dimensions in 'v_file' and 'd_file' are equal (the beginning...) */
 		    var=0;
 		    while (Data_Text::readline(txt_files->d_file,l))
@@ -459,9 +467,9 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 				SEND_ERR_MSG(IncmpDat1Dat2);
 				return false;
 		    }
-		    
+
 		    fgetpos(txt_files->d_file,&txt_files->matr_d_pos); // 'matr_d_pos' is set!
-		    
+
 		    /* check if Z dimensions in 'v_file' and 'd_file' are equal (...the end) */
 		    while (Data_Text::readline(txt_files->d_file,l))
 		    {
@@ -473,14 +481,14 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 				return false;
 		    }
 		}
-		
+
 		txt_files->flt_pt=*(localeconv()->decimal_point);
     }
-    
+
     QString msg=tr(" file \"");
 	(msg+=data_filename)+=tr("\" is loaded");
 	emit SendMessToLog(MainWindow::Success,my_sign,msg);
-	    
+
     if (main_wdg.host_names==NULL)
     {
 		main_wdg.host_names=new(std::nothrow) QString[main_wdg.x_num];
@@ -488,18 +496,18 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 		for (unsigned int i=0u; i!=main_wdg.x_num; ++i)
 		    main_wdg.host_names[i]=QString("v%1").arg(i);
     }
-    
+
     /* initializing graph matrix */
     main_wdg.edge_counts=static_cast<unsigned int*>(calloc(main_wdg.x_num*main_wdg.x_num,sizeof(int))); // fill with zeroes
     if (main_wdg.edge_counts==NULL) { NOT_ENOUGH_MEM_RET(false); }
-    
+
     try { hor_layout=new QHBoxLayout(this); }
     catch (const std::bad_alloc&) { NOT_ENOUGH_MEM_RET(false); }
     hor_layout->setContentsMargins(3,3,3,3); // thin white borders
     hor_layout->addWidget(&main_wdg); // 'main_wdg' is "glued" to 'this'
-	
+
     QTimer::singleShot(100,this,SLOT(Execute())); // after 100 milliseconds Execute() will be called
-    
+
     return true;
 }
 
@@ -521,9 +529,9 @@ void TopologyViewer::Execute (void) {
 	opts_ui.mesLenSB->setRange(begin_message_length,
 							   begin_message_length+static_cast<int>(main_wdg.z_num-1u)*step_length);
 	opts_ui.mesLenSB->setSingleStep(step_length);
-	
+
 	(void)options->exec(); // run as modal(!); it will return only QDialog::Accepted
-	
+
 	shmem_eps=1.0+opts_ui.shmEpsSB->value();
 	duplex_eps=1.0+opts_ui.dupEpsSB->value();
 	if (opts_ui.srcMesLenRB->isChecked())
@@ -558,22 +566,22 @@ void TopologyViewer::Execute (void) {
 	main_wdg.show_host_names=opts_ui.showVertLblsCB->isChecked();
 	delete options;
 	options=NULL;
-	
+
 	/* go! */
 	const unsigned int xy_num=main_wdg.x_num*main_wdg.x_num;
     double *matr=static_cast<double*>(malloc(xy_num*sizeof(double))); // matrix of size x_num*x_num
     if (matr==NULL) { NOT_ENOUGH_MEM_CLOSE; }
-    
+
     printf("START\n\n");
     if (txt_files==NULL)
     {
 		// NetCDF file
-		
+
 		const int file1=ncdf_files->v_file,matr1=ncdf_files->matr_v;
 		size_t start[]={0u,0u,0u}; // 2nd and 3rd components are always 0
 		size_t &start0=start[0];
 		const size_t count[]={1u,main_wdg.x_num,main_wdg.x_num};
-		
+
 		for (start0=0u; start0!=main_wdg.z_num; ++start0)
 		{
 		    nc_get_vara_double(file1,matr1,start,count,matr);
@@ -587,7 +595,7 @@ void TopologyViewer::Execute (void) {
     else
     {
 		// text file
-		
+
 		const char float_pt=txt_files->flt_pt;
 		const char non_flt_pt=(float_pt=='.')? ',' : '.';
 		FILE *file1=txt_files->v_file;
@@ -596,7 +604,7 @@ void TopologyViewer::Execute (void) {
 		const unsigned int x_num1=main_wdg.x_num-1u;
 		Data_Text::Line l1;
 		char *line1,*splitter,*pt_pos;
-		
+
 		fsetpos(file1,&matr1);
 		for (k=0u; k!=main_wdg.z_num; ++k)
 		{
@@ -628,84 +636,25 @@ void TopologyViewer::Execute (void) {
 		}
     }
     printf("\nEND\n\n");
-    
-    /*printf("WRITE FILE\n\n");
-    
-    if (txt_files==NULL)
-    {
-		const int file1=ncdf_files->v_file,matr1=ncdf_files->matr_v;
-		size_t start[3]={0u,0u,0u}; // 2nd and 3rd components are always 0
-		const size_t count[3]={1u,main_wdg.x_num,main_wdg.x_num};
-		
-		nc_get_vara_double(file1,matr1,start,count,matr);
-    }
-    else
-    {
-		const char float_pt=txt_files->flt_pt;
-		const char non_flt_pt=(float_pt=='.')? ',' : '.';
-		FILE *file1=txt_files->v_file;
-		const fpos_t matr1=txt_files->matr_v_pos;
-		unsigned int i,j;
-		const unsigned int x_num1=main_wdg.x_num-1u;
-		Data_Text::Line l1;
-		char *line1,*splitter,*pt_pos;
-		
-		fsetpos(file1,&matr1);
-		for (j=0u; j!=main_wdg.x_num; ++j)
-		{
-		    Data_Text::readline(file1,l1);
-		    line1=l1.Give_mdf();
-		    for (i=0u; i!=x_num1; ++i)
-		    {
-		    	*(splitter=strchr(line1,'\t'))='\0';
-		    	if ((pt_pos=strchr(line1,non_flt_pt))!=NULL)
-				    *pt_pos=float_pt;
-				matr[j*main_wdg.x_num+i]=atof(line1);
-				line1=splitter+1;
-			}
-			if ((pt_pos=strchr(line1,non_flt_pt))!=NULL)
-				*pt_pos=float_pt;
-			matr[j*main_wdg.x_num+i]=atof(line1);
-		}
-    }
-    FILE *ff=fopen("11.gv","w");
-    fprintf(ff,"graph topology {\n");
-    for (unsigned i=0u; i!=main_wdg.x_num; ++i)
-    	fprintf(ff,"\tv%u [label=\"%s\"];\n",i,main_wdg.host_names[i].toLocal8Bit().constData());
-    for (unsigned int i=0u; i!=main_wdg.x_num; ++i)
-    {
-    	for (unsigned int j=0u; j!=main_wdg.x_num; ++j)
-    	{
-    		if (main_wdg.edge_counts[i*main_wdg.x_num+j]>0u)
-	    		fprintf(ff,"\tv%u -- v%u [label=\"%g\"];\n",i,j,0.5*(matr[i*main_wdg.x_num+j]+matr[j*main_wdg.x_num+i]));//((double)edge_counts[i*x_num+j])*100.0/(double)z_num);
-    	}
-    }
-    fprintf(ff,"}\n");
-    fclose(ff);
-    ff=NULL;
-    
-    printf("WRITTEN\n\n");//return;
-    */
-	
-	
+
 	printf("BUILD GRAPH\n\n");
-	
+
 	if (!GetMatrixByValsForEdgsVar(matr))
 	{
 		free(matr);
 		NOT_ENOUGH_MEM_CLOSE;
 	}
-    
+
     // forget about edges with low existence probability
-    for (unsigned int *edg_c=main_wdg.edge_counts,*edg_c_end=main_wdg.edge_counts+xy_num; 
+    for (unsigned int *edg_c=main_wdg.edge_counts,*edg_c_end=main_wdg.edge_counts+xy_num;
     	 edg_c!=edg_c_end; ++edg_c)
     	*edg_c=(*edg_c<min_edg_cnt)? 0u : *edg_c;
-    
+
     unsigned int edg_num=0u; // number of all edges
 	unsigned int edg50_num=0u; // number of edges with length error not less than 50%
-	unsigned int edg99_num=0u; // number of edges with length error not less than 99%
-	
-    if (!main_wdg.MapGraphInto3D(matr,m_d_impact,edg_num,edg50_num,edg99_num))
+	unsigned int edg98_num=0u; // number of edges with length error not less than 98%
+
+    if (!main_wdg.MapGraphInto3D(matr, edg_num, edg50_num, edg98_num))
     {
     	free(matr);
 		NOT_ENOUGH_MEM_CLOSE;
@@ -718,222 +667,216 @@ void TopologyViewer::Execute (void) {
 		mes+=tr(" was not precise:");
 		mes+=QString("<br>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <b>%1%</b> ")\
 						.arg(static_cast<double>(edg50_num)*r_edg_num,0,'f',2);
-		mes+=tr("of edges have %1% length error or greater").arg(50); // 'arg(const)' is used to minimize 
+		mes+=tr("of edges have %1% length error or greater").arg(50); // 'arg(const)' is used to minimize
 																	  // the number of translated strings
-		if (edg99_num!=0u)
+		if (edg98_num!=0u)
 		{
 			mes+=QString("<br>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <b>%1%</b> ").\
-						 arg(static_cast<double>(edg99_num)*r_edg_num,0,'f',2);
-			mes+=tr("of edges have %1% length error or greater").arg(99);
+						 arg(static_cast<double>(edg98_num)*r_edg_num,0,'f',2);
+			mes+=tr("of edges have %1% length error or greater").arg(98);
 		}
 		(mes+="<br><br>")+=tr("(the graph has <b>%1</b> edges in all)<br>").arg(edg_num);
 		emit SendMessToLog(MainWindow::Info,my_sign,mes);
 		QMessageBox::information(this,tr("Graph building"),mes);
 	}
-	
+
     main_wdg.updateGL();
 }
 
 
-// garbage collectors;
-// make instances of these classes AFTER allocations of memory for managed pointers
-// TODO: replace these 2 classes with std::unique_ptr when C++11 will be fully supported
-class _FreeMeOnReturn {
-	private:
-		void *const ptr;
-		
-		_FreeMeOnReturn (const _FreeMeOnReturn&); // denied
-		void operator= (const _FreeMeOnReturn&); // denied
-	public:
-		explicit _FreeMeOnReturn (void *p): ptr(p) {}
-		~_FreeMeOnReturn (void) { free(ptr); }
-};
-template <typename T> class _Delete_arr_MeOnReturn {
-	private:
-		T *const arr;
-		
-		_Delete_arr_MeOnReturn (const _Delete_arr_MeOnReturn&); // denied
-		void operator= (const _Delete_arr_MeOnReturn&); // denied
-	public:
-		explicit _Delete_arr_MeOnReturn (T *a): arr(a) {}
-		~_Delete_arr_MeOnReturn (void) { delete[] arr; }
-};
-
 bool TopologyViewer::RetrieveTopology (double *matr) {
-	clock_t st=clock();
+	clock_t st = clock();
+	QLabel l(&main_wdg);
+	l.setFixedSize(200,50);
+	l.move((width()-l.width())/2,(height()-l.height())/2);
+	l.setAutoFillBackground(true);
+	l.show();
+	l.setText(QString("Retrieving topology from file..."));
 	
+	// immediate processing of all paint events and such
+	QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents,1);
+
 	// array of vertices; each vertex stores an array of adjacent vertices
-    std::vector<unsigned int> *vertices=new(std::nothrow) std::vector<unsigned int>[main_wdg.x_num];
-    if (vertices==NULL) { NOT_ENOUGH_MEM_RET(false); }
-    _Delete_arr_MeOnReturn<std::vector<unsigned int> > _for_vertices(vertices); // calls "delete[] vertices"
-    																			// when function returns
-    
+    std::vector<unsigned int> vertices[main_wdg.x_num];
+    if (vertices == nullptr) { 
+		NOT_ENOUGH_MEM_RET(false); 
+	}
+
     // distances between vertices; the structure is the same as the structure of 'vertices'
-    std::vector<double> *edges=new(std::nothrow) std::vector<double>[main_wdg.x_num];
-    if (edges==NULL) { NOT_ENOUGH_MEM_RET(false); }
-    _Delete_arr_MeOnReturn<std::vector<double> > _for_edges(edges); // calls "delete[] edges" when function returns
-    
-    // array of flags; a flag is 'true' when corresponding vertex is "viewed" or "done"
-    bool *vert_done=static_cast<bool*>(calloc(main_wdg.x_num,sizeof(bool)));
-    if (vert_done==NULL) { NOT_ENOUGH_MEM_RET(false); }
-    _FreeMeOnReturn _for_vert_done(vert_done); // calls "free(vert_done)" when function returns
-    
+    std::vector<double> edges[main_wdg.x_num];
+    if (edges == nullptr) { 
+		NOT_ENOUGH_MEM_RET(false); 
+	}
+
+    // unique_ptr to an array of flags; 
+	//a flag is 'true' when corresponding vertex is "viewed" or "done"
+	auto vert_done = std::make_unique<bool[]>(main_wdg.x_num);
+    if (vert_done == nullptr) { 
+		NOT_ENOUGH_MEM_RET(false); 
+	}
+	
     std::set<unsigned int> on_sh_mem; // processors on shared memory;
     								  // distances between such processors are not differ much
-    
-    unsigned int i,j=main_wdg.x_num+1u;
-    unsigned int bigi=main_wdg.x_num*(main_wdg.x_num+1u); // saves a value of "<some_var>*main_wdg.x_num"
+
+    unsigned int i,j = main_wdg.x_num + 1u;
+	// 'bigi' saves a value of "<some_var>*main_wdg.x_num"
+    unsigned int bigi = main_wdg.x_num * (main_wdg.x_num + 1u); 
     double glob_min; // minimum value in 'matr'
     unsigned int gl_min_s,gl_min_e; // row and column index of 'glob_min' correspondently
     double *cur; // an iterator for 'matr'
-    std::vector<unsigned int> *verts,*verts_end; // iterators for 'vertices'
-	std::vector<double> *edgs; // an iterator for 'edges'
-    bool main_break=false; // becomes 'true' when we need to exit the main cycle 
-    
+    bool main_break = false; // becomes 'true' when we need to exit the main cycle
+
     /* 1st part: retrieve spanning subgraph */
-    
+
     // erase diagonal elements to avoid self-pointing
     for (i=0u; i!=bigi; i+=j)
 		matr[i]=DBL_MAX;
-	
+
 	// start: find minimum value among values of the whole matrix;
 	// it's clear that two corresponding vertices are linked
-	glob_min=DBL_MAX;
-	gl_min_s=0u;
-	gl_min_e=0u;
-	cur=matr;
-	for (i=0u; i!=main_wdg.x_num; ++i)
+	glob_min = DBL_MAX;
+	gl_min_s = 0u;
+	gl_min_e = 0u;
+	cur = matr;
+	for (i = 0u; i != main_wdg.x_num; ++i)
 	{
-		for (j=0u; j!=main_wdg.x_num; ++j,++cur)
+		for (j = 0u; j != main_wdg.x_num; ++j,++cur)
 		{
-			if (*cur<glob_min)
+			if (*cur < glob_min)
 			{
-				glob_min=*cur;
-				gl_min_s=i;
-				gl_min_e=j;
+				glob_min = *cur;
+				gl_min_s = i;
+				gl_min_e = j;
 			}
 		}
 	}
-	vert_done[gl_min_s]=true;
+	vert_done[gl_min_s] = true;
 	try {
 		vertices[gl_min_s].push_back(gl_min_e);
 		edges[gl_min_s].push_back(glob_min);
 	}
-	catch (...) { NOT_ENOUGH_MEM_RET(false); }
-	matr[gl_min_s*main_wdg.x_num+gl_min_e]=DBL_MAX;
+	catch (...) { 
+		NOT_ENOUGH_MEM_RET(false); 
+	}
+	matr[gl_min_s * main_wdg.x_num + gl_min_e] = DBL_MAX;
 	// check if edge 'gl_min_s'<->'gl_min_e' is a duplex channel (with tolerance 'shmem_eps' (!))
-	glob_min*=shmem_eps;
-	cur=matr+(gl_min_e*main_wdg.x_num+gl_min_s);
-	if (*cur<glob_min)
+	glob_min *= shmem_eps;
+	cur = matr + (gl_min_e * main_wdg.x_num + gl_min_s);
+	if (*cur < glob_min)
 	{
 		try {
 			vertices[gl_min_e].push_back(gl_min_s);
 			edges[gl_min_e].push_back(*cur);
 		}
-		catch (...) { NOT_ENOUGH_MEM_RET(false); }
-		*cur=DBL_MAX;
+		catch (...) { 
+			NOT_ENOUGH_MEM_RET(false); 
+		}
+		*cur = DBL_MAX;
 	}
 	try {
 		on_sh_mem.insert(gl_min_e);
 	}
-	catch (...) { NOT_ENOUGH_MEM_RET(false); }
+	catch (...) { 
+		NOT_ENOUGH_MEM_RET(false); 
+	}
 	for ( ; ; )
 	{
 		// collect (and link) processors placed on shared memory;
 		// the tolerance is 'shmem_eps'
 		while (!on_sh_mem.empty())
 		{
-			gl_min_e=*(on_sh_mem.begin());
+			gl_min_e = *(on_sh_mem.begin());
 			on_sh_mem.erase(on_sh_mem.begin());
-			cur=matr+gl_min_e*main_wdg.x_num;
-			vert_done[gl_min_e]=true;
-			verts=vertices+gl_min_e;
-			edgs=edges+gl_min_e;
-			for (j=0u; j!=main_wdg.x_num; ++j,++cur)
+			cur = matr + gl_min_e * main_wdg.x_num;
+			vert_done[gl_min_e] = true;
+			for (j = 0u; j != main_wdg.x_num; ++j,++cur)
 			{
-				if (*cur<glob_min)
+				if (*cur < glob_min)
 				{
 					try {
-						verts->push_back(j);
-						edgs->push_back(*cur);
+						vertices[gl_min_e].push_back(j);
+						edges[gl_min_e].push_back(*cur);
 						if (!vert_done[j])
 							on_sh_mem.insert(j);
 					}
-					catch (...) { NOT_ENOUGH_MEM_RET(false); }
-					*cur=DBL_MAX;
+					catch (...) { 
+						NOT_ENOUGH_MEM_RET(false); 
+					}
+					*cur = DBL_MAX;
 				}
 			}
-			cur=matr+gl_min_e;
-			edgs=edges;
-			for (verts=vertices,verts_end=vertices+main_wdg.x_num; verts!=verts_end; ++verts,++edgs)
+			cur = matr + gl_min_e;
+			for (i = 0; i != main_wdg.x_num; ++i)
 			{
-				if (*cur<glob_min)
+				if (*cur < glob_min)
 				{
 					try {
-						verts->push_back(gl_min_e);
-						edgs->push_back(*cur);
+						vertices[i].push_back(gl_min_e);
+						edges[i].push_back(*cur);
 					}
-					catch (...) { NOT_ENOUGH_MEM_RET(false); }
-					*cur=DBL_MAX;
+					catch (...) { 
+						NOT_ENOUGH_MEM_RET(false); 
+					}
+					*cur = DBL_MAX;
 				}
-				cur+=main_wdg.x_num;
+				cur += main_wdg.x_num;
 			}
 		}
-		
-		/*for (i=0u; (i!=main_wdg.x_num) && vert_done[i]; ++i) ;
-		if (i==main_wdg.x_num) break;*/
-		
+
 		for ( ; ; )
 		{
 			// "throw" an edge from "visited" processors to "not visited" ones;
 			// this is called "ascent to cardboards";
 			// find minimum value among values which correspond to
 			// pairs of "visited"-"not visited" processors
-			glob_min=DBL_MAX;
-			gl_min_s=gl_min_e=0u;
-			cur=matr;
-			for (i=0u; i!=main_wdg.x_num; ++i)
+			glob_min = DBL_MAX;
+			gl_min_s = gl_min_e = 0u;
+			cur = matr;
+			for (i = 0u; i != main_wdg.x_num; ++i)
 			{
 				if (!vert_done[i])
 				{
-					cur+=main_wdg.x_num;
+					cur += main_wdg.x_num;
 					continue;
 				}
-				for (j=0u; j!=main_wdg.x_num; ++j,++cur)
+				for (j = 0u; j != main_wdg.x_num; ++j,++cur)
 				{
-					if (!vert_done[j] && (*cur<glob_min))
+					if (!vert_done[j] && (*cur < glob_min))
 					{
-						glob_min=*cur;
-						gl_min_s=i;
-						gl_min_e=j;
+						glob_min = *cur;
+						gl_min_s = i;
+						gl_min_e = j;
 					}
 				}
 			}
-			if (gl_min_s==gl_min_e)
+			if (gl_min_s == gl_min_e)
 			{
 				// this means that all processors are marked as "visited"
-				main_break=true;
+				main_break = true;
 				break;
 			}
-			//vert_done[gl_min_s]=true;
 			try {
 				vertices[gl_min_s].push_back(gl_min_e);
 				edges[gl_min_s].push_back(glob_min);
 			}
-			catch (...) { NOT_ENOUGH_MEM_RET(false); }
-			matr[gl_min_s*main_wdg.x_num+gl_min_e]=DBL_MAX;
+			catch (...) { 
+				NOT_ENOUGH_MEM_RET(false); 
+			}
+			matr[gl_min_s * main_wdg.x_num + gl_min_e] = DBL_MAX;
 			// check if edge 'gl_min_s'<->'gl_min_e' is
 			// a duplex channel (with tolerance 'duplex_eps')
-			bigi=gl_min_e*main_wdg.x_num;
-			cur=matr+(bigi+gl_min_s);
-			if (*cur<glob_min*duplex_eps)
+			bigi = gl_min_e * main_wdg.x_num;
+			cur = matr + (bigi + gl_min_s);
+			if (*cur < glob_min * duplex_eps)
 			{
 				try {
 					vertices[gl_min_e].push_back(gl_min_s);
 					edges[gl_min_e].push_back(*cur);
 				}
-				catch (...) { NOT_ENOUGH_MEM_RET(false); }
-				*cur=DBL_MAX;
+				catch (...) { 
+					NOT_ENOUGH_MEM_RET(false); 
+				}
+				*cur = DBL_MAX;
 			}
 			// the cycle of "descent to processor cores":
 			// 1) find edge with minimum length which begins in 'gl_min_e';
@@ -945,26 +888,27 @@ bool TopologyViewer::RetrieveTopology (double *matr) {
 			// found edges should form a chain
 			for ( ; ; )
 			{
-				gl_min_s=gl_min_e;
-				gl_min_e=main_wdg.x_num;
-				//glob_min=DBL_MAX; // new 'glob_min' must be strongly less than current one!
-				cur=matr+bigi;
-				for (j=0u; j!=main_wdg.x_num; ++j,++cur)
+				gl_min_s = gl_min_e;
+				gl_min_e = main_wdg.x_num;
+				cur = matr + bigi;
+				for (j = 0u; j != main_wdg.x_num; ++j,++cur)
 				{
-					if (*cur<glob_min)
+					if (*cur < glob_min)
 					{
-						glob_min=*cur;
-						gl_min_e=j;
+						glob_min = *cur;
+						gl_min_e = j;
 					}
 				}
-				if (gl_min_e==main_wdg.x_num)
+				if (gl_min_e == main_wdg.x_num)
 				{
 					if (!vert_done[gl_min_s])
 					{
 						try {
 							on_sh_mem.insert(gl_min_s);
 						}
-						catch (...) { NOT_ENOUGH_MEM_RET(false); }
+						catch (...) { 
+							NOT_ENOUGH_MEM_RET(false); 
+						}
 					}
 					break;
 				}
@@ -973,144 +917,155 @@ bool TopologyViewer::RetrieveTopology (double *matr) {
 					vertices[gl_min_s].push_back(gl_min_e);
 					edges[gl_min_s].push_back(glob_min);
 				}
-				catch (...) { NOT_ENOUGH_MEM_RET(false); }
-				matr[bigi+gl_min_e]=DBL_MAX;
-				glob_min*=shmem_eps;
-				bigi=gl_min_e*main_wdg.x_num;
-				cur=matr+(bigi+gl_min_s);
-				if (*cur<glob_min)
+				catch (...) { 
+					NOT_ENOUGH_MEM_RET(false); 
+				}
+				matr[bigi+gl_min_e] = DBL_MAX;
+				glob_min *= shmem_eps;
+				bigi = gl_min_e * main_wdg.x_num;
+				cur = matr + (bigi + gl_min_s);
+				if (*cur < glob_min)
 				{
 					try {
 						vertices[gl_min_e].push_back(gl_min_s);
 						edges[gl_min_e].push_back(*cur);
 					}
-					catch (...) { NOT_ENOUGH_MEM_RET(false); }
-					*cur=DBL_MAX;
+					catch (...) { 
+						NOT_ENOUGH_MEM_RET(false); 
+					}
+					*cur = DBL_MAX;
 				}
 			}
-			if (!on_sh_mem.empty()) break;
+			if (!on_sh_mem.empty()) 
+				break;
 		}
-		if (main_break) break; // first part of the algorithm is done
+		if (main_break) 
+			break; // first part of the algorithm is done
 	}
-	
-	st=clock()-st;
+	st = clock()-st;
 	printf("\n%g мс",static_cast<float>(st*1000u)/static_cast<float>(CLOCKS_PER_SEC));
-	st=clock();
-	
+	st = clock();
+
 	/* 2nd part: retrieve "good" cycles */
-	
+
 	// a "good" cycle is a cycle 1->2, 2->3, ... (k-1)->k, 1->k (direction is important),
 	// where |12| + |23| + ... +|k-1,k|> |1k| (|| is a length of an edge)
 	std::vector<unsigned int>::const_iterator it,it_end;
-	double *d=static_cast<double*>(malloc(main_wdg.x_num*sizeof(double)));
-	
-	if (d!=NULL)
+	auto d = std::make_unique<double[]>(main_wdg.x_num);
+
+	if (d != nullptr)
 	{
-		_FreeMeOnReturn _for_d(d); // calls "free(d)" at the end of scope
-		
-		verts=vertices;
-		edgs=edges;
-		for (i=0u,bigi=0u; i!=main_wdg.x_num; ++i,bigi+=main_wdg.x_num,++verts,++edgs)
+		int cnt = 0;
+		// Dijkstra algorithm for every vertex (found in Wikipedia)
+		for (i = 0u, bigi = 0u; i != main_wdg.x_num; ++i, bigi += main_wdg.x_num, ++cnt)
 		{
-			// Dijkstra algorithm for every vertex (found in Wikipedia)
-			memset(vert_done,0,main_wdg.x_num*sizeof(bool));
-			for (j=0u; j!=main_wdg.x_num; ++j)
-				d[j]=DBL_MAX;
-			d[i]=0.0;
-			vert_done[i]=true;
-			gl_min_e=1u; // counter of "visited" vertices
-			for (it=verts->begin(),it_end=verts->end(); it!=it_end; ++it)
-			{
-				glob_min=(*edgs)[it-verts->begin()];
-				j=*it;
-				if (glob_min<d[j]) d[j]=glob_min;
+			//initialization of vert_done
+			for (j = 0u; j < main_wdg.x_num; ++j) {
+				vert_done[j] = false;
 			}
-			for ( ; gl_min_e!=main_wdg.x_num; ++gl_min_e)
+			for (j = 0u; j != main_wdg.x_num; ++j)
+				d[j] = DBL_MAX;
+			d[i] = 0.0;
+			vert_done[i] = true;
+			gl_min_e = 1u; // counter of "visited" vertices
+			for (it = vertices[cnt].begin(); it != vertices[cnt].end(); ++it)
 			{
-				for (j=0u; vert_done[j]; ++j) ;
-				glob_min=d[j];
-				gl_min_s=j;
-				for (++j; j!=main_wdg.x_num; ++j)
+				glob_min = edges[cnt][it-vertices[cnt].begin()];
+				j = *it;
+				if (glob_min < d[j]) 
+					d[j] = glob_min;
+			}
+			for ( ; gl_min_e != main_wdg.x_num; ++gl_min_e)
+			{
+				for (j = 0u; vert_done[j]; ++j) ;
+				glob_min = d[j];
+				gl_min_s = j;
+				for (++j; j != main_wdg.x_num; ++j)
 				{
-					if (vert_done[j]) continue;
-					if (d[j]<glob_min)
+					if (vert_done[j]) 
+						continue;
+					if (d[j] < glob_min)
 					{
-						glob_min=d[j];
-						gl_min_s=j;
+						glob_min = d[j];
+						gl_min_s = j;
 					}
 				}
-				if (glob_min==DBL_MAX) break; // some vertices are unreachable
-				vert_done[gl_min_s]=true;
-				const std::vector<unsigned int> &v_gl_min_s=vertices[gl_min_s];
-				const std::vector<double> &e_gl_min_s=edges[gl_min_s];
-				for (it=v_gl_min_s.begin(),it_end=v_gl_min_s.end(); it!=it_end; ++it)
+				if (glob_min == DBL_MAX) 
+					break; // some vertices are unreachable
+				vert_done[gl_min_s] = true;
+				const std::vector<unsigned int> &v_gl_min_s = vertices[gl_min_s];
+				const std::vector<double> &e_gl_min_s = edges[gl_min_s];
+				for (it = v_gl_min_s.begin(), it_end = v_gl_min_s.end(); it!=it_end; ++it)
 				{
-					j=*it;
-					if (vert_done[j]) continue;
-					glob_min=d[gl_min_s]+e_gl_min_s[it-v_gl_min_s.begin()];
-					if (glob_min<d[j]) d[j]=glob_min;
+					j = *it;
+					if (vert_done[j]) 
+						continue;
+					glob_min = d[gl_min_s] + e_gl_min_s[it - v_gl_min_s.begin()];
+					if (glob_min < d[j]) 
+						d[j] = glob_min;
 				}
 			}
-			cur=matr+bigi;
-			for (j=0u; j!=main_wdg.x_num; ++j,++cur)
+			cur = matr + bigi;
+			for (j = 0u; j != main_wdg.x_num; ++j,++cur)
 			{
-				if ((d[j]!=DBL_MAX) && (*cur<d[j]))
+				if ((d[j] != DBL_MAX) && (*cur < d[j]))
 				{
-					//if (std::find(verts->begin(),verts->end(),j)!=verts->end()) exit(0);
 					try {
-						verts->push_back(j);
-						edgs->push_back(*cur);
+						vertices[cnt].push_back(j);
+						edges[cnt].push_back(*cur);
 					}
-					catch (...) { NOT_ENOUGH_MEM_RET(false); }
-					*cur=DBL_MAX;
+					catch (...) { 
+						NOT_ENOUGH_MEM_RET(false);
+					}
+					*cur = DBL_MAX;
 				}
 			}
 		}
 	}
-	
-	st=clock()-st;
+
+	st = clock()-st;
 	printf(", %g мс",static_cast<float>(st*1000u)/static_cast<float>(CLOCKS_PER_SEC));
-	st=clock();
-	
+	st = clock();
+
 	/* 3rd part: add new edges */
 	unsigned int *edg_cs=main_wdg.edge_counts;
-	for (verts=vertices,verts_end=vertices+main_wdg.x_num; verts!=verts_end; ++verts,edg_cs+=main_wdg.x_num)
+	for (i = 0; i != main_wdg.x_num; ++i, edg_cs += main_wdg.x_num)
 	{
-		for (it=verts->begin(),it_end=verts->end(); it!=it_end; ++it)
+		for (it = vertices[i].begin(); it!=vertices[i].end(); ++it)
 			++*(edg_cs+*it);
 	}
-	
-	st=clock()-st;
+
+	st = clock()-st;
 	printf(", %g мс\n",static_cast<float>(st*1000u)/static_cast<float>(CLOCKS_PER_SEC));
-	
+	l.hide();
 	return true;
 }
 
 bool TopologyViewer::GetMatrixByValsForEdgsVar (double *matr) {
 	const unsigned int xy_num=main_wdg.x_num*main_wdg.x_num;
 	double val;
-	
+
 	if (txt_files==NULL)
     {
 		const int file1=ncdf_files->v_file,matr1=ncdf_files->matr_v;
 		size_t start[3]={0u,0u,0u}; // 3rd component is always equal to 0
 		size_t &start0=start[0];
 		size_t count[3]={1u,main_wdg.x_num,main_wdg.x_num};
-		
+
 		switch (vals_for_edgs)
 		{
 			case 0u: // simple average
 			{
 				nc_get_vara_double(file1,matr1,start,count,matr); // safely get the first matrix
 				++start0;
-				
+
 				double *other_data=static_cast<double*>(malloc(xy_num*sizeof(double))); // aux. buffer
 				double *iter,*o_iter;
 				const double *iter_end;
-				
+
 				if (other_data==NULL)
 				{
-					// there is not enough memory to perform fast version - 
+					// there is not enough memory to perform fast version -
 					// we have to read single rows
 					other_data=static_cast<double*>(malloc(main_wdg.x_num*sizeof(double)));
 					if (other_data==NULL) { NOT_ENOUGH_MEM_RET(false); } // too bad
@@ -1156,7 +1111,7 @@ bool TopologyViewer::GetMatrixByValsForEdgsVar (double *matr) {
 				double *iter=matr,*o_iter,*o_iter1,*o_iter2;
 				const double *o_iter_end;
 				double tmp;
-				
+
 				if (data==NULL) { NOT_ENOUGH_MEM_RET(false); } // too bad
 				count[1]=1u;
 				count[0]=main_wdg.z_num;
@@ -1224,7 +1179,7 @@ bool TopologyViewer::GetMatrixByValsForEdgsVar (double *matr) {
 		Data_Text::Line l1;
 		char *line1,*splitter,*pt_pos;
 		double *iter=matr;
-		
+
 		switch (vals_for_edgs)
 		{
 			case 0u: // simple average
@@ -1270,7 +1225,7 @@ bool TopologyViewer::GetMatrixByValsForEdgsVar (double *matr) {
 				double *o_iter,*o_iter1,*o_iter2;
 				const double *o_iter_end;
 				double tmp;
-				
+
 				if (data==NULL) { NOT_ENOUGH_MEM_RET(false); } // too bad
 				for (unsigned int k=0u; k!=main_wdg.x_num; ++k)
 				{
@@ -1386,6 +1341,7 @@ bool TopologyViewer::GetMatrixByValsForEdgsVar (double *matr) {
     }
     return true;
 }
+
 void TVWidget::SaveImageMenu (){
     QWidget *window = new QWidget;
 
@@ -1405,76 +1361,91 @@ void TVWidget::SaveImageMenu (){
     window->show();
 }
 
-bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact, 
-							   unsigned int &edg_n, unsigned int &edg50_n, unsigned int &edg99_n) {
-	clock_t st=clock();
+//euclidean distance between i-th and j-th nodes
+double dist(double *x, double *y, double *z, int i, int j)
+{
+	double res = (x[i] - x[j])*(x[i] - x[j]) + (y[i] - y[j]) * (y[i] - y[j]) + (z[i] - z[j]) * (z[i] - z[j]);
+	return std::sqrt(res);
+}
+
+//part of the i-th vertex in the stress function
+double stress_part_i (double *x, double *y, double *z, double *matr, int n, int i)
+{
+	double res = 0.0, val, d_ij;
+	for (int j = 0; j < n; ++j) {
+		if (i == j) {
+			continue;
+		}
+		val = dist(x, y, z, i, j);
+		d_ij = matr[i * n + j];
+		res += (val - d_ij) * (val - d_ij);
+	}
+	return res;
+}
+
+bool TVWidget::MapGraphInto3D (double *matr, unsigned int &edg_n, 
+								unsigned int &edg50_n, unsigned int &edg98_n) {
 	
-	unsigned int i,j,v,k,k1;
-	double *mtr1=matr;
+	unsigned int i, j, v, k;
 	double val;
 	double min_val=DBL_MAX;
 
-	for (i=0u,k=0u; i!=x_num; ++i,k+=x_num)
-	{
-		j=i+1u;
-		k1=j*x_num+i;
-		for (mtr1+=j; j!=x_num; ++j,++mtr1,k1+=x_num)
-		{
-			v=edge_counts[k+j]+edge_counts[k1];
-			if (v==0u)
-				*mtr1=0.0; // assign something
-			else
-			{
-				// magic formula!
-				val=matr[k1];
-				val=val+(*mtr1-val)*static_cast<double>(edge_counts[k+j])/static_cast<double>(v);
-				val=(val<1.0e-15)? 1.0e-15 : val;
-				min_val=(val<min_val)? val : min_val;
-				*mtr1=val;
+	//the matrix values changed according to the probabilities of the existence of edges
+	for (i = 0; i < x_num; ++i) {
+		for (k = i; k < x_num; ++k) {
+			//diagonal elements are zeros
+			if (i == k) {
+				matr[i * x_num + k] = 0.0;
+				continue;
 			}
+			v = edge_counts[i * x_num + k] + edge_counts[k * x_num + i];
+			val = matr[i * x_num + k] * edge_counts[i * x_num + k];
+			val += matr[k * x_num + i] * edge_counts[k * x_num + i];
+			if (v != 0) {
+				val /= static_cast<double>(v);
+				val = (val<1.0e-10)? 1.0e-10 : val;
+				min_val = (val < min_val)? val : min_val;
+			}
+			//the matrix is made symmetrical
+			matr[i * x_num + k] = val;
+			matr[k * x_num + i] = val;
 		}
 	}
-	min_val=1.0/(min_val*min_val);
-	mtr1=matr;
-	for (i=0u; i<x_num; ++i)
-	{
-		j=i+1u;
-		for (mtr1+=j; j!=x_num; ++j,++mtr1)
-		{
-			// normalize and raise to the power of 2
-			val=*mtr1;
-			*mtr1=val*val*min_val;
-		}
-	}
-	
-	//! only the upper triangle of 'matr' is valid now!
-		
-	double *xx=static_cast<double*>(malloc(x_num*sizeof(double)));
-	if (xx==NULL) return false;
-	double *yy=static_cast<double*>(malloc(x_num*sizeof(double)));
-	if (yy==NULL) { free(xx); return false; }
-	double *zz=static_cast<double*>(malloc(x_num*sizeof(double)));
-	if (zz==NULL) { free(yy); free(xx); return false; }
 
-	/* do gradient descent */
-	static const double eps=1.0e-100; // precision for distances and for the step
-	static const double small_var=1.0e-6; // lower threshold of difference between
-										  // previous and current value of minimizing function
-	static const double dec_step=1.0/16.0,inc_step=1.5; // adjusting of the step
+	//elements normalization
+	for (i = 0u; i < x_num; ++i)
+	{
+		for (j = i + 1; j != x_num; ++j)
+		{
+			v = edge_counts[i * x_num + k] + edge_counts[k * x_num + i];
+			// normalize 
+			if (v != 0) {
+				matr[i * x_num + j] /= min_val;
+				matr[j * x_num + i] /= min_val;
+			}
+			//the elements of the matrix that correspond to unexisting edges are set to 1
+		}
+	}
+
+	double *xx=static_cast<double*>(malloc(x_num*sizeof(double)));
+	if (xx==NULL) 
+		return false;
+	double *yy=static_cast<double*>(malloc(x_num*sizeof(double)));
+	if (yy==NULL) {
+		free(xx); 
+		return false; 
+	}
+	double *zz=static_cast<double*>(malloc(x_num*sizeof(double)));
+	if (zz==NULL) {
+		free(yy); 
+		free(xx); 
+		return false; 
+	}
+
+	static const double eps=1.0e-10; // precision
 	static const unsigned int max_iter=300000u; // maximum number of iterations
-	double *gradx=static_cast<double*>(malloc(x_num*sizeof(double)));
-	if (gradx==NULL) { free(zz); free(yy); free(xx); return false; }
-	double *grady=static_cast<double*>(malloc(x_num*sizeof(double)));
-	if (grady==NULL) { free(gradx); free(zz); free(yy); free(xx); return false; }
-	double *gradz=static_cast<double*>(malloc(x_num*sizeof(double)));
-	if (gradz==NULL) { free(grady); free(gradx); free(zz); free(yy); free(xx); return false; }
-	const unsigned int x_num1=x_num-1u;
-	const double *mtr;
-	const unsigned int *edg_cnt;
-	double t=1.0e-7,f_prev,f;
-	double x_i,y_i,z_i,dx,dy,dz,grx,gry,grz;
-	const double half_m_d_impact=0.5*m_d_impact;
-	
+
+	//random initialization
 	srand(x_num);
 	for (i=0u; i!=x_num; ++i)
 	{
@@ -1482,273 +1453,152 @@ bool TVWidget::MapGraphInto3D (double *matr, const double m_d_impact,
 		yy[i]=static_cast<double>(i)*(1.0+static_cast<double>(rand())/static_cast<double>(RAND_MAX));
 		zz[i]=static_cast<double>(i)*(1.0+static_cast<double>(rand())/static_cast<double>(RAND_MAX));
 	}
-	
-	/* temporary add lower triangle to upper triangle;
-	   this action makes access to 'edge_counts' in the descent cache friendly
-	   (and speeds up each iteration by the ratio of 2 and greater when 'x_num'>2000)
-	   do not forget to rollback these changes */
-	for (i=0u,k=0u; i!=x_num1; ++i)
-	{
-		j=i+1u;
-		k+=j;
-		v=j*x_num+i;
-		for ( ; j!=x_num; ++j,++k,v+=x_num)
-			edge_counts[k]+=edge_counts[v];
-	}
-	/* move all necessary values in 'matr' closer 
-	   to the beginning to improve cache friendliness */
-	mtr=mtr1=matr; // first row is OK
-	edg_cnt=edge_counts;
-	for (i=0u; i!=x_num1; ++i)
-	{
-		j=i+1u;
-		mtr+=j;
-		edg_cnt+=j;
-		for ( ; j!=x_num; ++j,++mtr,++edg_cnt)
-		{
-			if (*edg_cnt!=0u)
-			{
-				*mtr1=*mtr;
-				++mtr1;
-			}
-		}
-	}
-	
-	f=0.0;
-	mtr=matr;
-	edg_cnt=edge_counts;
-	for (i=0u,k=0u; i!=x_num1; ++i)
-	{
-		x_i=xx[i]; y_i=yy[i]; z_i=zz[i];
-		j=i+1u;
-		for (edg_cnt+=j; j!=x_num; ++j,++edg_cnt)
-		{
-			dx=x_i-xx[j]; dy=y_i-yy[j]; dz=z_i-zz[j];
-			val=dx*dx+dy*dy+dz*dz;
-			if (*edg_cnt==0u)
-				f+=((val<eps)? m_d_impact : ((val<1.0)? (m_d_impact/val) : 0.0));
-			else
-			{
-				val-=*mtr;
-				f+=(val*val);
-				++mtr;
-			}
-		}
-	}
-	f*=0.5;
-	f_prev=f;
 
 	QLabel l(this);
 	l.setFixedSize(200,50);
 	l.move((width()-l.width())/2,(height()-l.height())/2);
 	l.setAutoFillBackground(true);
 	l.show();
-	
-	clock_t st1;
-	for (k=0u; k!=max_iter; ++k)
-	{
+
+	//stress function is computed
+	double stress = 0.0, new_stress = 0.0, d_ij;
+	for (i = 0; i < x_num; ++i) {
+		for (j = i + 1; j < x_num; ++j) {
+			val = dist(xx, yy, zz, i, j);
+			d_ij = matr[i * x_num + j];
+			stress += (val - d_ij) * (val - d_ij);
+		}
+	}
+	double prev_part_i, cur_part_i;
+	bool stop = false;
+	/* stress majorization implemented
+	you can find the formula in the article 
+	E. R. Gansner, Y. Koren. 'Graph Drawing by Stress Majorization' */
+	for (k = 0; k != max_iter; ++k) {
 		if ((k & 0x1f)==0u)
 		{
 			l.setText(QString("<div align=\"center\">iter %1 / %2</div><br><div align=\"left\">func: %3</div>").
-					  arg(k).arg(max_iter).arg(f,0,'g',12));
+					  arg(k).arg(max_iter).arg(stress,0,'g',12));
 			// immediate processing of all paint events and such
 			QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents,1);
 		}
-		st1=clock();
-		memset(gradx,0,x_num*sizeof(double));
-		memset(grady,0,x_num*sizeof(double));
-		memset(gradz,0,x_num*sizeof(double));
-		f=0.0;
-		t=-t; // temporary
-		mtr=matr;
-		edg_cnt=edge_counts;
-		for (i=0u; i<x_num1; ++i)
-		{
-			x_i=xx[i]; y_i=yy[i]; z_i=zz[i];
-			grx=gry=grz=0.0;
-			j=i+1u;
-			for (edg_cnt+=j; j<x_num; ++j,++edg_cnt)
-			{
-				dx=x_i-xx[j]; dy=y_i-yy[j]; dz=z_i-zz[j];
-				val=dx*dx+dy*dy+dz*dz;
-				if (*edg_cnt==0u)
-				{
-					if (!(val<1.0)) continue;
-					if (val<eps)
-					{
-						dx=dy=dz=-half_m_d_impact;
-					}
-					else
-					{
-						val=-m_d_impact/(val*val);
-						dx*=val; dy*=val; dz*=val;
-					}
+		for (i = 0; i < x_num; ++i) {
+			double new_x = 0.0, new_y = 0.0, new_z = 0.0;
+			//previous part of the i-th vertex in the stress function
+			prev_part_i = stress_part_i(xx, yy, zz, matr, x_num, i);
+			//new coordinates for i-th node
+			for (j = 0; j < x_num; ++j) {
+				if (i == j) {
+					continue;
 				}
-				else
-				{
-					(val-=*mtr)*=2.0;
-					++mtr;
-					dx*=val; dy*=val; dz*=val;
+				double cur_dist = dist(xx, yy, zz, i, j);
+				double inv = 0.0;
+				if (cur_dist != 0.0) {
+					inv = 1 / cur_dist;
 				}
-				grx+=dx; gry+=dy; grz+=dz;
-				gradx[j]-=dx; grady[j]-=dy; gradz[j]-=dz;
+				double d_ij = matr[i * x_num + j];
+				new_x += xx[j] + d_ij * (xx[i] - xx[j]) * inv;
+				new_y += yy[j] + d_ij * (yy[i] - yy[j]) * inv;
+				new_z += zz[j] + d_ij * (zz[i] - zz[j]) * inv;
 			}
-			gradx[i]+=grx; grady[i]+=gry; gradz[i]+=grz;
-		}
-		for (i=0u; i<x_num; ++i)
-		{
-			gradx[i]*=t;
-			xx[i]+=gradx[i];
-			grady[i]*=t;
-			yy[i]+=grady[i];
-			gradz[i]*=t;
-			zz[i]+=gradz[i];
-		}
-		mtr=matr;
-		edg_cnt=edge_counts;
-		for (i=0u; i<x_num1; ++i)
-		{
-			x_i=xx[i]; y_i=yy[i]; z_i=zz[i];
-			j=i+1u;
-			for (edg_cnt+=j; j<x_num; ++j,++edg_cnt)
-			{
-				dx=x_i-xx[j]; dy=y_i-yy[j]; dz=z_i-zz[j];
-				val=dx*dx+dy*dy+dz*dz;
-				if (*edg_cnt==0u)
-					f+=((val<eps)? m_d_impact : ((val<1.0)? (m_d_impact/val) : 0.0));
-				else
-				{
-					val-=*mtr;
-					f+=(val*val);
-					++mtr;
-				}
+			xx[i] = new_x / (x_num - 1);
+			yy[i] = new_y / (x_num - 1);
+			zz[i] = new_z / (x_num - 1);
+			//current part of the i-th vertex in the stress function
+			cur_part_i = stress_part_i(xx, yy, zz, matr, x_num, i);
+			new_stress = stress - prev_part_i + cur_part_i;
+			//stop condition
+			if ((stress - new_stress) / stress < eps) {
+				stop = true;
+				break;
 			}
+			stress = new_stress;
+			printf("stress = %f\n", stress);
 		}
-		f*=0.5;
-		t=-t;
-		st1=clock()-st1;
-		printf("  %u: prev=%.12g cur=%.12g t=%g, %g мс\n",k,f_prev,f,t,
-				static_cast<double>(st1*1000u)/static_cast<double>(CLOCKS_PER_SEC));
-		if (f>f_prev)
-		{
-			if (f<f_prev+small_var) break;
-			for (i=0u; i!=x_num; ++i) // return old values
-		   	{
-		   		xx[i]-=gradx[i];
-				yy[i]-=grady[i];
-				zz[i]-=gradz[i];
-			}
-			t*=dec_step; // decrease the step
-			if (t<eps) break; // the step is too small
-		}
-		else
-		{
-			if (f_prev<f+small_var) break;
-			f_prev=f;
-			t*=inc_step; // increase the step
+		if (stop) {
+			break;
 		}
 	}
-	f=(f>f_prev)? f_prev : f;
-	free(gradz);
-	free(grady);
-	free(gradx);
-	
+	printf("%u iterations\n", k);
+
 	l.hide();
-	
-	st=clock()-st;
-    
-	printf("\nReached optimum: %.12g\n\n",f);
-	
-	printf("\nEND BUILD GRAPH: %g мс\n\n",static_cast<double>(st*1000u)/static_cast<double>(CLOCKS_PER_SEC));
-	
+
 	/* count errors */
 	unsigned int edg_num=0u; // number of all edges
 	unsigned int edg50_num=0u; // number of edges with length error not less than 50%
-	unsigned int edg99_num=0u; // number of edges with length error not less than 99%
+	unsigned int edg98_num=0u; // number of edges with length error not less than 98%
 
-	mtr=matr;
-	for (i=0u,v=0u; i!=x_num1; ++i)
+	for (i = 0; i < x_num - 1; ++i)
 	{
-		x_i=xx[i]; y_i=yy[i]; z_i=zz[i];
-		j=i+1u;
-		for (v+=j; j!=x_num; ++j,++v)
+		for (j = i + 1; j < x_num; ++j)
 		{
-			if (edge_counts[v]==0u)
+			v = edge_counts[i * x_num + j] + edge_counts[j * x_num + i];
+			if (v == 0)
 				continue;
 			++edg_num;
-			dx=x_i-xx[j]; dy=y_i-yy[j]; dz=z_i-zz[j];
-			val=fabs(dx*dx+dy*dy+dz*dz-*mtr);
-			if (val>=*mtr*0.25) // squares are compared, that's why 0.25 instead of 0.5
+			double d_ij = matr[i * x_num + j];
+			val = fabs(dist(xx, yy, zz, i, j) - d_ij);
+			if (val >= d_ij * 0.5) 
 			{
 				++edg50_num;
-				if (val>=*mtr*0.9801)
-					++edg99_num;
+				if (val >= d_ij * 0.9801)
+					++edg98_num;
 			}
-			++mtr;
 		}
 	}
 	edg_n=edg_num;
 	edg50_n=edg50_num;
-	edg99_n=edg99_num;
-	
-	// rollback the changes
-	for (i=0u,k=0u; i!=x_num1; ++i)
-	{
-		j=i+1u;
-		k+=j;
-		v=j*x_num+i;
-		for ( ; j!=x_num; ++j,++k,v+=x_num)
-			edge_counts[k]-=edge_counts[v];
-	}
-	
+	edg98_n=edg98_num;
+
 	/* centre the graph */
-	double min_x=DBL_MAX,max_x=1.0-DBL_MAX,min_y=DBL_MAX,max_y=1.0-DBL_MAX,min_z=DBL_MAX,max_z=1.0-DBL_MAX;
-	for (i=0u; i!=x_num; ++i)
+	double min_x = DBL_MAX, max_x = 1.0-DBL_MAX, min_y = DBL_MAX;
+	double max_y = 1.0-DBL_MAX, min_z = DBL_MAX, max_z = 1.0-DBL_MAX;
+	for (i = 0u; i != x_num; ++i)
 	{
-		min_x=(xx[i]<min_x)? xx[i] : min_x;
-		max_x=(xx[i]>max_x)? xx[i] : max_x;
-		min_y=(yy[i]<min_y)? yy[i] : min_y;
-		max_y=(yy[i]>max_y)? yy[i] : max_y;
-		min_z=(zz[i]<min_z)? zz[i] : min_z;
-		max_z=(zz[i]>max_z)? zz[i] : max_z;
+		min_x = (xx[i]<min_x)? xx[i] : min_x;
+		max_x = (xx[i]>max_x)? xx[i] : max_x;
+		min_y = (yy[i]<min_y)? yy[i] : min_y;
+		max_y = (yy[i]>max_y)? yy[i] : max_y;
+		min_z = (zz[i]<min_z)? zz[i] : min_z;
+		max_z = (zz[i]>max_z)? zz[i] : max_z;
 	}
-	min_x=-(min_x+max_x)*0.5;
-	min_y=-(min_y+max_y)*0.5;
-	geom_c_z=(min_z+max_z)*0.5;
-	min_z=5.0-min_z; // the nearest (to viewer) z-coordinate should be equal to 5
-	geom_c_z+=min_z;
-	for (i=0u; i!=x_num; ++i)
+	min_x = -(min_x + max_x) * 0.5;
+	min_y = -(min_y + max_y) * 0.5;
+	geom_c_z = (min_z + max_z) * 0.5;
+	min_z = 5.0 - min_z; // the nearest (to viewer) z-coordinate should be equal to 5
+	geom_c_z += min_z;
+	for (i = 0u; i != x_num; ++i)
 	{
-		xx[i]+=min_x;
-		yy[i]+=min_y;
-		zz[i]+=min_z;
+		xx[i] += min_x;
+		yy[i] += min_y;
+		zz[i] += min_z;
 	}
-	
-	/* convert coordinates from double to float */
+
+	/* convert coordinates from double to float for opengl drawing*/
 	double *arr_end;
 	float *arr;
 
 	/* there is enough memory for these 3 arrays
 	   because 'gradx', 'grady' and 'gradz' were free'd */
-	arr=static_cast<float*>(malloc(x_num*sizeof(float)));
-	points_z=arr;
-	for (arr_end=zz+x_num; zz!=arr_end; ++zz,++arr)
+	arr = static_cast<float*>(malloc(x_num*sizeof(float)));
+	points_z = arr;
+	for (arr_end = zz + x_num; zz != arr_end; ++zz,++arr)
 		*arr=static_cast<float>(*zz);
-	zz-=x_num;
+	zz -= x_num;
 	free(zz);
-	arr=static_cast<float*>(malloc(x_num*sizeof(float)));
-	points_y=arr;
-	for (arr_end=yy+x_num; yy!=arr_end; ++yy,++arr)
+	arr = static_cast<float*>(malloc(x_num*sizeof(float)));
+	points_y = arr;
+	for (arr_end = yy + x_num; yy != arr_end; ++yy,++arr)
 		*arr=static_cast<float>(*yy);
-	yy-=x_num;
+	yy -= x_num;
 	free(yy);
-	arr=static_cast<float*>(malloc(x_num*sizeof(float)));
-	points_x=arr;
-	for (arr_end=xx+x_num; xx!=arr_end; ++xx,++arr)
-		*arr=static_cast<float>(*xx);
-	xx-=x_num;
+	arr = static_cast<float*>(malloc(x_num*sizeof(float)));
+	points_x = arr;
+	for (arr_end = xx + x_num; xx != arr_end; ++xx,++arr)
+		*arr = static_cast<float>(*xx);
+	xx -= x_num;
 	free(xx);
-	
+
 	return true;
 }
 
@@ -1762,10 +1612,10 @@ void TopologyViewer::CompareTopologies (void) {
 	QString ideal_topo_fname(QFileDialog::getOpenFileName(this,tr("Open file with \"ideal\" topology")));
 
 	if (ideal_topo_fname.isEmpty()) return;
-	
+
 	// without this line file dialog remains wisible until the end (!) of the function
 	QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents,20);
-	
+
 	FILE *ideal_topo_file=fopen(ideal_topo_fname.toLocal8Bit().constData(),"r");
 
 	if (ideal_topo_file==NULL)
@@ -1773,7 +1623,7 @@ void TopologyViewer::CompareTopologies (void) {
 		SEND_ERR_MSG1(CannotOpen,ideal_topo_fname);
 		return;
 	}
-	
+
 	Data_Text::Line l;
 	const char *line1;
 
@@ -1802,15 +1652,15 @@ void TopologyViewer::CompareTopologies (void) {
 		SEND_ERR_MSG1(BraceNotLast,ideal_topo_fname);
 		return;
 	}
-	
+
 	// this map is put into operation to reorder 'host_names' for faster search;
 	// hosts' names are not unique what means that one name corresponds to several processes
 	// (for example, cores of a single processor have the same names)
 	std::map<QString,std::pair<std::vector<unsigned int>,unsigned int> > our_hosts;
-	
+
 	unsigned int i;
 	std::map<QString,std::pair<std::vector<unsigned int>,unsigned int> >::iterator o_h_it,o_h_it_end;
-	
+
 	try {
 		for (i=0u; i!=main_wdg.x_num; ++i)
 			our_hosts[main_wdg.host_names[i]].first.push_back(i);
@@ -1823,23 +1673,23 @@ void TopologyViewer::CompareTopologies (void) {
 	o_h_it_end=our_hosts.end(); // and it won't be changed
 	for (o_h_it=our_hosts.begin(); o_h_it!=o_h_it_end; ++o_h_it)
 		o_h_it->second.second=0u; // this is a number of accesses to '*o_h_it' during searches
-	
+
 	// "ideal" topology graph (directed!);
 	// each vertex has a name and an array of adjacent vertices;
 	// the map is used for faster search of duplicate edges;
-	// the second elements of the map store weights of edges 
+	// the second elements of the map store weights of edges
 	// (reciprocal to bandwidth of that channel, that is number of nanoseconds to send 1 bit)
 	std::vector<std::pair<QString,std::map<unsigned int,double> > > ideal_topo;
-	
+
 	static const unsigned int UINT_MAX_DIV_10=UINT_MAX / 10u;
 	static const char UINT_MAX_MOD_10=static_cast<const char>(UINT_MAX % 10u);
-	
+
 	unsigned int v1,v2;
 	QString name;
-	
+
 	for ( ; ; )
 	{
-		/* collect vertices of "ideal" topology graph; 
+		/* collect vertices of "ideal" topology graph;
 		   each vertex must be written in the folowing format:
 		   'v123 [label="name"];',
 		   where 'v', '[]', 'label=' and ';' are necessary elements */
@@ -1981,14 +1831,14 @@ void TopologyViewer::CompareTopologies (void) {
 			return;
 		}
 	}
-	
+
 	std::pair<unsigned int,double> sec_end; // the second end and a reciprocal to a bandwidth of an edge
 	std::pair<std::map<unsigned int,double>::iterator,bool> i_tp_ins; // result of insertion into 'ideal_topo'
 	char *line;
-	
+
 	for ( ; ; )
 	{
-		/* collect edges of "ideal" topology graph; 
+		/* collect edges of "ideal" topology graph;
 		   each edge must be written in the folowing format:
 		   'v123 -- v456 [label="789Gbit/s"];',
 		   where 'v', '--', '[]', 'label=', 'Gbit/s' and ';' are necessary elements */
@@ -2193,7 +2043,7 @@ void TopologyViewer::CompareTopologies (void) {
 	}
 	l.Destroy();
 	fclose(ideal_topo_file);
-	
+
 	double similarity=0.0; // percent of per-edge similarity between "real" and "ideal" topology
 	unsigned int edges_num_in_ideal=0u; // number of edges in "ideal" topology which connect
 										// vertices in "real" topology
@@ -2202,7 +2052,7 @@ void TopologyViewer::CompareTopologies (void) {
 	unsigned int max_edg_cnt;
 	const unsigned int n=ideal_topo.size();
 	unsigned int *edg_cnt;
-	
+
 	for (i=0u; i!=n; ++i)
 	{
 		o_h_it=our_hosts.find(ideal_topo[i].first);
@@ -2227,7 +2077,7 @@ void TopologyViewer::CompareTopologies (void) {
 			similarity+=static_cast<double>(max_edg_cnt); // first part of magic formula!
 		}
 	}
-	// note that 'edges_num_in_ideal' is two times greater than the real number of edges 
+	// note that 'edges_num_in_ideal' is two times greater than the real number of edges
 	// because "ideal" topology is undirected graph and we store it like directed graph
 	if (edges_num_in_ideal!=0u)
 	{
@@ -2241,11 +2091,11 @@ void TopologyViewer::CompareTopologies (void) {
 			return;
 		}
 	}
-	
+
 	// "ideal" topology is hierarchical (trees, stars etc...)
-	
+
 	/* show a red-blue representation of "ideal" (!) topology */
-	
+
 	// this structure represents a list of weighted edges;
 	// each edge is a map 'v1'->'v2', where 'v1' and 'v2' are vertices;
 	// (note that 'v1' is strongly less than 'v2');
@@ -2253,10 +2103,10 @@ void TopologyViewer::CompareTopologies (void) {
 	// to compute a simple average a {double,int} pair is used;
 	// useful information: 'real_times' is a subset of 'ideal_topo'
 	std::map<unsigned int,std::map<unsigned int,std::pair<double,unsigned int> > > real_times;
-	
+
 	double *matr; // values for "real" topology
 	double ml; // message length (or a simple average of all message lengths depending on 'vals_for_edgs')
-	
+
 	matr=static_cast<double*>(malloc(main_wdg.x_num*main_wdg.x_num*sizeof(double)));
 	if (matr==NULL) { NOT_ENOUGH_MEM_RET(); }
 	if (!GetMatrixByValsForEdgsVar(matr))
@@ -2279,7 +2129,7 @@ void TopologyViewer::CompareTopologies (void) {
 			break;
 	}
 	ml=(ml<DBL_EPSILON)? 1.0 : ml; // move away from zero to keep edges' weights positive
-	
+
 	unsigned int *previous; // reverse of shortest path between 2 vertices in "ideal" topology
 	bool *visited; // array of indicators for vertices
 	double *dist; // array of distances to vertices
@@ -2290,7 +2140,7 @@ void TopologyViewer::CompareTopologies (void) {
 	std::map<unsigned int,std::pair<double,unsigned int> > *e2; // right part of the first map in 'real_times'
 	std::pair<double,unsigned int> *e1e2; // right part of the map in 'e2'
 	unsigned int vb,ve;
-	
+
 	dist=static_cast<double*>(malloc(n*sizeof(double)));
 	if (dist==NULL) { free(matr); NOT_ENOUGH_MEM_RET(); }
 	previous=static_cast<unsigned int*>(malloc(n*sizeof(int)));
@@ -2346,7 +2196,7 @@ void TopologyViewer::CompareTopologies (void) {
 			v2=i1;
 			v1=previous[v2];
 			if (v1==UINT_MAX) break; // 'i' and 'i1' are not connected
-			
+
 			// so, we have a weighted path from 'i' to 'i1' (direction is important!)
 			// in "ideal" topology and a measure of time for this pair of vertices in "real" topology;
 			//
@@ -2354,18 +2204,18 @@ void TopologyViewer::CompareTopologies (void) {
 			// 'p[0]', 'p[1]', ..., 'p['pn'-1]'; and let 'tp[j]' be the length of the edge 'p[j]';
 			// we can distribute 't' to edge 'p[j]' using the following formula: t*tp[j] / (tp[0]+...+tp[pn-1]),
 			// i.e. the more 'tp[j]' is, the bigger part of 't' is given to 'p[j]';
-			// let 'e1' and 'e2' be the two ends of an edge 'p[j]', then add the result of the 
+			// let 'e1' and 'e2' be the two ends of an edge 'p[j]', then add the result of the
 			// mentioned formula to real_times[e1][e2].first and add 1 to real_times[e1][e2].second;
-			// in general, more than one path containes 'p[j]', so a simple average of collected 
+			// in general, more than one path containes 'p[j]', so a simple average of collected
 			// values is used;
 			//
 			// let's designate 'tp_i' as (real_times[e1][e2].first/real_times[e1][e2].second);
 			//
-			// a group of edges in "real" topology corresponds to a single edge in "ideal" topology, 
-			// so 't' is a simple average of weights of edges in that group (the weights depend on 
-			// 'vals_for_edgs' variable) and 'ml' as message length (or a simple average of 
+			// a group of edges in "real" topology corresponds to a single edge in "ideal" topology,
+			// so 't' is a simple average of weights of edges in that group (the weights depend on
+			// 'vals_for_edgs' variable) and 'ml' as message length (or a simple average of
 			// all message lengths depending on 'vals_for_edgs');
-			
+
 			// compute 1/('tp[0]'+...+'tp[pn-1]')
 			printf("\r111111: %u->%u",i,i1);fflush(stdout);r_sum_tm=0.0;
 			for ( ; ; )
@@ -2413,7 +2263,7 @@ void TopologyViewer::CompareTopologies (void) {
 					// new edge
 					e1e2->first=time_real*ideal_topo[vb].second[ve];
 					e1e2->second=1u;
-				}	
+				}
 				if (v1==i) break;
 				v2=v1;
 				v1=previous[v2];
@@ -2424,38 +2274,38 @@ void TopologyViewer::CompareTopologies (void) {
 	free(previous);
 	free(dist);
 	free(matr);
-	
+
 	if (real_times.empty())
 	{
-		// it means that "ideal" topology does not provide useful information: 
+		// it means that "ideal" topology does not provide useful information:
 		// all vertices we are interested in are unconnected
 		emit SendMessToLog(MainWindow::Info,my_sign,ErrMsgs::ToString(NV::UselessTopoMatch,1,&ideal_topo_fname));
 		return;
 	}
-	
+
 	std::map<unsigned int,std::map<unsigned int,std::pair<double,unsigned int> > >::iterator r_t_it,r_t_it_end;
 	std::map<unsigned int,std::pair<double,unsigned int> >::iterator it4,it4_end;
 	std::map<unsigned int,double>::iterator it5,it5_end;
-	
+
 	/* finish calculations in 'real_times' */
 	for (r_t_it=real_times.begin(),r_t_it_end=real_times.end(); r_t_it!=r_t_it_end; ++r_t_it)
 	{
 		for (it4=r_t_it->second.begin(),it4_end=r_t_it->second.end(); it4!=it4_end; ++it4)
 			it4->second.first/=static_cast<double>(it4->second.second);
 	}
-	
+
 	/* multiply all weights of edges in 'ideal_topo' by 'ml' */
 	for (i=0u; i!=n; ++i)
 	{
 		for (it5=ideal_topo[i].second.begin(),it5_end=ideal_topo[i].second.end(); it5!=it5_end; ++it5)
 			it5->second*=ml; // now 'it5->second' represents an "ideal" message pass
 	}
-	
-	/* find minimum and maximum values in the intersection 
+
+	/* find minimum and maximum values in the intersection
 	   of 'real_times' and 'ideal_topo' to paint edges */
 	double gt_min,gt_max; // minimum and maximum of positive differencies for color mapping
 	double lt_min,lt_max; // minimum and maximum of negative differencies for color mapping
-	
+
 	gt_min=DBL_MAX;
 	gt_max=0.0;
 	lt_min=DBL_MAX;
@@ -2499,24 +2349,24 @@ void TopologyViewer::CompareTopologies (void) {
 	gt_max=(gt_max<DBL_EPSILON)? 255.0 : 255.0/gt_max;
 	lt_max-=lt_min; // turn 'lt_max' into color mapping coefficient
 	lt_max=(lt_max<DBL_EPSILON)? 255.0 : 255.0/lt_max;
-	
+
 	// free some memory
 	for (o_h_it=our_hosts.begin(); o_h_it!=o_h_it_end; ++o_h_it)
 		o_h_it->second.first.clear();
-	
+
 	TVWidget *ideal_topo_view; // widget with red-blue representation of "ideal" topology graph
-	
+
 	try {
 		ideal_topo_view=new TVWidget;
 	}
 	catch (...) { NOT_ENOUGH_MEM_RET(); }
 	ideal_topo_view->x_num=n;
 	ideal_topo_view->z_num=1u;
-	
+
 	quint8 *bit_arr; // iterator for bit arrays
 	quint8 one_byte;
 	unsigned int n1;
-	
+
 	/* determine colors of vertices in "ideal" topology */
 	bit_arr=static_cast<quint8*>(malloc((n>>3u)+1u));
 	if (bit_arr==NULL) { delete ideal_topo_view; NOT_ENOUGH_MEM_RET(); }
@@ -2537,9 +2387,9 @@ void TopologyViewer::CompareTopologies (void) {
 		}
 	}
 	if ((n & 0x7)!=0u) *bit_arr=one_byte; // the last byte
-	
+
 	our_hosts.clear(); // no longer necessary
-	
+
 	/* compute the number of edges in "ideal" topology (remember that it is undirected) */
 	n1=0u;
 	for (i=0u; i!=n; ++i)
@@ -2547,21 +2397,21 @@ void TopologyViewer::CompareTopologies (void) {
 	bit_arr=static_cast<quint8*>(calloc((n1>>3u)+1u,1u)); // n1 / 2
 	if (bit_arr==NULL) { delete ideal_topo_view; NOT_ENOUGH_MEM_RET(); }
 	ideal_topo_view->i_e_color=bit_arr;
-	
+
 	/* paint existing edges */
 	unsigned char *clr_arr;
-	
+
 	n1=0u;
 	for (r_t_it=real_times.begin(); r_t_it!=r_t_it_end; ++r_t_it)
 		n1+=r_t_it->second.size();
 	clr_arr=static_cast<unsigned char*>(malloc(n1*sizeof(char)));
 	if (clr_arr==NULL) { delete ideal_topo_view; NOT_ENOUGH_MEM_RET(); }
 	ideal_topo_view->i_e_color_val=clr_arr;
-	
+
 	// (all designations were taken from that big comment high above)
 	//
 	// 'tp[i]'*'ml' represents an "ideal" message pass and 'tp_i' represents a "real" message pass;
-	// colors of edges are determined by comparing 'tp[i]'*'ml' and 'tp_i': if the former is greater 
+	// colors of edges are determined by comparing 'tp[i]'*'ml' and 'tp_i': if the former is greater
 	// than the latter then the edge is painted in red else the edge is painted in blue (very rare case!)
 	n1=0u;
 	r_t_it=real_times.begin();
@@ -2611,9 +2461,9 @@ void TopologyViewer::CompareTopologies (void) {
 		bit_arr+=(n1>>3u);
 		n1&=0x7;
 	}
-	
+
 	real_times.clear(); // no longer necessary
-	
+
 	/* turn adjacency list into adjacency matrix */
 	/* fill distance matrix with edges' lengths */
 	matr=static_cast<double*>(calloc(n*n,sizeof(double)));
@@ -2631,7 +2481,7 @@ void TopologyViewer::CompareTopologies (void) {
 			dist[k]=it->second;
 		}
 	}
-	
+
 	/* assign names */
 	ideal_topo_view->host_names=new(std::nothrow) QString[n];
 	if (ideal_topo_view->host_names==NULL) { free(matr); delete ideal_topo_view; NOT_ENOUGH_MEM_RET(); }
@@ -2640,31 +2490,31 @@ void TopologyViewer::CompareTopologies (void) {
 		ideal_topo_view->host_names[i]=ideal_topo[i].first;
 		ideal_topo[i].first.clear();
 	}
-	
+
 	ideal_topo.clear(); // no longer necessary
-	
+
 	ideal_topo_view->resize(main_wdg.size());
 	ideal_topo_view->show();
-	
+
 	unsigned int edg_num=0u; // number of all edges
 	unsigned int edg50_num=0u; // number of edges with length error not less than 50%
-	unsigned int edg99_num=0u; // number of edges with length error not less than 99%
-	
-	if (!ideal_topo_view->MapGraphInto3D(matr,m_d_impact,edg_num,edg50_num,edg99_num))
+	unsigned int edg98_num=0u; // number of edges with length error not less than 98%
+
+	if (!ideal_topo_view->MapGraphInto3D(matr, edg_num, edg50_num, edg98_num))
 	{
 		free(matr);
 		delete ideal_topo_view;
 		NOT_ENOUGH_MEM_RET();
 	}
 	free(matr);
-	
+
 	ideal_topo_view->setParent(this); // hope that 'ideal_topo_view' will be deleted by Qt
 	ideal_topo_view->setAttribute(Qt::WA_DeleteOnClose,true);
 	ideal_topo_view->setWindowFlags(ideal_topo_view->windowFlags() | Qt::Window); // tear away from 'this'
 	ideal_topo_view->window()->setWindowTitle(QString("PARUS - Network Viewer 2 - ")+
 											  tr("\"ideal\" topology for '")+fname_for_tvwidget+"'");
 	if (ideal_topo_view->isHidden()) ideal_topo_view->show(); // why does the window disappear sometimes??
-		
+
 	if (edg50_num!=0u)
 	{
 		const double r_edg_num=100.0/static_cast<double>(edg_num);
@@ -2672,19 +2522,19 @@ void TopologyViewer::CompareTopologies (void) {
 		mes+=tr(" was not precise:");
 		mes+=QString("<br>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <b>%1%</b> ")\
 					.arg(static_cast<double>(edg50_num)*r_edg_num,0,'f',2);
-		mes+=tr("of edges have %1% length error or greater").arg(50); // 'arg(const)' is used to minimize 
-																	  // the number of translated strings 
-		if (edg99_num!=0u)
+		mes+=tr("of edges have %1% length error or greater").arg(50); // 'arg(const)' is used to minimize
+																	  // the number of translated strings
+		if (edg98_num!=0u)
 		{
 			mes+=QString("<br>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <b>%1%</b> ")\
-						.arg(static_cast<double>(edg99_num)*r_edg_num,0,'f',2);
-			mes+=tr("of edges have %1% length error or greater").arg(99);
+						.arg(static_cast<double>(edg98_num)*r_edg_num,0,'f',2);
+			mes+=tr("of edges have %1% length error or greater").arg(98);
 		}
 		(mes+="<br><br>")+=tr("(the graph has <b>%1</b> edges in all)<br>").arg(edg_num);
 		emit SendMessToLog(MainWindow::Info,my_sign,mes);
 		QMessageBox::information(ideal_topo_view,tr("Graph building"),mes);
 	}
-	
+
 	ideal_topo_view->updateGL();
 }
 
@@ -2694,20 +2544,20 @@ void TopologyViewer::keyPressEvent (QKeyEvent *key_event) {
 		emit CloseOnEscape(this);
 		return;
 	}
-	
+
 	if ((key_event->modifiers()==Qt::ControlModifier) && (key_event->key()==Qt::Key_O))
 	{
 		// 'Ctrl'+'O' was pressed -> open file with "ideal" topology to compare with retrieved topology
 		CompareTopologies();
 		return;
 	}
-	
+
 	main_wdg.keyPressEvent(key_event); // "redirection" of the event
 }
 
 void TVWidget::keyPressEvent (QKeyEvent *key_event) {
 	static const float shift_xy=0.2f,shift_zz=0.1f;
-	
+
 	switch (key_event->key())
 	{
 	  case Qt::Key_A: // shift "camera" left
@@ -2765,29 +2615,29 @@ void TVWidget::mouseMoveEvent (QMouseEvent *mouse_event) {
 	{
 		const int new_x=mouse_event->x(),new_y=mouse_event->y();
 		static const int min_move=3;
-		
-		if ((new_x<0) || (new_y<0) || (new_x>=width()) || (new_y>=height()) || 
-			((new_x<x_move+min_move) && (new_x+min_move>x_move) && 
+
+		if ((new_x<0) || (new_y<0) || (new_x>=width()) || (new_y>=height()) ||
+			((new_x<x_move+min_move) && (new_x+min_move>x_move) &&
 			 (new_y<y_move+min_move) && (new_y+min_move>y_move))) return;
-		
+
 		click_disabled=true;
-		
+
 		// rotation in OXZ
 		alpha+=(static_cast<float>(180*(new_x-x_move))/static_cast<float>(width()));
 		// rotation in OYZ
 		beta+=(static_cast<float>(180*(y_move-new_y))/static_cast<float>(height()));
-		
+
 		if (alpha>360.0f) alpha-=360.0f;
 		else
 			if (alpha<-360.0f) alpha+=360.0f;
 		if (beta>360.0f) beta-=360.0f;
 		else
 			if (beta<-360.0f) beta+=360.0f;
-			
+
 		// move vector origin to the new point
 		x_move=new_x;
 		y_move=new_y;
-		
+
 		ApplyTransform();
 		updateGL();
 	}
@@ -2798,7 +2648,7 @@ void TVWidget::mouseReleaseEvent (QMouseEvent *mouse_event) {
 	if (mouse_event->button()==Qt::LeftButton)
 	{
 		const int m_x=mouse_event->x(),m_y=mouse_event->y();
-		
+
 		mouse_pressed=false;
 		if ((m_x<0) || (m_y<0) || (m_x>=width()) || (m_y>=height())) click_disabled=false;
 	}
@@ -2808,23 +2658,23 @@ void TVWidget::ApplyTransform (void) {
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	gluLookAt(0.0,0.0,0.0,0.0,0.0,1.0,0.0,1.0,0.0);
-	
+
 	glTranslatef(shift_x,shift_y,shift_z+geom_c_z);
-	
+
 	glRotatef(alpha,0.0f,1.0f,0.0f);
 	glRotatef(beta,1.0f,0.0f,0.0f);
-		
+
 	glTranslatef(0.0f,0.0f,-geom_c_z);
 }
 
 void TVWidget::tvCone (const float radius, const float height, const unsigned int slices) {
 	if (slices<2u) return;
-	
+
 	const float alpha=(M_PI+M_PI)/static_cast<float>(slices);
 	const float sina=sinf(alpha),cosa=cosf(alpha);
 	unsigned int i;
 	float dir_x=radius,dir_y=0.0f,tmp;
-	
+
 	// cone surface
 	glBegin(GL_TRIANGLE_FAN);
 	  glNormal3f(0.0f,0.0f,1.0f); // top point has this normal
@@ -2864,48 +2714,50 @@ void TVWidget::tvCone (const float radius, const float height, const unsigned in
 void TVWidget::initializeGL () {
 	glClearColor(backgr_clr,backgr_clr,backgr_clr,1.0f);
 	glClearDepth(1.0f);
-	
+
 	glEnable(GL_DEPTH_TEST);
-	
+
 	glShadeModel(GL_SMOOTH/*GL_FLAT*/);
-	
+
 	//glHint(GL_PERSPECTIVE_CORRECTION_HINT,GL_NICEST);
-		
+
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
-	
+
 	glLineWidth(3.0f);
 	glEnable(GL_LINE_SMOOTH);
 }
 
 void TVWidget::paintGL () {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	
-	if (points_x==NULL) return;
-	
+
+	if (points_x==NULL) 
+		return;
+
 	static const float vert_rad=0.025f,edg_rad=0.01f,rad_to_deg=180.0f/M_PI;
 	GLfloat mat_clr_diff[]={32.0f/51.0f,0.0f,0.0f};
 	static const GLfloat mat_clr_spec[]={0.0f,0.0f,0.0f};
 	unsigned int i,j;
 	unsigned int *edgs=edge_counts;
 	float coef;
-	
+
 	GLUquadric *quadr_obj=gluNewQuadric();
-	
+
 	glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,mat_clr_spec);
-	
+
 	if (i_v_color==NULL)
 	{
 		// "real" topology
-		
+
 		unsigned int from,to;
 		unsigned int *edgs2;
 		float rb,len;
 		static const unsigned int simplex_times=2u;
 		static const float exist_eps=0.5f;
 		bool arrow;
-	
+
 		// vertices
+		glEnable(GL_DEPTH_TEST);
 		glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,mat_clr_diff);//glColor3ub(160u,0u,0u);
 		for (i=0u; i!=x_num; ++i)
 		{
@@ -2914,7 +2766,7 @@ void TVWidget::paintGL () {
 			gluSphere(quadr_obj,vert_rad,4,2);
 			glPopMatrix();
 		}
-	
+
 		// edges
 		for (i=0u; i!=x_num; ++i)
 		{
@@ -2969,8 +2821,6 @@ void TVWidget::paintGL () {
 				// magic formula!
 				coef=static_cast<float>(static_cast<double>(*edgs**edgs+*edgs2**edgs2)/
 										static_cast<double>(z_num*(*edgs+*edgs2)));
-				//coef=static_cast<float>(*edgs2)/static_cast<float>(z_num);
-				//printf("%f\n",coef);
 				rb=backgr_clr*(1.0f-coef);
 				if (coef+rb+exist_eps<1.0f)
 				{
@@ -2999,31 +2849,33 @@ void TVWidget::paintGL () {
 				glPopMatrix();
 			}
 		}
-	
+
 		// vertices' labels
 		if (show_host_names)
 		{
-			//glDisable(GL_DEPTH_TEST);
+			// glDisable(GL_DEPTH_TEST);
 			glDisable(GL_LIGHTING);
 			glColor3fv(mat_clr_spec); // 'mat_clr_spec' consists of zeroes
 			coef=vert_rad*1.3f;
-			for (i=0u; i!=x_num; ++i)
+			glEnable(GL_DEPTH_TEST);
+			for (i=0u; i!=x_num; ++i) {
 				renderText(points_x[i]+coef,points_y[i]+coef,points_z[i]+coef,host_names[i]);
+			}
 			glEnable(GL_LIGHTING);
-			//glEnable(GL_DEPTH_TEST);
+			// glEnable(GL_DEPTH_TEST);
 		}
 	}
 	else
 	{
 		// "ideal" topology
-		
+
 		quint8 *bit_arr; // iterator for bit arrays
 		quint8 one_byte; // stores '*bit_arr'
 		unsigned int n1; // bit counter
 		bool gray=true; // flag to minimize calls to glMaterialfv() due to color switching
 		unsigned char *clr_arr; // iterator for 'i_e_color_val'
 		static const GLfloat _1_div_255=1.0f/255.0f;
-		
+
 		// vertices
 		mat_clr_diff[0]=mat_clr_diff[1]=mat_clr_diff[2]=ignore_clr;
 		glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,mat_clr_diff);
@@ -3068,7 +2920,7 @@ void TVWidget::paintGL () {
 			gluSphere(quadr_obj,vert_rad,4,2);
 			glPopMatrix();
 		}
-				
+
 		// edges
 		bit_arr=i_e_color;
 		one_byte=*bit_arr;
@@ -3118,7 +2970,7 @@ void TVWidget::paintGL () {
 				glPopMatrix();
 			}
 		}
-		
+
 		// vertices' labels
 		//glDisable(GL_DEPTH_TEST);
 		glDisable(GL_LIGHTING);
@@ -3129,24 +2981,24 @@ void TVWidget::paintGL () {
 		glEnable(GL_LIGHTING);
 		//glEnable(GL_DEPTH_TEST);
 	}
-	
+
 	gluDeleteQuadric(quadr_obj);
 }
 
 void TVWidget::resizeGL (int width, int height) {
 	glViewport(0,0,width,height);
-	
+
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluPerspective(45.0,static_cast<double>(width)/static_cast<double>(height),1.0,1000.0);
-	
+
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	gluLookAt(0.0,0.0,0.0,0.0,0.0,1.0,0.0,1.0,0.0);
-	
+
 	const GLfloat light_pos[]={0.0f,0.0f,0.0f,1.0f};
 	glLightfv(GL_LIGHT0,GL_POSITION,light_pos);
-	
+
 	ApplyTransform();
 }
 

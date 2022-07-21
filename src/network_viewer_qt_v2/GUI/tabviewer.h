@@ -23,10 +23,13 @@
 #pragma once
 
 #include <QMainWindow>
+#include <map>
 #include "ui_tabviewer.h"
 #include "../core/cntrlr_abstract.h"
 #include "matrixviewer.h"
 #include "mainwindow.h"
+#include <iostream>
+
 
 class TabViewer: public QMainWindow {
 	Q_OBJECT
@@ -34,26 +37,28 @@ class TabViewer: public QMainWindow {
   private:
   	  static const QString my_sign; // sign for log messages
   	  ICntrlr *const controller;
-      Ui::TabViewer *ui;
+	  Ui::ui_TabViewer *ui;
+	  double minw, maxw;
 
   private:
 	  // constructor
 	  TabViewer (ICntrlr *cntrlr, QMainWindow *parent): QMainWindow(parent), controller(cntrlr) {
 		  ui=NULL;
+		  minw = maxw = 0;
 	  }
-	  
+	
 	  // must be called once after constructor
 	  bool Init (void);
-	  
-      Q_DISABLE_COPY(TabViewer)
+	
+	  Q_DISABLE_COPY(TabViewer);
 
   public:
-	  // replaces calls to both the constructor and Init() (it was designed to ensure a call to Init()); 
-	  // returns 'NULL' if any errors occured; 
+	  // replaces calls to both the constructor and Init() (it was designed to ensure a call to Init());
+	  // returns 'NULL' if any errors occured;
 	  // returned pointer should be deleted using 'delete'
 	  static TabViewer* Create (ICntrlr *cntrlr, QMainWindow *parent) {
 		  TabViewer *new_tv;
-		  
+		
 		  try {
 			  new_tv=new TabViewer(cntrlr,parent);
 		  }
@@ -67,7 +72,7 @@ class TabViewer: public QMainWindow {
 		  }
 		  return new_tv;
 	  }
-	  
+	
 	  // destructor
 	  ~TabViewer () {
 		  if (controller!=NULL) delete controller;
@@ -89,29 +94,30 @@ class TabViewer: public QMainWindow {
 
   Q_SIGNALS:
 	  void SendMessToLog (const MainWindow::MsgType, const QString &msg, const QString &stat);
+	  void MinMaxWindow (const double, const double);
 
-  private slots:
+  private Q_SLOTS:
 	  void Initialize ();
-	  
+	
 	  void ShowMesLen ();
 	  void ShowRow ();
 	  void ShowCol ();
 	  void ShowPair ();
-	  
+	
 	  void LoadWindow ();
 	  void DropWindow ();
-	  
+	
 	  void ChangeMatrNumber (const double val) { ui->SB_MatrixNumber->setValue(val); }
-	  
+	
 	  void ChangeLoadWindowBtn (void) {
 	  	  ui->B_LoadWindow->setEnabled(ui->SB_LoadWinFrom->value()<ui->SB_LoadWinTo->value());
 	  }
-	  
+	
 	  void DeleteSubWindow (QWidget *sub) {
 		  ui->mdiArea->removeSubWindow(sub);
 		  delete sub;
 	  }
-	  
+	
 	  void SubActivated (QMdiSubWindow *sub) const {
 		  if (sub!=NULL)
 		  {
@@ -120,7 +126,7 @@ class TabViewer: public QMainWindow {
 		  }
 	  }
 
-  public slots:
+  public Q_SLOTS:
 	  void SetProgressBarValue (const int val) {
 		  if (val==-1) ui->progressBar->hide();
 		  else
@@ -129,17 +135,17 @@ class TabViewer: public QMainWindow {
 			  ui->progressBar->setValue(val);
 		  }
 	  }
-	  
+	
 	  void SetRowValue (const int val) {
 		  if (ui->CB_updFromCurrMtr->isChecked() /*&& ui->SB_row->isEnabled()*/)
 			  ui->SB_row->setValue(val);
 	  }
-	  
+	
 	  void SetColValue (const int val) {
 		  if (ui->CB_updFromCurrMtr->isChecked() /*&& ui->SB_column->isEnabled()*/)
 			  ui->SB_column->setValue(val);
 	  }
-	  
+	
 	  void NewMatrix_mes (MatrixViewer*);
 	  void NewMatrix_row (MatrixViewer*);
 	  void NewMatrix_col (MatrixViewer*);
