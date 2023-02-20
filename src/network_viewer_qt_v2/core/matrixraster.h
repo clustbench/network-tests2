@@ -25,13 +25,17 @@ class MatrixRaster: public QwtRasterData {
 	
 	  virtual QwtInterval range () const { return QwtInterval(from,to); } // derived from QwtRasterData
 	
-	  virtual double value (double col, double row) const override{ // derived from QwtRasterData
+	  virtual double value (double col, double row) const{ // derived from QwtRasterData
 		  int x=static_cast<int>(col),y=static_cast<int>(row);
 		  if ((x>=0) && (x<cols) && (y>=0) && (y<rows)) return data_array[y*cols+x];
 		  return 0.0;
 	  }
 	
-	  QwtInterval interval( Qt::Axis ) const override { return QwtInterval(from,to); }  //must be derived because it is pure virtual in the base class
+      //must be derived because it is pure virtual in the base class
+	  QwtInterval interval( Qt::Axis ) const
+      {
+          return QwtInterval(from,to);
+      }
 
 	  const double* Data () const { return data_array; }
 	
