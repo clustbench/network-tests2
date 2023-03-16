@@ -291,7 +291,7 @@ int main(int argc,char **argv)
         printf("\tresult file median\t\t\"%s_median.nc\"\n",test_parameters.file_name_prefix);
         printf("\tresult file deviation\t\t\"%s_deviation.nc\"\n",test_parameters.file_name_prefix);
         printf("\tresult file minimum\t\t\"%s_min.nc\"\n",test_parameters.file_name_prefix);
-	printf("\tresult file hosts\t\t\"%s_hosts.txt\"\n\n",test_parameters.file_name_prefix);
+    	printf("\tresult file hosts\t\t\"%s_hosts.txt\"\n\n",test_parameters.file_name_prefix);
 
 
     } /* End preparation (only in MPI process with rank 0) */
@@ -313,16 +313,18 @@ int main(int argc,char **argv)
      */
     {
         Test_time_result_type tmp_time;
-        MPI_Address( &(tmp_time.average), &base);
-        MPI_Address( &(tmp_time.median), &displace[1]);
-        MPI_Address( &(tmp_time.deviation), &displace[2]);
-        MPI_Address( &(tmp_time.min), &displace[3]);
+        MPI_Get_address( &(tmp_time.average), &base);
+        MPI_Get_address( &(tmp_time.median), &displace[1]);
+        MPI_Get_address( &(tmp_time.deviation), &displace[2]);
+        MPI_Get_address( &(tmp_time.min), &displace[3]);
     }
+    
     displace[0]=0;
     displace[1]-=base;
     displace[2]-=base;
     displace[3]-=base;
-    MPI_Type_struct(4,blocklength,displace,struct_types,&MPI_My_time_struct);
+
+    MPI_Type_create_struct(4,blocklength,displace,struct_types,&MPI_My_time_struct);
     MPI_Type_commit(&MPI_My_time_struct);
 
 
@@ -358,20 +360,20 @@ int main(int argc,char **argv)
 
         if(test_parameters.test_type==NOISE_BLOCKING_TEST_TYPE)
         {
-                test_noise_blocking
-		(
-		 	times,
-		    	tmp_mes_size,
-			test_parameters.num_repeats,
-			test_parameters.num_noise_messages,
-			test_parameters.noise_message_length,
-		       	test_parameters.num_noise_procs
-		);
+            test_noise_blocking
+    		(
+    		 	times,
+    		    tmp_mes_size,
+    			test_parameters.num_repeats,
+    			test_parameters.num_noise_messages,
+    			test_parameters.noise_message_length,
+    		    test_parameters.num_noise_procs
+    		);
         }
 
         if(test_parameters.test_type==NOISE_TEST_TYPE)
         {
-            		test_noise
+            test_noise
 			(
 			 	times,
 				tmp_mes_size,
@@ -402,12 +404,12 @@ int main(int argc,char **argv)
 
         if(test_parameters.test_type==PUT_ONE_TO_ONE_TEST_TYPE)
         {
-		put_one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
+            put_one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
         } /* end put_one_to_one */
 
         if(test_parameters.test_type==GET_ONE_TO_ONE_TEST_TYPE)
         {
-		get_one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
+            get_one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
         } /* end get_one_to_one */
 
 
