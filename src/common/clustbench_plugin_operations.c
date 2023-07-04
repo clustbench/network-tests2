@@ -40,17 +40,24 @@ int clustbench_open_benchmark(const char *path_to_benchmark_code_dir,
         return 1;
     }
     
-    snprintf(path_to_so, path_length, "%s/%s/%s.so", path_to_benchmark_code_dir,
-                                       benchmark_name,
+    //snprintf записывает в строку(первый аргумент) форматированные данные
+    snprintf(path_to_so, path_length, "%s/%s.so", path_to_benchmark_code_dir,
                                        benchmark_name);
 
+    //void *dlopen(const char *filename, int flag);
+    //dlopen загружает динамическую библиотеку, имя которой указано в строке
+    //filename, и возвращает прямой указатель на начало динамической библы. 
     pointers->dynamic_library_handler = dlopen(path_to_so,RTLD_LAZY);
     if(pointers->dynamic_library_handler == NULL)
     {
+        //dlerror возвращает NULL, если не возникло ошибок с момента 
+        //инициализации или его последнего вызова. Если вызывать dlerror() 
+        //дважды, то во второй раз рез. выполнения всегда будет равен NULL. 
         fprintf(stderr,"clustbench_open_benchmark: %s\n",dlerror());
         return 1;
     }
     
+    //выделение памяти под строку с названием бэнчмарка
     symbol_name = (char *)malloc(strlen(benchmark_name)+512);
     if(symbol_name == NULL)
     {
@@ -62,7 +69,19 @@ int clustbench_open_benchmark(const char *path_to_benchmark_code_dir,
     /*FIXME
      * Need to fix multiple rewtite of benchmark_name in string.
      */
+     
+     //sprintf отличается от snprintf тем, что в snprintf есть указание длины
+     //буфера строки, а в sprintf - нет
     sprintf(symbol_name,"%s_%s",benchmark_name,"short_description");
+    
+    //void *dlsym(void *handle, char *symbol);
+    //dlsym использует указатель на динамическую библиотеку, возвращаемую 
+    //dlopen, и оканчивающееся нулем символьное имя, а затем возвращает 
+    //адрес, указывающий, откуда загружается этот символ. Если символ не 
+    //найден, то возвращаемым значением dlsym является NULL; тем не менее, 
+    //правильным способом проверки dlsym на наличие ошибок является 
+    //сохранение в переменной результата выполнения dlerror, а затем    
+    //проверка, равно ли это значение NULL.  ЗАЧЕМ ЭТО ВООБЩЕ?
     pointers->short_description = dlsym(pointers->dynamic_library_handler, symbol_name);
     if(pointers->short_description == NULL)
     {
@@ -72,6 +91,7 @@ int clustbench_open_benchmark(const char *path_to_benchmark_code_dir,
         return 1;
     }
 
+    //то же самое для print_help
     sprintf(symbol_name,"%s_%s",benchmark_name,"print_help");
     pointers->print_help = dlsym(pointers->dynamic_library_handler, symbol_name);
     if(pointers->print_help == NULL)
@@ -82,6 +102,7 @@ int clustbench_open_benchmark(const char *path_to_benchmark_code_dir,
         return 1;
     }
 
+    //то же самое для print_parametrs
     sprintf(symbol_name,"%s_%s",benchmark_name,"print_parameters");
     pointers->print_parameters = dlsym(pointers->dynamic_library_handler, symbol_name);
     if(pointers->print_parameters == NULL)
@@ -92,6 +113,7 @@ int clustbench_open_benchmark(const char *path_to_benchmark_code_dir,
         return 1;
     }
    
+    //то же самое для parse_parametrs
     sprintf(symbol_name,"%s_%s",benchmark_name,"parse_parameters");
     pointers->parse_parameters = dlsym(pointers->dynamic_library_handler, symbol_name);
     if(pointers->parse_parameters == NULL)
@@ -102,6 +124,7 @@ int clustbench_open_benchmark(const char *path_to_benchmark_code_dir,
         return 1;
     }
     
+    //то же самое для define_netcdf_vars
     sprintf(symbol_name,"%s_%s",benchmark_name,"define_netcdf_vars");
     pointers->define_netcdf_vars = dlsym(pointers->dynamic_library_handler, symbol_name);
     if(pointers->define_netcdf_vars == NULL)
@@ -112,6 +135,7 @@ int clustbench_open_benchmark(const char *path_to_benchmark_code_dir,
         return 1;
     }
     
+    //то же самое для put_netcdf_vars
     sprintf(symbol_name,"%s_%s",benchmark_name,"put_netcdf_vars");
     pointers->put_netcdf_vars = dlsym(pointers->dynamic_library_handler, symbol_name);
     if(pointers->put_netcdf_vars == NULL)
@@ -122,6 +146,7 @@ int clustbench_open_benchmark(const char *path_to_benchmark_code_dir,
         return 1;
     }
     
+    //то же самое для free_parametrs
     sprintf(symbol_name,"%s_%s",benchmark_name,"free_parameters");
     pointers->free_parameters = dlsym(pointers->dynamic_library_handler, symbol_name);
     if(pointers->free_parameters == NULL)
@@ -132,6 +157,8 @@ int clustbench_open_benchmark(const char *path_to_benchmark_code_dir,
         return 1;
     }
     
+    //то же самое для test_function
+    //почему нет четвертого аргумента в кавычках?
     sprintf(symbol_name,"%s",benchmark_name);
     pointers->test_function = dlsym(pointers->dynamic_library_handler, symbol_name);
     if(pointers->test_function == NULL)
@@ -190,6 +217,7 @@ int clustbench_print_list_of_benchmarks(const char *path_to_benchmarks_code_dir)
         return -1;
     }
 
+    char a = getchar();
     base_dir=opendir(path_to_benchmarks_code_dir);
     if(base_dir == NULL)
     {
@@ -206,7 +234,7 @@ int clustbench_print_list_of_benchmarks(const char *path_to_benchmarks_code_dir)
             continue;
         }
         
-        sprintf(path,"%s/%s/%s.so",path_to_benchmarks_code_dir,entry->d_name,entry->d_name);
+        sprintf(path,"%s/%s",path_to_benchmarks_code_dir,entry->d_name);
         if(access(path,R_OK) == 0)
         {
             if(current_size == current_allocated)
@@ -234,6 +262,8 @@ int clustbench_print_list_of_benchmarks(const char *path_to_benchmarks_code_dir)
                 return -1;
             }
             strcpy(benchmark_names[current_size],entry->d_name);
+            //удаляем.so из названия
+            benchmark_names[current_size][strlen(benchmark_names[current_size])-3] = '\0';
             current_size++;
         }        
     }

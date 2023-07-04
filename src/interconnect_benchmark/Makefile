@@ -39,9 +39,17 @@ make_common:
 	$(MAKE) -C ../common
 
 interconnect_benchmark: $(FILES_IB) make_common
-	$(MPI_CCLINKER) $(MPI_CCLINKER_FLAGS) $(MPI_LIB_PATH) $(NETCDF_INCLUDE) -L ../core -L ../common -o $(EXECS) $(FILES_IB) ../common/clustbench_plugin_operations.o ../common/benchmarks_common.o ../common/clustbench_data_write_operations.o ../common/clustbench_easy_matrices.o ../core/string_id_converters.o -lm -ldl $(MPI_LIBS)
+	$(MPI_CCLINKER) $(MPI_CCLINKER_FLAGS) $(MPI_LIB_PATH) $(NETCDF_INCLUDE) $(LIB_PATH) -L ../core -L ../common -o $(EXECS) $(FILES_IB) ../common/clustbench_plugin_operations.o ../common/benchmarks_common.o ../common/clustbench_data_write_operations.o ../common/clustbench_easy_matrices.o ../core/string_id_converters.o -lm -ldl -fpic $(MPI_LIBS)
+
+del_n:
+	rm -f ./*.nc
+	rm -f ./*.txt
+	rm -f ./*.btr
 	
 clean:
+	rm -f ./*.nc
+	rm -f ./*.txt
+	rm -f ./*.btr
 	rm  -f ./*.o
 	rm  -f $(EXECS)
 	$(MAKE) clean -C ../common
@@ -50,4 +58,4 @@ install: all
 	cp -rf $(EXECS) $(INSTALL_DIR)/bin/
 	
 %.o: %.c
-	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -ldl -I ../core -I ../.. -I ../common -c $^ -o $@
+	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -ldl -fpic -I ../core -I ../.. -I ../common -c $^ -o $@

@@ -52,7 +52,7 @@ static int random_option_2_default = 3;
 
 char *all_to_all_short_description = "short description";
 
-int all_to_all(clustbench_time_result_t *times,int mes_length,int num_repeats, void *additional)
+int all_to_all(clustbench_time_result_t *times,  clustbench_time_t *real_times, int mes_length,int num_repeats, void *additional)
 {
     int comm_size, comm_rank;
     MPI_Comm_size(MPI_COMM_WORLD,&comm_size);
@@ -76,6 +76,7 @@ int all_to_all(clustbench_time_result_t *times,int mes_length,int num_repeats, v
     if(tmp_results==NULL)
     {
         free(times);
+        free(real_times);
         return -1;
     }
 
@@ -83,6 +84,7 @@ int all_to_all(clustbench_time_result_t *times,int mes_length,int num_repeats, v
     if(send_request == NULL)
     {
         free(times);
+        free(real_times);
         free(tmp_results);
         return -1;
     }
@@ -91,6 +93,7 @@ int all_to_all(clustbench_time_result_t *times,int mes_length,int num_repeats, v
     if(recv_request == NULL)
     {
         free(times);
+        free(real_times);
         free(tmp_results);
         free(send_request);
         return -1;
@@ -108,6 +111,7 @@ int all_to_all(clustbench_time_result_t *times,int mes_length,int num_repeats, v
     if(recv_data == NULL)
     {
         free(times);
+        free(real_times);
         free(tmp_results);
         free(send_request);
         free(recv_request);
@@ -144,6 +148,7 @@ int all_to_all(clustbench_time_result_t *times,int mes_length,int num_repeats, v
     if(flag == 1)
     {
         free(times);
+        free(real_times);
         free(send_request);
         free(recv_request);
         for(i=0; i<comm_size; i++)
@@ -202,9 +207,12 @@ int all_to_all(clustbench_time_result_t *times,int mes_length,int num_repeats, v
     for(i=0; i<comm_size; i++)
     {
         sum=0;
+        //НОВОЕ: ПАРАЛЛЕЛЬНО ЗАПОЛНЯЕМ МАССИВ ЗАДЕРЖЕК
         for(j=0; j<num_repeats; j++)
         {
             sum+=tmp_results[i][j];
+            real_times[i*num_repeats+j] = tmp_results[i][j];
+            //printf("%d,%d,%d %f\n", comm_rank, i, j, tmp_results[i][j]);
         }
         times[i].average=sum/(double)num_repeats;
 
@@ -220,7 +228,6 @@ int all_to_all(clustbench_time_result_t *times,int mes_length,int num_repeats, v
         times[i].median=tmp_results[i][num_repeats/2];
 
         times[i].min=tmp_results[i][0];
-
 
     }
 

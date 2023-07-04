@@ -36,7 +36,7 @@ int  easy_mtr_create_3d(Clustbench_easy_matrix_3d *m, uint32_t x, uint32_t y, ui
 {
 	m->sizex=x;
 	m->sizey=y;
-    m->sizez=z;
+        m->sizez=z;
 	m->body=(double *)malloc(x*y*z*sizeof(double));
 	   if(m->body==NULL) return -1;
 	return 0;

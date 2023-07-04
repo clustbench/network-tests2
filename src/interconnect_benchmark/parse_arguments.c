@@ -17,8 +17,8 @@
 #include "parse_arguments.h"
 
 #define MESSAGE_BEGIN_LENGTH 0
-#define MESSAGE_END_LENGTH 10000
-#define NUM_REPEATS 100
+#define MESSAGE_END_LENGTH 300
+#define NUM_REPEATS 10
 #define MESSAGE_STEP 100
 
 #define BENCHMARK_DIR CLUSTBENCH_BENCHMARKS_DIR "/interconnect"
@@ -133,7 +133,7 @@ int parse_network_test_arguments(clustbench_benchmark_parameters_t *parameters,
     parameters->step_length                =  MESSAGE_STEP;
     parameters->num_repeats                =  NUM_REPEATS;
     parameters->file_name_prefix           =  default_file_name_prefix;
-    parameters->path_to_benchmark_code_dir =  BENCHMARK_DIR;
+    parameters->path_to_benchmark_code_dir =  NULL;
     parameters->benchmark_parameters       =  NULL;
     parameters->statistics_save            =  CLUSTBENCH_MIN     | 
                                               CLUSTBENCH_DEVIATION | 
@@ -227,6 +227,7 @@ int parse_network_test_arguments(clustbench_benchmark_parameters_t *parameters,
             }            
            break;
         case 'l':
+            printf("%s\n", "YAHOO");
             return LIST_FLAG;
             break;
         case 'p':
@@ -263,7 +264,7 @@ int parse_network_test_arguments(clustbench_benchmark_parameters_t *parameters,
                     }
                     else if(*tmp == 'z') /* all individual delays */
                     {
-                        parameters->statistics_save |= CLUSTBENCH_ALL_VALUES;
+                        parameters->statistics_save |= CLUSTBENCH_ALL;
                         continue;
                     }
                     
@@ -277,6 +278,16 @@ int parse_network_test_arguments(clustbench_benchmark_parameters_t *parameters,
             break;
         case 't':
             parameters->benchmark_name = optarg;
+            char *tmptmp = (char *)malloc((strlen(BENCHMARK_DIR) + strlen(parameters->benchmark_name) + 2) * sizeof(char));
+            int i;
+            for (i = 0; i < strlen(BENCHMARK_DIR); i++){
+                tmptmp[i] = BENCHMARK_DIR[i];
+            }
+            tmptmp[i] = '/';
+            i = i + 1;
+            memmove(tmptmp+i, parameters->benchmark_name, strlen(parameters->benchmark_name) + 1);
+            printf("%s\n", tmptmp);
+            parameters->path_to_benchmark_code_dir = tmptmp;
 		    break;
         case 'v':
             if(!mpi_rank)
@@ -295,6 +306,16 @@ int parse_network_test_arguments(clustbench_benchmark_parameters_t *parameters,
             break;
         case 'h':
             parameters->benchmark_name = optarg;
+            char *mptmp = (char *)malloc((strlen(BENCHMARK_DIR) + strlen(parameters->benchmark_name) + 2) * sizeof(char));
+            int j;
+            for (j = 0; j < strlen(BENCHMARK_DIR); j++){
+                mptmp[j] = BENCHMARK_DIR[j];
+            }
+            mptmp[j] = '/';
+            j = j + 1;
+            memmove(mptmp+j, parameters->benchmark_name, strlen(parameters->benchmark_name) + 1);
+            printf("%s\n", mptmp);
+            parameters->path_to_benchmark_code_dir = mptmp;
             return_flag = HELP_FLAG;
             break;
         case '?':
@@ -311,7 +332,10 @@ int parse_network_test_arguments(clustbench_benchmark_parameters_t *parameters,
             break;
         }        
     } /* end for */
-    
+    printf("%d\n", return_flag);
+    if (return_flag == LIST_FLAG){
+        //printf("%s\n", "YAHOO1");
+    }
     if(return_flag == HELP_FLAG)
     {
         if(mpi_rank == 0 && print_network_test_help_message(parameters))

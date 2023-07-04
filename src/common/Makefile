@@ -35,4 +35,4 @@ clean:
 	rm  -f ./*.o
 	
 %.o: %.c
-	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) -fPIC -ldl -I ../core -I ../.. -I ../common -c $^ -o $@
+	$(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) $(NETCDF_INCLUDE) -fPIC -ldl -I ../core -I ../.. -I ../common -c $^ -o $@

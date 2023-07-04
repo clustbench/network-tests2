@@ -22,6 +22,7 @@
 
 #include <stdint.h>
 
+//UINT нужен для обратной совместимости с C99?
 typedef struct
 {
 	double *body;

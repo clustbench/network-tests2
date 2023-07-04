@@ -24,17 +24,28 @@ extern "C"
 #endif
 
 
-
+//создание и заполнение файла формата NetCDF
 int create_netcdf_header
 (
 	int file_data_type,
-	const clustbench_benchmark_parameters_t* test_parameters,
+	clustbench_benchmark_parameters_t* test_parameters,
 	int *file_id,
 	int *data_id,
     int (*benchmark_define_netcdf_vars)(int file_id, clustbench_benchmark_parameters_t* params),
     int (*benchmark_put_netcdf_vars)(int file_id, clustbench_benchmark_parameters_t* params)
 );
 
+int create_netcdf_header_3d
+(
+	int file_data_type,
+	clustbench_benchmark_parameters_t *test_parameters,
+	int *file_id,
+	int *data_id,
+    int (*benchmark_define_netcdf_vars)(int file_id, clustbench_benchmark_parameters_t* params),
+    int (*benchmark_put_netcdf_vars)(int file_id, clustbench_benchmark_parameters_t* params)
+);
+
+//Запись в двумерную матрицу
 int netcdf_write_matrix
 (
         const int netcdf_file_id,
@@ -45,6 +56,19 @@ int netcdf_write_matrix
         const double *data
 );
 
+//Запись в трехмерную матрицу
+int netcdf_write_3d_matrix
+(
+	const int netcdf_file_id,
+	const int netcdf_var_id,
+	const int matrix_number_in_file,
+	const int size_x,
+	const int size_y,
+	const int size_z,
+	const double *data
+);
+
+//завершение работы с файлом
 int netcdf_close_file(const int netcdf_file_id);
 
 #ifdef __cplusplus

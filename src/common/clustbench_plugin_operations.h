@@ -13,13 +13,14 @@ typedef struct
 {
     void *dynamic_library_handler;
     char *short_description;
+    //что это такое?
     int (*print_help)(clustbench_benchmark_parameters_t*);
     int (*print_parameters)(clustbench_benchmark_parameters_t*);
     int (*parse_parameters)(clustbench_benchmark_parameters_t*,int,char**,int);
     int (*define_netcdf_vars)(int file_id, clustbench_benchmark_parameters_t* params);
     int (*put_netcdf_vars)(int file_id, clustbench_benchmark_parameters_t* params);
     int (*free_parameters)(clustbench_benchmark_parameters_t*);
-    int (*test_function)(clustbench_time_result_t *times,
+    int (*test_function)(clustbench_time_result_t *times,  clustbench_time_t *real_times,
         int mes_length,
         int num_repeats,
         void *individual_parameters);
