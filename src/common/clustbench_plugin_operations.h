@@ -19,7 +19,7 @@ typedef struct
     int (*define_netcdf_vars)(int file_id, clustbench_benchmark_parameters_t* params);
     int (*put_netcdf_vars)(int file_id, clustbench_benchmark_parameters_t* params);
     int (*free_parameters)(clustbench_benchmark_parameters_t*);
-    int (*test_function)(clustbench_time_result_t *times,
+    int (*test_function)(clustbench_time_result_t *times,  clustbench_time_t *real_times,
         int mes_length,
         int num_repeats,
         void *individual_parameters);

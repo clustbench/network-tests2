@@ -50,10 +50,10 @@ partition_number_ (0)
 	
 	
 	NcVar *proc_num, *test_type, *data_type, *begin_mes_length, *end_mes_length;
-	NcVar *step_length, *noise_mes_length, *num_noise_mes, *num_noise_proc, *num_repeates;
+	NcVar *step_length, *noise_mes_length, *num_noise_mes, *num_noise_proc, *num_repeats;
 	
 	int proc_num_v,	test_type_v, data_type_v, begin_mes_length_v, end_mes_length_v, step_length_v,
-	noise_mes_length_v, num_noise_mes_v, num_noise_proc_v, num_repeates_v;
+	noise_mes_length_v, num_noise_mes_v, num_noise_proc_v, num_repeats_v;
 	//int err_count = 0;
 	
 	//printf ("?");
@@ -67,7 +67,7 @@ partition_number_ (0)
 	CHECK_THROW (noise_mes_length_v	= input_->get_var ("noise_mes_length")->as_int (0), VAR_GET_ERR_STR);
 	CHECK_THROW (num_noise_mes_v	= input_->get_var ("num_noise_mes")->as_int (0), VAR_GET_ERR_STR);
 	CHECK_THROW (num_noise_proc_v	= input_->get_var ("num_noise_proc")->as_int (0), VAR_GET_ERR_STR);
-	CHECK_THROW (num_repeates_v		= input_->get_var ("num_repeates")->as_int (0), VAR_GET_ERR_STR);
+	CHECK_THROW (num_repeats_v		= input_->get_var ("num_repeats")->as_int (0), VAR_GET_ERR_STR);
 	CHECK_THROW (input_data_var_	= input_->get_var ("data"), VAR_GET_ERR_STR);
 	
 	CHECK_THROW (n_dim = input_->get_dim ("n"), DIM_GET_ERR_STR);
@@ -86,7 +86,7 @@ partition_number_ (0)
 	CHECK_THROW (noise_mes_length	= output_->add_var ("anoise_mes_length", ncInt), VAR_CREATE_ERR_STR);
 	CHECK_THROW (num_noise_mes		= output_->add_var ("anum_noise_mes", ncInt), VAR_CREATE_ERR_STR);
 	CHECK_THROW (num_noise_proc		= output_->add_var ("anum_noise_proc", ncInt), VAR_CREATE_ERR_STR);
-	CHECK_THROW (num_repeates		= output_->add_var ("anum_repeates", ncInt), VAR_CREATE_ERR_STR);
+	CHECK_THROW (num_repeats		= output_->add_var ("anum_repeats", ncInt), VAR_CREATE_ERR_STR);
 	CHECK_THROW (info_var_			= output_->add_var ("ainfo", ncInt, n_dim, x_dim, x_dim), VAR_CREATE_ERR_STR);
 	CHECK_THROW (length_var_		= output_->add_var ("alength", ncInt, n_dim), VAR_CREATE_ERR_STR);
 	CHECK_THROW (data_var_			= temp_out_->add_var ("data", ncDouble, d_dim), VAR_CREATE_ERR_STR);
@@ -100,7 +100,7 @@ partition_number_ (0)
 	noise_mes_length->put (&noise_mes_length_v);
 	num_noise_mes->put (&num_noise_mes_v);
 	num_noise_proc->put (&num_noise_proc_v);
-	num_repeates->put (&num_repeates_v);
+	num_repeats->put (&num_repeats_v);
 	
 	line_length_ = proc_num_v*proc_num_v;
 	proc_num_ = proc_num_v;

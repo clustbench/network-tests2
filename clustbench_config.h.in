@@ -3,5 +3,5 @@
 #define  CLUSTBENCH_VERSION "@PACKAGE_VERSION@"
 #define  CLUSTBENCH_INSTALL_DIR "@prefix@"
 #define  CLUSTBENCH_DATA_DIR "@prefix@/var/spool/clustbench-" CLUSTBENCH_VERSION
-#define  CLUSTBENCH_BENCHMARKS_DIR "@prefix@/lib/clustbench-" CLUSTBENCH_VERSION " 
+#define  CLUSTBENCH_BENCHMARKS_DIR "@prefix@/lib/clustbench-" CLUSTBENCH_VERSION 
 #endif /* __CLUSTBENCH_CONFIG_H__ */

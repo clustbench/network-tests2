@@ -28,6 +28,8 @@ extern "C"
 {
 #endif
 
+//возвращает текущее время с помощью
+// стандартной функции mpi.h
 extern px_my_time_type px_my_cpu_time(void);
 
 #ifdef __cplusplus

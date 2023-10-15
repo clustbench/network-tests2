@@ -8,6 +8,8 @@ extern "C"
 {
 #endif
 
+//костыль на случаи когда основная функция из mytime.c
+//не робит
 extern clustbench_time_t clustbench_get_time(void);
 
 #ifdef __cplusplus

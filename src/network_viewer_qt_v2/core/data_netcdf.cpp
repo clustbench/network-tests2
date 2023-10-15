@@ -36,7 +36,7 @@ Data_NetCDF::Data_NetCDF (const QString &f_name, const QString &hosts_fname, NV:
 	READVAR(this->noise_message_length,"noise_mes_length",NoNoiseMesLen)
 	READVAR(this->noise_message_num,"num_noise_mes",NoNoiseMesNum)
 	READVAR(this->noise_processors,"num_noise_proc",NoNoiseNumProc)
-	READVAR(this->num_repeats,"num_repeates",NoRpts)
+	READVAR(this->num_repeats,"num_repeats",NoRpts)
 
 	if (!hosts_fname.isEmpty())
 	{

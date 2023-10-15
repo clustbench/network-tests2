@@ -17,13 +17,17 @@
  */
 
 
+//это для того чтобы при компиляции на плюсах 
+//стандарт вызова был под си?
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-
+//функция для вывода типа содержимого файла
+//(среднее, медиана, ... )
 extern const char *file_data_type_to_string(const int data_type);
+//где эти описаны/используются?
 extern int get_test_type(const char *str);
 extern int get_test_type_name(int test_type,char *str);
 

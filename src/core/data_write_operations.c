@@ -133,7 +133,7 @@ int create_netcdf_header
 		return NETCDF_ERROR;
     }
 
-	if(nc_def_var(netcdf_file_id,"num_repeates",NC_INT,0,0,&num_repeats_var_id)!=NC_NOERR)
+	if(nc_def_var(netcdf_file_id,"num_repeats",NC_INT,0,0,&num_repeats_var_id)!=NC_NOERR)
 	{
 		return NETCDF_ERROR;
     }

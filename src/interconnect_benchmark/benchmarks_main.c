@@ -28,6 +28,7 @@
 #include <stdint.h>
 
 
+//зачем это? для работы с графической оболочкой?
 #ifdef _GNU_SOURCE
 #include <getopt.h>
 #else
@@ -37,6 +38,7 @@
 /*
 from ../..
 */
+//это подключает стандартный конфиг?
 #include "clustbench_config.h"
 
 /*
@@ -70,6 +72,7 @@ int main(int argc,char **argv)
     MPI_Status status;
 
     clustbench_time_result_t *times = NULL; /* old px_my_time_type *times=NULL;*/
+    clustbench_time_t *real_times = NULL;
 
     /*
      * The structure with network_test parameters.
@@ -85,6 +88,8 @@ int main(int argc,char **argv)
      *  all values
      *
      */
+     
+    //добавил переменные под матрицу с массивами задержек (с постфиксом del)
     int netcdf_file_av;
     int netcdf_file_me;
     int netcdf_file_di;
@@ -162,7 +167,6 @@ int main(int argc,char **argv)
     /*
      * Initializing num_procs parameter
      */
-
     error_flag = parse_network_test_arguments(&test_parameters,argc,argv,comm_rank);
     if(error_flag == ERROR_FLAG)
     {
@@ -191,7 +195,6 @@ int main(int argc,char **argv)
     }
     
     test_parameters.num_procs=comm_size;
-
 
     if (comm_size == 1)
     {
@@ -337,18 +340,19 @@ int main(int argc,char **argv)
                 return 1;
             }
         }
-
-        if(test_parameters.statistics_save & CLUSTBENCH_ALL_VALUES)
+        
+        
+        if(test_parameters.statistics_save & CLUSTBENCH_ALL)
         {
             flag = easy_mtr_create_3d(&mtr_all,comm_size,comm_size,test_parameters.num_repeats);
             if( flag==-1 )
             {
-                fprintf(stderr,"Can not to create all values matrix to story  the test results\n");
+                fprintf(stderr,"Can not to create all values matrix to store  the test results\n");
                 MPI_Abort(MPI_COMM_WORLD,1);
                 return 1;
             }
 
-            if(create_netcdf_header(ALL_DELAYS_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_mi,&netcdf_var_mi,pointers.define_netcdf_vars,pointers.put_netcdf_vars))
+            if(create_netcdf_header_3d(ALL_DELAYS_NETWORK_TEST_DATATYPE,&test_parameters,&netcdf_file_all,&netcdf_var_all,pointers.define_netcdf_vars,pointers.put_netcdf_vars))
             {
                 fprintf(stderr,"Can not to create file with name \"%s_all.nc\"\n",test_parameters.file_name_prefix);
                 MPI_Abort(MPI_COMM_WORLD,1);
@@ -415,6 +419,15 @@ int main(int argc,char **argv)
     	MPI_Abort(MPI_COMM_WORLD,1);
     	return 1;
     }
+    
+    //Новое
+    real_times=(clustbench_time_t*)malloc(comm_size*test_parameters.num_repeats*sizeof(clustbench_time_t));
+    if(real_times==NULL)
+    {
+        fprintf(stderr, "Memory allocation error\n");
+    	MPI_Abort(MPI_COMM_WORLD,1);
+    	return 1;
+    }
 
     MPI_Barrier(MPI_COMM_WORLD);
 
@@ -431,8 +444,7 @@ int main(int argc,char **argv)
         )
     {
         
-        pointers.test_function(times, tmp_mes_size, test_parameters.num_repeats, test_parameters.benchmark_parameters);
-
+        pointers.test_function(times, real_times, tmp_mes_size, test_parameters.num_repeats, test_parameters.benchmark_parameters);
 
         MPI_Barrier(MPI_COMM_WORLD);
 
@@ -456,11 +468,19 @@ int main(int argc,char **argv)
                 {
                     MATRIX_FILL_ELEMENT(mtr_mi,0,j,times[j].min);
                 }
+                //Новое
+        
+                if (test_parameters.statistics_save & CLUSTBENCH_ALL)
+                {
+                    for (int k = 0; k<test_parameters.num_repeats; k++){
+                        MATRIX_FILL_ELEMENT_3D(mtr_all,0,j,k,real_times[j*test_parameters.num_repeats + k]);
+                    }                    
+                }
             }
             for(i=1; i<comm_size; i++)
             {
-
                 MPI_Recv(times,comm_size,MPI_My_time_struct,i,100,MPI_COMM_WORLD,&status);
+                MPI_Recv(real_times,comm_size*test_parameters.num_repeats,MPI_DOUBLE,i,101,MPI_COMM_WORLD,&status);
                 for(j=0; j<comm_size; j++)
                 {
                     if (test_parameters.statistics_save & CLUSTBENCH_AVERAGE)
@@ -478,6 +498,13 @@ int main(int argc,char **argv)
                     if (test_parameters.statistics_save & CLUSTBENCH_MIN)
                     {
                         MATRIX_FILL_ELEMENT(mtr_mi,i,j,times[j].min);
+                    }
+                    //Новое
+                    if (test_parameters.statistics_save & CLUSTBENCH_ALL)
+                    {
+                        for (int k = 0; k<test_parameters.num_repeats; k++){
+                            MATRIX_FILL_ELEMENT_3D(mtr_all,i,j,k,real_times[j*test_parameters.num_repeats+k]);
+                        }                    
                     }
                 }
             }
@@ -522,6 +549,17 @@ int main(int argc,char **argv)
                     return 1;
                 }
             }
+            
+            if (test_parameters.statistics_save & CLUSTBENCH_ALL)
+            {
+                if (netcdf_write_3d_matrix(netcdf_file_all,netcdf_var_all,step_num,mtr_all.sizex,mtr_all.sizey,mtr_all.sizez,mtr_all.body))
+                {
+                    printf("Can't write matrix with all values to file.\n");
+                    MPI_Abort(MPI_COMM_WORLD,1);
+                    return 1;
+                }
+            }
+            
 
 
             printf("message length %d finished\r",tmp_mes_size);
@@ -531,9 +569,10 @@ int main(int argc,char **argv)
         else
         {
             MPI_Send(times,comm_size,MPI_My_time_struct,0,100,MPI_COMM_WORLD);
+            MPI_Send(real_times, comm_size*test_parameters.num_repeats, MPI_DOUBLE, 0, 101, MPI_COMM_WORLD);
         }
 
-
+         
         /* end for cycle .
          * Now we  go to the next length of message that is used in
          * the test perfomed on multiprocessor.
@@ -547,6 +586,19 @@ int main(int argc,char **argv)
      * Times array should be moved from return value to the input argument
      * for any network_test.
      */
+    if(comm_rank==0)
+    {
+        for (i = 0; i < comm_size; i++)
+        {
+            for (j = 0; j < comm_size; j++)
+            {
+                for (int k = 0; k < test_parameters.num_repeats; k++)
+                {
+                    printf("MAIN %d,%d,%d %e\n", i,j,k, MATRIX_GET_ELEMENT_3D(mtr_all,i,j,k));
+                }
+            }
+        } 
+    } 
 
     free(times);
     
@@ -579,6 +631,11 @@ int main(int argc,char **argv)
         {
             netcdf_close_file(netcdf_file_mi);
             free(mtr_mi.body);
+        }
+        if (test_parameters.statistics_save & CLUSTBENCH_ALL)
+        {
+            netcdf_close_file(netcdf_file_all);
+            free(mtr_all.body);
         }
 
         for(i=0; i<comm_size; i++)

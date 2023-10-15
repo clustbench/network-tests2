@@ -28,7 +28,7 @@ data_netcdf::data_netcdf(string iFileName, string iHostsFileName)
     FORMATCHECK(noise_message_length, "noise_mes_length", "cannot get noise message length");
     FORMATCHECK(noise_message_num, "num_noise_mes", "cannot get count of noise messages");
     FORMATCHECK(noise_processors, "num_noise_proc", "cannot get count of noise processors");
-    FORMATCHECK(num_repeats, "num_repeates", "cannot get count of repeats");
+    FORMATCHECK(num_repeats, "num_repeats", "cannot get count of repeats");
 
     if (iHostsFileName != "") {
         FILE *tmpHostFile;
