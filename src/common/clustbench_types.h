@@ -9,7 +9,7 @@
 #define CLUSTBENCH_DEVIATION       2
 #define CLUSTBENCH_AVERAGE         4
 #define CLUSTBENCH_MEDIAN          8
-#define CLUSTBENCH_ALL     15
+#define CLUSTBENCH_ALL     16
 
 typedef double clustbench_time_t;
 typedef double *clustbench_array_time_t;

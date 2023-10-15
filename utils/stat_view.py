@@ -3,6 +3,7 @@ import sys
 from scipy.fft import rfft, rfftfreq
 import numpy as np
 from matplotlib import pyplot as plt
+import gettext
 
 def draw_stat(cur_1d):
     plt.hist(cur_1d, color = 'blue', edgecolor = 'black', bins = 100)
@@ -17,12 +18,12 @@ cdf = nc.Dataset(file_path)
 
 print(type(cdf))
 print('\n\n')
-print("Begin length:", cdf['begin_mes_length'][:])
-print("Step:", cdf['step_length'][:])
-print("End length:", cdf['end_mes_length'][:])
+print(_("Begin length:"), cdf['begin_mes_length'][:])
+print(_("Step:"), cdf['step_length'][:])
+print(_("End length:"), cdf['end_mes_length'][:])
 
 
-while (params := input("Введите длину сообщения, для которой надо создать трехмерный файл: ")) != 'quit':
+while (params := input(_("Введите длину сообщения, для которой надо создать трехмерный файл: "))) != 'quit':
     params = params.split()
     print(params)
     mes_length = int(params[0])
@@ -36,7 +37,7 @@ while (params := input("Введите длину сообщения, для к�
         cur_1d = data[mes_length][n_src][n_dest]
         draw_stat(cur_1d)
     except IndexError:
-        print("your length is not valid")
+        print(_("your length is not valid"))
     
 ##    else:
 ##        print(type(cur_3d), cur_3d)

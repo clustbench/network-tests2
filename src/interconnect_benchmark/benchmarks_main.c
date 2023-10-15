@@ -167,16 +167,13 @@ int main(int argc,char **argv)
     /*
      * Initializing num_procs parameter
      */
-    printf("YEEEEEEEEEEEEEEEEEEEES\n");
     error_flag = parse_network_test_arguments(&test_parameters,argc,argv,comm_rank);
-    printf("NO\n");
     if(error_flag == ERROR_FLAG)
     {
             MPI_Abort(MPI_COMM_WORLD,1);
             return 1;
     }
 
-    printf("MB\n");
     if(error_flag == LIST_FLAG)
     {
         if(comm_rank == 0)
@@ -199,7 +196,6 @@ int main(int argc,char **argv)
     
     test_parameters.num_procs=comm_size;
 
-    printf("MB\n");
     if (comm_size == 1)
     {
         if(comm_rank == 0)
@@ -329,7 +325,6 @@ int main(int argc,char **argv)
 
         if(test_parameters.statistics_save & CLUSTBENCH_MIN)
         {
-            printf("GLOBAL_STATS\n");
             flag = easy_mtr_create(&mtr_mi,comm_size,comm_size);
             if( flag==-1 )
             {
@@ -346,14 +341,9 @@ int main(int argc,char **argv)
             }
         }
         
-        //новое
-        
-        printf("test_parameters.statistics_save%d\n", test_parameters.statistics_save);
-        printf("CLUSTBENCH_ALL_VALUES%d\n", CLUSTBENCH_ALL);
         
         if(test_parameters.statistics_save & CLUSTBENCH_ALL)
         {
-            printf("GLOBAL_STATS\n");
             flag = easy_mtr_create_3d(&mtr_all,comm_size,comm_size,test_parameters.num_repeats);
             if( flag==-1 )
             {
@@ -383,7 +373,6 @@ int main(int argc,char **argv)
          *
          */
 
-        printf("ALAHAMORA\n");
         if(print_network_test_parameters(&test_parameters))
         {
             fprintf(stderr,"Can't print parameters\n");

@@ -3,6 +3,7 @@ import sys
 from scipy.fft import rfft, rfftfreq
 import numpy as np
 from matplotlib import pyplot as plt
+import gettext
 
 
 def spektrum(cur_3d, src, dest, pos_begin, length):
@@ -89,13 +90,6 @@ def make_netcdf(cdf, cur_3d, cur_size):
     s = new_netcdf.createDimension('strings', size = cdf.dimensions['strings'].size)
 
     print(cdf['proc_num'].getValue())
-##    proc_num = new_netcdf.createVariable('proc_num', 'i4', fill_value = cdf['proc_num'].getValue())
-##    test_type = new_netcdf.createVariable('test_type', 'S1', dimensions = (s))
-##    data_type = new_netcdf.createVariable('data_type', 'i4', fill_value=cdf['data_type'].getValue())
-##    begin_mes_length = new_netcdf.createVariable('begin_mes_length', 'i4', fill_value = cdf['begin_mes_length'].getValue())
-##    end_mes_length = new_netcdf.createVariable('end_mes_length', 'i4', fill_value = cdf['end_mes_length'].getValue())
-##    step_length = new_netcdf.createVariable('step_length', 'i4', fill_value = cdf['step_length'].getValue())
-##    num_repeats = new_netcdf.createVariable('num_repeates', 'i4', fill_value = cdf['num_repeates'].getValue())
     proc_num = new_netcdf.createVariable('proc_num', 'i4')
     test_type = new_netcdf.createVariable('test_type', 'S1', dimensions = (s))
     data_type = new_netcdf.createVariable('data_type', 'i4')
@@ -130,12 +124,12 @@ cdf = nc.Dataset(file_path)
 
 print(type(cdf))
 print('\n\n')
-print("Begin length:", cdf['begin_mes_length'][:])
-print("Step:", cdf['step_length'][:])
-print("End length:", cdf['end_mes_length'][:])
+print(_("Begin length:"), cdf['begin_mes_length'][:])
+print(_("Step:"), cdf['step_length'][:])
+print(_("End length:"), cdf['end_mes_length'][:])
 
 
-mes_length = int(input("Введите длину сообщения, для которой надо создать трехмерный файл: "))
+mes_length = int(input(_("Введите длину сообщения, для которой надо создать трехмерный файл: ")))
 attr_length = mes_length
 mes_length //= cdf['step_length'][:]
 
@@ -144,11 +138,11 @@ data = cdf['data'][:]
 try:
     cur_3d = data[mes_length]
 except:
-    print("your length is not valid")
+    print(_("your length is not valid"))
 else:
     cur_spektrum = spektrum(cur_3d,1,2,20,120)
-    spektrum_ncdf(cur_3d, int(input("Введите длину окна для подсчета дискретного спектра: ")), mes_length)
-    flag = input("Do you want ti make a new netcdf cut fuli with info about latencies for given lewngth? (y/n)")
+    spektrum_ncdf(cur_3d, int(input(_("Введите длину окна для подсчета дискретного спектра: "))), mes_length)
+    flag = input(_("Do you want to make a new netcdf cut fuli with info about latencies for given lewngth? (y/n)"))
     if flag not in ("n", "no"):
         real_3d = [[[0 for j_1 in range(len(cur_3d[0]))] for j_2 in range(len(cur_3d))] for j_3 in range(len(cur_3d[0][0]))]
         for i_1 in range(len(cur_3d)):

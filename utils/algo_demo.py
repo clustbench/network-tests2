@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 import random
 import numpy.linalg
 import json
+import gettext
 
 
 global_window_params = []
@@ -98,7 +99,7 @@ def algo_stat_diff_eval(cur_1d, flag_log):
             param_max = min_max_stats['min']['max']
             param_res = param_min/param_max
             if flag_log:
-                print(f"min_koeff on {cur_iter} iterations is: {param_res} counted on windows with length {window_length}")
+                print(_(f"min_koeff on {cur_iter} iterations is: {param_res} counted on windows with length {window_length}"))
             if param_res < k_min:
                 exit_condition = False
         if dev_stat:
@@ -106,7 +107,7 @@ def algo_stat_diff_eval(cur_1d, flag_log):
             param_max = min_max_stats['dev']['max']
             param_res = param_min/param_max
             if flag_log:
-                print(f"dev_koeff on {cur_iter} iterations is: {param_res} counted on windows with length {window_length}")
+                print(_(f"dev_koeff on {cur_iter} iterations is: {param_res} counted on windows with length {window_length}"))
             if param_res < k_dev:
                 exit_condition = False
         if med_stat:
@@ -114,7 +115,7 @@ def algo_stat_diff_eval(cur_1d, flag_log):
             param_max = min_max_stats['med']['max']
             param_res = param_min/param_max
             if flag_log:
-                print(f"med_koeff on {cur_iter} iterations is: {param_res} counted on windows with length {window_length}")
+                print(_(f"med_koeff on {cur_iter} iterations is: {param_res} counted on windows with length {window_length}"))
             if param_res < k_med:
                 exit_condition = False
         if avg_stat:
@@ -122,7 +123,7 @@ def algo_stat_diff_eval(cur_1d, flag_log):
             param_max = min_max_stats['avg']['max']
             param_res = param_min/param_max
             if flag_log:
-                print(f"avg_koeff on {cur_iter} iterations is: {param_res} counted on windows with length {window_length}")
+                print(_(f"avg_koeff on {cur_iter} iterations is: {param_res} counted on windows with length {window_length}"))
             if param_res < k_avg:
                 exit_condition = False
 
@@ -131,29 +132,29 @@ def algo_stat_diff_eval(cur_1d, flag_log):
             break
 
     if flag_log:
-        print(f'Result has been reached within {cur_iter-iter_step} iterations, max_iters was {max_iter}')
+        print(_(f'Result has been reached within {cur_iter-iter_step} iterations, max_iters was {max_iter}'))
     if flag_log:
-        print(f'Reached quality measurements:')
+        print(_('Reached quality measurements:'))
     if min_stat:
         param_min = min_max_stats['min']['min']
         param_max = min_max_stats['min']['max']
         if flag_log:
-            print(f' {param_min/param_max} for min')
+            print(_(f' {param_min/param_max} for min'))
     if dev_stat:
         param_min = min_max_stats['dev']['min']
         param_max = min_max_stats['dev']['max']
         if flag_log:
-            print(f' {param_min/param_max} for dev, k_dev was {k_dev}')
+            print(_(f' {param_min/param_max} for dev, k_dev was {k_dev}'))
     if med_stat:
         param_min = min_max_stats['med']['min']
         param_max = min_max_stats['med']['max']
         if flag_log:
-            print(f' {param_min/param_max} for med')
+            print(_(f' {param_min/param_max} for med'))
     if avg_stat:
         param_min = min_max_stats['avg']['min']
         param_max = min_max_stats['avg']['max']
         if flag_log:
-            print(f' {param_min/param_max} for avg')
+            print(_(f' {param_min/param_max} for avg'))
     return cur_iter-iter_step
 
 
@@ -187,15 +188,15 @@ def algo_spektr_diff_eval(cur_1d, flag_log):
             spektrums.append(yf)
         cur_acc = 1-(dists_sum/(window_amount**2-window_amount))/(norms_sum/window_amount)
         if flag_log:
-            print(f"Accuracy reached within {cur_iter} iterations: {cur_acc}")
+            print(_(f"Accuracy reached within {cur_iter} iterations: {cur_acc}"))
         cur_iter += iter_step
         if cur_acc > accuracy:
             break
 
     if flag_log:
-        print(f'Result has been reached within {cur_iter-iter_step} iterations, max_iters was {max_iter}')
+        print(_(f'Result has been reached within {cur_iter-iter_step} iterations, max_iters was {max_iter}'))
     if flag_log:
-        print(f'reached accuracy: {cur_acc}')
+        print(_(f'reached accuracy: {cur_acc}'))
     return cur_iter-iter_step
 
 #3
@@ -229,26 +230,26 @@ def algo_spektr_mode_diff_eval(cur_1d, flag_log):
             spektrums.append(yf)
         cur_acc = (dists_sum/(window_amount**2-window_amount))/(norms_sum/window_amount)
         if flag_log:
-            print(f"Accuracy reached within {cur_iter} iterations: {cur_acc}")
+            print(_(f"Accuracy reached within {cur_iter} iterations: {cur_acc}"))
         cur_iter += iter_step
         if cur_acc < accuracy:
             break
 
     if flag_log:
-        print(f'Result has been reached within {cur_iter-iter_step} iterations, max_iters was {max_iter}')
+        print(_(f'Result has been reached within {cur_iter-iter_step} iterations, max_iters was {max_iter}'))
     if flag_log:
-        print(f'reached accuracy: {cur_acc}')
+        print(_(f'reached accuracy: {cur_acc}'))
     return cur_iter-iter_step
 
 # 4
 def algo_vector_diff_eval(cur_1d):
     global global_acc_params, global_window_params
 
-    max_iter = min(int(input('Insert max. allowed number of iterations delay measurement: ')), len(cur_1d))
-    frequency = int(input('Insert frequency of stop condition checking (how many times algo will check the condition before reaching max_iter): '))
-    window_amount = int(input('Insert amount of windows to count the stats on: '))
-    window_sum_length = int(input('Insert the ratio of the total length of the windows to the current number of iterations: '))
-    accuracy = float(input('Insert accuracy'))
+    max_iter = min(int(input(_('Insert max. allowed number of iterations delay measurement: '))), len(cur_1d))
+    frequency = int(input(_('Insert frequency of stop condition checking (how many times algo will check the condition before reaching max_iter): ')))
+    window_amount = int(input(_('Insert amount of windows to count the stats on: ')))
+    window_sum_length = int(input(_('Insert the ratio of the total length of the windows to the current number of iterations: ')))
+    accuracy = float(input(_('Insert accuracy')))
 
     iter_step = max_iter//frequency
     cur_iter = iter_step
@@ -268,45 +269,45 @@ def algo_vector_diff_eval(cur_1d):
                 dists_sum += numpy.linalg.norm(tmp - cur_w, ord=2)
             cur_windows.append(cur_w)
         cur_acc = (dists_sum/(window_amount**2-window_amount))/(norms_sum/window_amount)
-        print(f"Accuracy reached within {cur_iter} iterations: {cur_acc}")
+        print(_(f"Accuracy reached within {cur_iter} iterations: {cur_acc}"))
         cur_iter += iter_step
         if cur_acc < accuracy:
             break
 
-    print(f'Result has been reached within {cur_iter-iter_step} iterations, max_iters was {max_iter}')
-    print(f'reached accuracy: {cur_acc}')
+    print(_(f'Result has been reached within {cur_iter-iter_step} iterations, max_iters was {max_iter}'))
+    print(_(f'reached accuracy: {cur_acc}'))
     return cur_iter-iter_step
 
 
 def make_params(algo, cur_1d):
     global global_acc_params, global_window_params
     if algo == 1:
-        min_stat = (input('Do you want to use min stat?(y/n)') in ('y', 'Y', 'Yes', 'yes'))
-        dev_stat = (input('Do you want to use dev stat?(y/n)') in ('y', 'Y', 'Yes', 'yes'))
-        med_stat = (input('Do you want to use med stat?(y/n)') in ('y', 'Y', 'Yes', 'yes'))
-        avg_stat = (input('Do you want to use avg stat?(y/n)') in ('y', 'Y', 'Yes', 'yes'))
-        max_iter = min(int(input('Insert max. allowed number of iterations delay measurement: ')), len(cur_1d))
-        frequency = int(input('Insert frequency of stop condition checking (how many times algo will check the condition before reaching max_iter): '))
-        window_amount = int(input('Insert amount of windows to count the stats on: '))
-        window_sum_length = int(input('Insert the ratio of the total length of the windows to the current number of iterations: '))
+        min_stat = (input(_('Do you want to use min stat?(y/n)')) in ('y', 'Y', 'Yes', 'yes'))
+        dev_stat = (input(_('Do you want to use dev stat?(y/n)')) in ('y', 'Y', 'Yes', 'yes'))
+        med_stat = (input(_('Do you want to use med stat?(y/n)')) in ('y', 'Y', 'Yes', 'yes'))
+        avg_stat = (input(_('Do you want to use avg stat?(y/n)')) in ('y', 'Y', 'Yes', 'yes'))
+        max_iter = min(int(input(_('Insert max. allowed number of iterations delay measurement: '))), len(cur_1d))
+        frequency = int(input(_('Insert frequency of stop condition checking (how many times algo will check the condition before reaching max_iter): ')))
+        window_amount = int(input(_('Insert amount of windows to count the stats on: ')))
+        window_sum_length = int(input(_('Insert the ratio of the total length of the windows to the current number of iterations: ')))
         global_acc_params = []
         if min_stat:
-            k_min = float(input('Insert coeff. for min: '))
+            k_min = float(input(_('Insert coeff. for min: ')))
             global_acc_params.append(k_min)
         else:
             global_acc_params.append(-1)
         if dev_stat:
-            k_dev = float(input('Insert coeff. for dev: '))
+            k_dev = float(input(_('Insert coeff. for dev: ')))
             global_acc_params.append(k_dev)
         else:
             global_acc_params.append(-1)
         if med_stat:
-            k_med = float(input('Insert coeff. for med: '))
+            k_med = float(input(_('Insert coeff. for med: ')))
             global_acc_params.append(k_med)
         else:
             global_acc_params.append(-1)
         if avg_stat:
-            k_avg = float(input('Insert coeff. for avg: '))
+            k_avg = float(input(_('Insert coeff. for avg: ')))
             global_acc_params.append(k_avg)
         else:
             global_acc_params.append(-1)
@@ -315,11 +316,11 @@ def make_params(algo, cur_1d):
 
         return
     else:
-        max_iter = min(int(input('Insert max. allowed number of iterations delay measurement: ')), len(cur_1d))
-        frequency = int(input('Insert frequency of stop condition checking (how many times algo will check the condition before reaching max_iter): '))
-        window_amount = int(input('Insert amount of windows to count the stats on: '))
-        window_sum_length = int(input('Insert the ratio of the total length of the windows to the current number of iterations: '))
-        accuracy = float(input('Insert accuracy'))
+        max_iter = min(int(input(_('Insert max. allowed number of iterations delay measurement: '))), len(cur_1d))
+        frequency = int(input(_('Insert frequency of stop condition checking (how many times algo will check the condition before reaching max_iter): ')))
+        window_amount = int(input(_('Insert amount of windows to count the stats on: ')))
+        window_sum_length = int(input(_('Insert the ratio of the total length of the windows to the current number of iterations: ')))
+        accuracy = float(input(_('Insert accuracy')))
 
         global_acc_params = [accuracy]
         global_window_params = [max_iter, frequency, window_amount, window_sum_length]
@@ -329,18 +330,18 @@ def make_params(algo, cur_1d):
 file_path = ("/home/volch/3_kurs/asvk_sc/results/" + sys.argv[1])
 cdf = nc.Dataset(file_path)
 
-print("Begin length:", cdf['begin_mes_length'][:])
-print("Step:", cdf['step_length'][:])
-print("End length:", cdf['end_mes_length'][:])
-print("Proc amount:", cdf['proc_num'][:])
+print(_("Begin length:"), cdf['begin_mes_length'][:])
+print(_("Step:"), cdf['step_length'][:])
+print(_("End length:"), cdf['end_mes_length'][:])
+print(_("Proc amount:"), cdf['proc_num'][:])
 
-available_algorithms = {1: ['algorithm based on the estimation of the spread of statistical values', algo_stat_diff_eval],
-                        2: ['algorithm based on the estimation of the spektrum distancies', algo_spektr_diff_eval],
-                        3: ['algorithm based on the estimation of the spektrum distancies with powerfull harmonics separated.', algo_spektr_mode_diff_eval],
-                        4: ['algorithm based on the estimation of distancies between vectors itself', algo_vector_diff_eval]}
+available_algorithms = {1: [_('algorithm based on the estimation of the spread of statistical values'), algo_stat_diff_eval],
+                        2: [_('algorithm based on the estimation of the spektrum distancies'), algo_spektr_diff_eval],
+                        3: [_('algorithm based on the estimation of the spektrum distancies with powerfull harmonics separated.'), algo_spektr_mode_diff_eval],
+                        4: [_('algorithm based on the estimation of distancies between vectors itself'), algo_vector_diff_eval]}
 
 
-while (params := input("Insert message length, source number and destination number to run the algorithm on: ")) != 'quit':
+while (params := input(_("Insert message length, source number and destination number to run the algorithm on: "))) != 'quit':
     params = params.split()
     print(params)
     mes_length = int(params[0])
@@ -353,14 +354,14 @@ while (params := input("Insert message length, source number and destination num
     try:
         cur_1d = data[mes_length][n_src][n_dest]
     except IndexError:
-        print("your params are not valid")
+        print(_("your params are not valid"))
         continue
 
     target_min = min(cur_1d)
     target_avg = sum(cur_1d)/len(cur_1d)
     target_dev = sum([i**2 for i in cur_1d])/len(cur_1d)-target_avg**2
     target_med = sorted(cur_1d)[len(cur_1d)//2]
-    print('Choose algorithm you want to test (insert number) and how many times to run: ')
+    print(_('Choose algorithm you want to test (insert number) and how many times to run: '))
     for algo in available_algorithms:
         print(f"{algo}) {available_algorithms[algo][0]}")
     launch = input().split()
@@ -381,11 +382,11 @@ while (params := input("Insert message length, source number and destination num
         acc_dev = abs(1-res_dev/target_dev)
         acc_med = abs(1-res_med/target_med)
         if (launches == 1):
-            print("RESULT RELATIVE ACCURACIES:")
-            print(f"MIN: {acc_min}")
-            print(f"AVG: {acc_avg}")
-            print(f"DEV: {acc_dev}")
-            print(f"MED: {acc_med}")
+            print(_("RESULT RELATIVE ACCURACIES:"))
+            print(_(f"MIN: {acc_min}"))
+            print(_(f"AVG: {acc_avg}"))
+            print(_(f"DEV: {acc_dev}"))
+            print(_(f"MED: {acc_med}"))
             file_name = 'log_algo_single.txt'
             with open(file_name, "r") as f:
                 json_in = json.loads(f.readline())

@@ -13,7 +13,6 @@ typedef struct
 {
     void *dynamic_library_handler;
     char *short_description;
-    //что это такое?
     int (*print_help)(clustbench_benchmark_parameters_t*);
     int (*print_parameters)(clustbench_benchmark_parameters_t*);
     int (*parse_parameters)(clustbench_benchmark_parameters_t*,int,char**,int);

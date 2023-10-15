@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <stdbool.h>
 
 #include "types.h"
 #include "clustbench_data_write_operations.h"
@@ -141,7 +140,7 @@ int create_netcdf_header
 		return NETCDF_ERROR;
         }*/
 
-	if(nc_def_var(netcdf_file_id,"num_repeates",NC_INT,0,0,&num_repeats_var_id)!=NC_NOERR)
+	if(nc_def_var(netcdf_file_id,"num_repeats",NC_INT,0,0,&num_repeats_var_id)!=NC_NOERR)
 	{
 		return NETCDF_ERROR;
     }
@@ -256,7 +255,6 @@ int create_netcdf_header_3d
     
     int status;
 
-        printf("koplkoplkoplkopl\n");
 	file_name=(char *)malloc(strlen(test_parameters->file_name_prefix)+strlen("_deviation.nc")+1);
 	if(file_name==NULL)
 	{
@@ -432,20 +430,6 @@ int create_netcdf_header_3d
         return NETCDF_ERROR;
     }
 
-	/*if(nc_put_var_int(netcdf_file_id,noise_mesage_length_var_id,&test_parameters->noise_message_length)!=NC_NOERR)
-	{
-		return NETCDF_ERROR;
-	}
-
-	if(nc_put_var_int(netcdf_file_id,num_noise_messages_var_id,&test_parameters->num_noise_messages)!=NC_NOERR)
-	{
-		return NETCDF_ERROR;
-	}
-
-	if(nc_put_var_int(netcdf_file_id,num_noise_procs_var_id,&test_parameters->num_noise_procs)!=NC_NOERR)
-	{
-		return NETCDF_ERROR;
-	}*/
 	nc_sync(netcdf_file_id);
 	
 	*file_id=netcdf_file_id;

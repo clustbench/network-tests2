@@ -5,6 +5,7 @@ import json
 import sys
 import netCDF4 as nc
 import pandas as pd
+import gettext
 
 
 def autolabel(rects, labels=None, height_factor=1.01):
@@ -110,10 +111,10 @@ if mode == 3:
     file_path = ("/home/volch/3_kurs/asvk_sc/results/" + sys.argv[1])
     cdf = nc.Dataset(file_path)
 
-    print("Begin length:", cdf['begin_mes_length'][:])
-    print("Step:", cdf['step_length'][:])
-    print("End length:", cdf['end_mes_length'][:])
-    print("Proc amount:", cdf['proc_num'][:])
+    print(_("Begin length:"), cdf['begin_mes_length'][:])
+    print(_("Step:"), cdf['step_length'][:])
+    print(_("End length:"), cdf['end_mes_length'][:])
+    print(_("Proc amount:"), cdf['proc_num'][:])
     while (params := input("Insert message length, source number and destination number to run the algorithm on: ")) != 'quit':
         params = params.split()
         print(params)
