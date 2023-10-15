@@ -152,7 +152,7 @@ bool TopologyViewer::Init (const bool two_files, const QString &data_filename,
 		FORMATCHECK(noise_message_length,"noise_mes_length",NoNoiseMesLen)
 		FORMATCHECK(noise_message_num,"num_noise_mes",NoNoiseMesNum)
 		FORMATCHECK(noise_processors,"num_noise_proc",NoNoiseNumProc)
-		FORMATCHECK(num_repeats,"num_repeates",NoRpts)
+		FORMATCHECK(num_repeats,"num_repeats",NoRpts)
 
 		int n_vars,i;
 		int *varids;

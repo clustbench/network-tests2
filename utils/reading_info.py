@@ -96,7 +96,7 @@ def make_netcdf(cdf, cur_3d, cur_size):
     begin_mes_length = new_netcdf.createVariable('begin_mes_length', 'i4')
     end_mes_length = new_netcdf.createVariable('end_mes_length', 'i4')
     step_length = new_netcdf.createVariable('step_length', 'i4')
-    num_repeats = new_netcdf.createVariable('num_repeates', 'i4')
+    num_repeats = new_netcdf.createVariable('num_repeats', 'i4')
     data = new_netcdf.createVariable('data', 'f8', dimensions = (n,x,y))
     noise_message_length = new_netcdf.createVariable('noise_mes_length', 'i4')
     noise_message_num = new_netcdf.createVariable('num_noise_mes', 'i4')
