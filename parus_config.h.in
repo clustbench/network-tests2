@@ -1,6 +1,0 @@
-#ifndef __PARUS_CONFIG_H__
-#define __PARUS_CONFIG_H__
-#define  PARUS_VERSION "@PACKAGE_VERSION@"
-#define  PARUS_INSTALL_DIR "@prefix@"
-#define  PARUS_DATA_DIR "@prefix@/var/spool/network_tests2"
-#endif /* __PARUS_CONFIG_H__ */

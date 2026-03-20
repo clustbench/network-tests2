@@ -38,7 +38,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdio.h>
-
+#include <cuda_runtime.h>
 
 #ifdef _GNU_SOURCE
 #include <getopt.h>
@@ -60,8 +60,8 @@
 
 int comm_size;
 int comm_rank;
-
-
+int* gpu_count;
+int total_gpu = 0;
 
 int main(int argc,char **argv)
 {
@@ -112,11 +112,15 @@ int main(int argc,char **argv)
 
 
     char test_type_name[100];
-    int i,j;
+    int i,j,k;
 
 
     char** host_names=NULL;
+    char** gpu_names=NULL;
+
+    char gpu_name[256];
     char host_name[256];
+
 
 
     int flag;
@@ -126,6 +130,9 @@ int main(int argc,char **argv)
     int version_flag = 0;
 	*/
     int error_flag = 0;
+    int cur_gpu_count = 0;
+    
+
 	/*
     int ignore_flag = 0;
     int median_flag = 0;
@@ -147,6 +154,7 @@ int main(int argc,char **argv)
     MPI_Comm_size(MPI_COMM_WORLD,&comm_size);
     MPI_Comm_rank(MPI_COMM_WORLD,&comm_rank);
 
+    printf("%d\n", comm_rank);
     if(comm_rank == 0)
     {
         if ( comm_size == 1 )
@@ -161,45 +169,143 @@ int main(int argc,char **argv)
             return -1;
         }
 
-        host_names = (char**)malloc(sizeof(char*)*comm_size);
-        if(host_names==NULL)
+        for ( i = 1; i < comm_size; i++)
+            MPI_Send( &test_parameters.test_type, 1, MPI_INT, i, 201, MPI_COMM_WORLD);
+        if ( test_parameters.test_type != ONE_TO_ONE_CUDA_TEST_TYPE && test_parameters.test_type != ALL_TO_ALL_CUDA_TEST_TYPE ) 
         {
-            printf("Can't allocate memory %d bytes for host_names\n",(int)(sizeof(char*)*comm_size));
-            MPI_Abort(MPI_COMM_WORLD,-1);
-            return -1;
-        }
-
-        for ( i = 0; i < comm_size; i++ )
-        {
-            host_names[i] = (char*)malloc(256*sizeof(char));
-            if(host_names[i]==NULL)
+            host_names = (char**)malloc(sizeof(char*)*comm_size);
+            if(host_names==NULL)
             {
-                printf("Can't allocate memory for name proc %d\n",i);
+                printf("Can't allocate memory %d bytes for host_names\n",(int)(sizeof(char*)*comm_size));
                 MPI_Abort(MPI_COMM_WORLD,-1);
+                return -1;
+            }
+
+            for ( i = 0; i < comm_size; i++ )
+            {
+                host_names[i] = (char*)malloc(256*sizeof(char));
+                if(host_names[i]==NULL)
+                {
+                    printf("Can't allocate memory for name proc %d\n",i);
+                    MPI_Abort(MPI_COMM_WORLD,-1);
+                }
             }
         }
     } /* End if(rank==0) */
+    else 
+    {
+        int test_type;
+        MPI_Recv( &test_type, 1, MPI_INT, 0, 201, MPI_COMM_WORLD, &status);    
+        test_parameters.test_type = test_type;
+    }
 
+    if ( test_parameters.test_type == ONE_TO_ONE_CUDA_TEST_TYPE || test_parameters.test_type == ALL_TO_ALL_CUDA_TEST_TYPE ) 
+    {
+        int errged = cudaGetDeviceCount( &cur_gpu_count );
+        gpu_count = ( int* )malloc( sizeof( int ) * comm_size );
+        printf("CUDA Get Device Count exited with %d\n", errged);
+        if ( comm_rank == 0 ) 
+        {
+            for ( i = 1; i < comm_size; i++ ) {
+                MPI_Recv( ( gpu_count + i ), 1, MPI_INT, i, 200, MPI_COMM_WORLD, &status);
+            }
+            gpu_count[0] = cur_gpu_count;
+            for ( i = 0; i < comm_size; i++ )
+            {
+                total_gpu += gpu_count[i];
+                printf("%d has %d gpus\n", i, gpu_count[i]);
+            }
+            //total_gpu = 2;
+            for ( i = 1; i < comm_size; i++ )
+            {
+                MPI_Send( &total_gpu, 1, MPI_INT, i, 200, MPI_COMM_WORLD );
+                MPI_Send( gpu_count, comm_size, MPI_INT, i, 201, MPI_COMM_WORLD );   
+            }
+            host_names = ( char** )malloc( sizeof( char* ) * total_gpu );
+            for ( i = 0; i < total_gpu; i++ )
+            {
+                host_names[i] = ( char* )malloc( sizeof( char ) * 256 );
+            }
+        }
+        else
+        {
+            MPI_Send( &cur_gpu_count, 1, MPI_INT, 0, 200, MPI_COMM_WORLD );
+            MPI_Recv( &total_gpu, 1, MPI_INT, 0, 200, MPI_COMM_WORLD, &status );
+            MPI_Recv( gpu_count, comm_size, MPI_INT, 0, 201, MPI_COMM_WORLD, &status );
+        }
+        
+    }
+
+
+    /* if gpus not found */
     /*
      * Going to get and write all processors' hostnames
      */
     gethostname( host_name, 255 );
 
+
+    gpu_names = ( char** )malloc( sizeof( char* ) * cur_gpu_count );
+    for ( i = 0 ; i < cur_gpu_count; i++ )
+        gpu_names[i] = ( char* )malloc( sizeof( char ) * 256 );
+
     if ( comm_rank == 0 )
     {
-        for ( i = 1; i < comm_size; i++ )
-            MPI_Recv( host_names[i], 256, MPI_CHAR, i, 200, MPI_COMM_WORLD, &status );
-        strcpy(host_names[0],host_name);
+        if ( test_parameters.test_type == ONE_TO_ONE_CUDA_TEST_TYPE || test_parameters.test_type == ALL_TO_ALL_CUDA_TEST_TYPE ) 
+        {
+            int stride = cur_gpu_count;
+            for ( i = 1; i < comm_size; i++ )
+            {
+                for ( j = 0; j < gpu_count[i]; j++ )
+                    MPI_Recv( host_names[stride + j], 256, MPI_CHAR, i, 200, MPI_COMM_WORLD, &status );
+                stride += gpu_count[i];
+            }
+            for ( i = 0; i < cur_gpu_count; i++ )
+            {
+                struct cudaDeviceProp props;
+                cudaGetDeviceProperties( &props, i );
+                strcpy(gpu_names[i], host_name);
+                strcat(gpu_names[i], "--");
+                strcat(gpu_names[i], props.name);
+                strcpy(host_names[i], gpu_names[i]);
+            }
+        }
+
+        else 
+        {
+            for ( i = 1; i < comm_size; i++ )
+                MPI_Recv( host_names[i], 256, MPI_CHAR, i, 200, MPI_COMM_WORLD, &status );
+            strcpy(host_names[0],host_name);
+        }
     }
     else
     {
-        MPI_Send( host_name, 256, MPI_CHAR, 0, 200, MPI_COMM_WORLD );
+        if ( test_parameters.test_type == ONE_TO_ONE_CUDA_TEST_TYPE || test_parameters.test_type == ALL_TO_ALL_CUDA_TEST_TYPE ) 
+        { 
+            for ( i = 0; i < cur_gpu_count; i++ )
+            {
+                struct cudaDeviceProp props;
+                cudaGetDeviceProperties( &props, i );
+                strcpy(gpu_names[i], host_name);
+                strcat(gpu_names[i], "--");
+                strcat(gpu_names[i], props.name);
+            }
+            for ( i = 0; i < cur_gpu_count; i++ )
+            {
+                MPI_Send(gpu_names[i], 256, MPI_CHAR, 0, 200, MPI_COMM_WORLD);
+            }
+        }
+        else 
+            MPI_Send( host_name, 256, MPI_CHAR, 0, 200, MPI_COMM_WORLD );
     }
 
     /*
      * Initializing num_procs parameter
      */
-    test_parameters.num_procs=comm_size;
+    
+    if ( test_parameters.test_type == ONE_TO_ONE_CUDA_TEST_TYPE || test_parameters.test_type == ALL_TO_ALL_CUDA_TEST_TYPE ) 
+        test_parameters.num_procs=total_gpu;
+    else
+        test_parameters.num_procs=comm_size;
 
     if( comm_rank == 0)
     {
@@ -208,28 +314,41 @@ int main(int argc,char **argv)
          * Matrices initialization
          *
          */
-        flag = easy_mtr_create(&mtr_av,comm_size,comm_size);
+
+        if ( test_parameters.test_type == ONE_TO_ONE_CUDA_TEST_TYPE || test_parameters.test_type == ALL_TO_ALL_CUDA_TEST_TYPE ) 
+            flag = easy_mtr_create(&mtr_av,total_gpu,total_gpu);
+        else
+            flag = easy_mtr_create(&mtr_av,comm_size,comm_size);
         if( flag==-1 )
         {
             printf("Can not to create average matrix to story the test results\n");
             MPI_Abort(MPI_COMM_WORLD,-1);
             return -1;
         }
-        flag = easy_mtr_create(&mtr_me,comm_size,comm_size);
+        if ( test_parameters.test_type == ONE_TO_ONE_CUDA_TEST_TYPE || test_parameters.test_type == ALL_TO_ALL_CUDA_TEST_TYPE ) 
+            flag = easy_mtr_create(&mtr_me,total_gpu,total_gpu);
+        else
+            flag = easy_mtr_create(&mtr_me,comm_size,comm_size);
         if( flag==-1 )
         {
             printf("Can not to create median matrix to story the test results\n");
             MPI_Abort(MPI_COMM_WORLD,-1);
             return -1;
         }
-        flag = easy_mtr_create(&mtr_di,comm_size,comm_size);
+        if ( test_parameters.test_type == ONE_TO_ONE_CUDA_TEST_TYPE || test_parameters.test_type == ALL_TO_ALL_CUDA_TEST_TYPE ) 
+            flag = easy_mtr_create(&mtr_di,total_gpu,total_gpu);
+        else
+            flag = easy_mtr_create(&mtr_di,comm_size,comm_size);
         if( flag==-1 )
         {
             printf("Can not to create deviation matrix to story the test results\n");
             MPI_Abort(MPI_COMM_WORLD,-1);
             return -1;
         }
-        flag = easy_mtr_create(&mtr_mi,comm_size,comm_size);
+        if ( test_parameters.test_type == ONE_TO_ONE_CUDA_TEST_TYPE || test_parameters.test_type == ALL_TO_ALL_CUDA_TEST_TYPE ) 
+            flag = easy_mtr_create(&mtr_mi,total_gpu,total_gpu);
+        else
+            flag = easy_mtr_create(&mtr_mi,comm_size,comm_size);
         if( flag==-1 )
         {
             printf("Can not to create min values matrix to story  the test results\n");
@@ -265,12 +384,12 @@ int main(int argc,char **argv)
             return -1;
         }
 
-	if(create_test_hosts_file(&test_parameters,host_names))		
-	{
-		printf("Can not to create file with name \"%s_hosts.txt\"\n",test_parameters.file_name_prefix);
-    		MPI_Abort(MPI_COMM_WORLD,-1);
-    		return -1;
-	}
+        if(create_test_hosts_file(&test_parameters,host_names))		
+        {
+            printf("Can not to create file with name \"%s_hosts.txt\"\n",test_parameters.file_name_prefix);
+                MPI_Abort(MPI_COMM_WORLD,-1);
+                return -1;
+        }
 
         /*
          *
@@ -291,7 +410,7 @@ int main(int argc,char **argv)
         printf("\tresult file median\t\t\"%s_median.nc\"\n",test_parameters.file_name_prefix);
         printf("\tresult file deviation\t\t\"%s_deviation.nc\"\n",test_parameters.file_name_prefix);
         printf("\tresult file minimum\t\t\"%s_min.nc\"\n",test_parameters.file_name_prefix);
-    	printf("\tresult file hosts\t\t\"%s_hosts.txt\"\n\n",test_parameters.file_name_prefix);
+	printf("\tresult file hosts\t\t\"%s_hosts.txt\"\n\n",test_parameters.file_name_prefix);
 
 
     } /* End preparation (only in MPI process with rank 0) */
@@ -318,17 +437,18 @@ int main(int argc,char **argv)
         MPI_Get_address( &(tmp_time.deviation), &displace[2]);
         MPI_Get_address( &(tmp_time.min), &displace[3]);
     }
-    
     displace[0]=0;
     displace[1]-=base;
     displace[2]-=base;
     displace[3]-=base;
-
     MPI_Type_create_struct(4,blocklength,displace,struct_types,&MPI_My_time_struct);
     MPI_Type_commit(&MPI_My_time_struct);
 
 
-    times=(Test_time_result_type* )malloc(comm_size*sizeof(Test_time_result_type));
+    if ( test_parameters.test_type == ONE_TO_ONE_CUDA_TEST_TYPE || test_parameters.test_type == ALL_TO_ALL_CUDA_TEST_TYPE ) 
+        times=(Test_time_result_type* )malloc(cur_gpu_count*total_gpu*sizeof(Test_time_result_type));
+    else
+        times=(Test_time_result_type* )malloc(comm_size*sizeof(Test_time_result_type));
     if(times==NULL)
     {
 		printf("Memory allocation error\n");
@@ -360,20 +480,20 @@ int main(int argc,char **argv)
 
         if(test_parameters.test_type==NOISE_BLOCKING_TEST_TYPE)
         {
-            test_noise_blocking
-    		(
-    		 	times,
-    		    tmp_mes_size,
-    			test_parameters.num_repeats,
-    			test_parameters.num_noise_messages,
-    			test_parameters.noise_message_length,
-    		    test_parameters.num_noise_procs
-    		);
+                test_noise_blocking
+		(
+		 	times,
+		    	tmp_mes_size,
+			test_parameters.num_repeats,
+			test_parameters.num_noise_messages,
+			test_parameters.noise_message_length,
+		       	test_parameters.num_noise_procs
+		);
         }
 
         if(test_parameters.test_type==NOISE_TEST_TYPE)
         {
-            test_noise
+            		test_noise
 			(
 			 	times,
 				tmp_mes_size,
@@ -399,46 +519,102 @@ int main(int argc,char **argv)
             send_recv_and_recv_send(times,tmp_mes_size,test_parameters.num_repeats);
         } /* end send_recv_and_recv_send */
 
-
-
-
         if(test_parameters.test_type==PUT_ONE_TO_ONE_TEST_TYPE)
         {
-            put_one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
+		put_one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
         } /* end put_one_to_one */
 
         if(test_parameters.test_type==GET_ONE_TO_ONE_TEST_TYPE)
         {
-            get_one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
+		get_one_to_one(times,tmp_mes_size,test_parameters.num_repeats);
         } /* end get_one_to_one */
 
 
+        if( test_parameters.test_type==ALL_TO_ALL_CUDA_TEST_TYPE )
+        {
+            all_to_all_cuda( times, tmp_mes_size, test_parameters.num_repeats );
+        }
+        
+        if( test_parameters.test_type==ONE_TO_ONE_CUDA_TEST_TYPE )
+        {
+            one_to_one_cuda( times, tmp_mes_size, test_parameters.num_repeats );
+        
+        }
+
         MPI_Barrier(MPI_COMM_WORLD);
+
+        
 
         if(comm_rank==0)
         {
-            for(j=0; j<comm_size; j++)
+            if( test_parameters.test_type==ONE_TO_ONE_CUDA_TEST_TYPE || test_parameters.test_type == ALL_TO_ALL_CUDA_TEST_TYPE )
             {
-                MATRIX_FILL_ELEMENT(mtr_av,0,j,times[j].average);
-                MATRIX_FILL_ELEMENT(mtr_me,0,j,times[j].median);
-                MATRIX_FILL_ELEMENT(mtr_di,0,j,times[j].deviation);
-                MATRIX_FILL_ELEMENT(mtr_mi,0,j,times[j].min);
-            }
-            for(i=1; i<comm_size; i++)
-            {
-
-                MPI_Recv(times,comm_size,MPI_My_time_struct,i,100,MPI_COMM_WORLD,&status);
-                for(j=0; j<comm_size; j++)
+                for( j = 0; j < cur_gpu_count; j++ )
                 {
-                    MATRIX_FILL_ELEMENT(mtr_av,i,j,times[j].average);
-                    MATRIX_FILL_ELEMENT(mtr_me,i,j,times[j].median);
-                    MATRIX_FILL_ELEMENT(mtr_di,i,j,times[j].deviation);
-                    MATRIX_FILL_ELEMENT(mtr_mi,i,j,times[j].min);
+                    for( k = 0; k < total_gpu; k++ )
+                    {
+                        MATRIX_FILL_ELEMENT(mtr_av,j,k,times[j * total_gpu + k].average);
+                        MATRIX_FILL_ELEMENT(mtr_me,j,k,times[j * total_gpu + k].median);
+                        MATRIX_FILL_ELEMENT(mtr_di,j,k,times[j * total_gpu + k].deviation);
+                        MATRIX_FILL_ELEMENT(mtr_mi,j,k,times[j * total_gpu + k].min);
+                    }
+                }
+                for(i=1; i<comm_size; i++)
+                {
+                    Test_time_result_type *times_recv = ( Test_time_result_type *)malloc( sizeof( Test_time_result_type ) * gpu_count[i] * total_gpu );
+                    MPI_Recv(times_recv,gpu_count[i] * total_gpu,MPI_My_time_struct,i,100,MPI_COMM_WORLD,&status);
+                    int stride = 0;
+                    for ( j = 0; j < i; j++ )
+                    {
+                        stride += gpu_count[j];
+                    } 
+		    for ( j = 0; j < gpu_count[i]; j++ )
+			{
+				printf("\n===for GPU %d===\n", j + stride);
+				for ( k = 0; k < total_gpu; k++) 
+					printf("%lf ", times_recv[j * total_gpu + k].median);
 
+				    printf("\n=======================\n");
+
+				    fflush(stdout);
+			}
+                    for( j = 0; j < gpu_count[i]; j++ )
+                    {
+                        for( k = 0; k < total_gpu; k++ )
+                        {
+                            MATRIX_FILL_ELEMENT(mtr_av,j + stride,k,times_recv[j * total_gpu + k].average);
+                            MATRIX_FILL_ELEMENT(mtr_me,j + stride,k,times_recv[j * total_gpu + k].median);
+                            MATRIX_FILL_ELEMENT(mtr_di,j + stride,k,times_recv[j * total_gpu + k].deviation);
+                            MATRIX_FILL_ELEMENT(mtr_mi,j + stride,k,times_recv[j * total_gpu + k].min);
+                        }
+                    }
+                    free( times_recv );
                 }
             }
+            else
+            {
+                for(j=0; j<comm_size; j++)
+                {
+                    MATRIX_FILL_ELEMENT(mtr_av,0,j,times[j].average);
+                    MATRIX_FILL_ELEMENT(mtr_me,0,j,times[j].median);
+                    MATRIX_FILL_ELEMENT(mtr_di,0,j,times[j].deviation);
+                    MATRIX_FILL_ELEMENT(mtr_mi,0,j,times[j].min);
+                }
+                for(i=1; i<comm_size; i++)
+                {
 
+                    MPI_Recv(times,comm_size,MPI_My_time_struct,i,100,MPI_COMM_WORLD,&status);
+                    for(j=0; j<comm_size; j++)
+                    {
+                        MATRIX_FILL_ELEMENT(mtr_av,i,j,times[j].average);
+                        MATRIX_FILL_ELEMENT(mtr_me,i,j,times[j].median);
+                        MATRIX_FILL_ELEMENT(mtr_di,i,j,times[j].deviation);
+                        MATRIX_FILL_ELEMENT(mtr_mi,i,j,times[j].min);
 
+                    }
+                }
+
+            }
             if(netcdf_write_matrix(netcdf_file_av,netcdf_var_av,step_num,mtr_av.sizex,mtr_av.sizey,mtr_av.body))
             {
                 printf("Can't write average matrix to file.\n");
@@ -474,7 +650,16 @@ int main(int argc,char **argv)
         } /* end comm rank 0 */
         else
         {
-            MPI_Send(times,comm_size,MPI_My_time_struct,0,100,MPI_COMM_WORLD);
+            if( test_parameters.test_type==ONE_TO_ONE_CUDA_TEST_TYPE || test_parameters.test_type == ALL_TO_ALL_CUDA_TEST_TYPE )
+            {
+                MPI_Send(times,cur_gpu_count*total_gpu,MPI_My_time_struct,0,100,MPI_COMM_WORLD);
+            }
+            else
+            {
+                MPI_Send(times,comm_size,MPI_My_time_struct,0,100,MPI_COMM_WORLD);
+            }
+            
+            
         }
 
 
@@ -492,8 +677,12 @@ int main(int argc,char **argv)
      * for any network_test.
      */
 
-	free(times);
+    free(times);
+    free( gpu_count );
 
+    for ( i = 0; i < cur_gpu_count; i++ )
+	free ( gpu_names[i] );
+    free ( gpu_names );
 
 	if(comm_rank==0)
     {
@@ -502,11 +691,20 @@ int main(int argc,char **argv)
         netcdf_close_file(netcdf_file_me);
         netcdf_close_file(netcdf_file_di);
         netcdf_close_file(netcdf_file_mi);
-
-        for(i=0; i<comm_size; i++)
+	
+	if( test_parameters.test_type==ONE_TO_ONE_CUDA_TEST_TYPE || test_parameters.test_type == ALL_TO_ALL_CUDA_TEST_TYPE )
         {
-            free(host_names[i]);
-        }
+		for ( i = 0; i < total_gpu; i++)
+			free( host_names[i] );
+	}
+	else 
+	{
+		for(i=0; i<comm_size; i++)
+		{
+		    free(host_names[i]);
+		}
+
+	}
         free(host_names);
 
         free(mtr_av.body);

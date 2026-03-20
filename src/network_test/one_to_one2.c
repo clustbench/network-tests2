@@ -95,13 +95,13 @@ int one_to_one(Test_time_result_type *times,int mes_length,int num_repeats)
 
 	    if(send_proc==-1)
                 break;
-            if(send_proc==comm_rank)
-                real_one_to_one(mes_length,num_repeats,send_proc,recv_proc);
-            if(recv_proc==comm_rank)
-                times[send_proc]=real_one_to_one(mes_length,num_repeats,send_proc,recv_proc);
+        if(send_proc==comm_rank)
+            real_one_to_one(mes_length,num_repeats,send_proc,recv_proc);
+        if(recv_proc==comm_rank)
+            times[send_proc]=real_one_to_one(mes_length,num_repeats,send_proc,recv_proc);
 
-            confirmation_flag=1;
-            MPI_Send(&confirmation_flag,1,MPI_INT,0,1,MPI_COMM_WORLD);
+        confirmation_flag=1;
+        MPI_Send(&confirmation_flag,1,MPI_INT,0,1,MPI_COMM_WORLD);
         }
     } /* end else comm_rank==0 */
 

@@ -41,10 +41,10 @@ FILES_COMMON=\
 	data_write_operations.o
 
 
-EXECS= libparus_network.a
+EXECS = libparus_network.a
 
 all: $(EXECS)
-#	$(CCLINKER) -shared $(FILES) $(LIB_FLAGS)
+#	$(CCLINKER) -shared $(FILES) $(LIB_FLAGS) -fPIC
 
 core: $(FILES) $(FILES_COMMON)
 	# Compile core OK!
@@ -70,7 +70,7 @@ clean:
 %.cpp: %.h
 
 %.o: %.c
-	 $(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) $(NETCDF_INCLUDE) -I ../..  -c $< -o $@
+	 $(MPI_CC) $(MPI_CC_FLAGS) $(MPI_CC_INCLUDE) $(NETCDF_INCLUDE) -I ../..  -c $< -o $@ -fPIC
 
 %.o: %.cpp
 	 $(MPI_CXX) $(MPI_CXX_FLAGS) $(MPI_CXX_INCLUDE) $(NETCDF_INCLUDE) -I ../..  -c $< -o $@

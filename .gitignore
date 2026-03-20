@@ -58,3 +58,12 @@ __pycache__
 
 # Lom 2 wirejournal - the person who provided it forbid to share it
 wire_journal_48_53.xlsx
+
+/.vscode
+*.nc
+*.aux
+*.log
+*.fls
+*.out
+*.fdb_latexmk
+*.synctex.gz

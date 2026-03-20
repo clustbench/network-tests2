@@ -22,7 +22,7 @@ $(EXTERN_OBJS):
 	$(CXX) $(CXX_FLAGS) $(CXX_INCLUDE) $(NETCDF_INCLUDE) -c -o $@  $^
  	
 $(EXECS): $(OBJS) $(EXTERN_OBJS)
-	$(CXXLINKER) $(CXXLINKER_FLAGS) -o $@ $^ $(NETCDF_LIBS)
+	$(CXXLINKER) $(CXXLINKER_FLAGS) -o $@ $^ $(NETCDF_LIBS) -lfftw3 -lm
 	
 install: $(EXECS)
 	cp -rf $^ $(INSTALL_DIR)/bin

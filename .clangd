@@ -1,0 +1,9 @@
+# Если открыт только каталог network-tests2 (не весь nauchka)
+CompileFlags:
+  Add:
+    - -Isrc/core
+    - -Isrc/network_test
+    - -I.
+    - -isystem/usr/include
+    - -I/usr/lib/x86_64-linux-gnu/openmpi/include
+    - -I/usr/local/cuda/include

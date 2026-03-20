@@ -18,25 +18,27 @@
  *
  */
 
-#include <mpi.h>
-#include <sys/time.h>
-#include <time.h>
+#include <stdlib.h>
+#include <stdint.h>
 
-//оно же уже объявлено в хэдере, зачем?
-typedef double px_my_time_type;
+#include "clustbench_easy_matrices.h"
 
-px_my_time_type px_my_cpu_time(void);
-
-px_my_time_type px_my_cpu_time(void)
+int  easy_mtr_create(Clustbench_easy_matrix *m, uint32_t x, uint32_t y)
 {
- return MPI_Wtime();
+	m->sizex=x;
+	m->sizey=y;
+	m->body=(double *)malloc(x*y*sizeof(double));
+	   if(m->body==NULL) return -1;
+	return 0;
 }
 
-//ПОЧЕМУ ЕЕ НЕТ В ХЭДЭРЕ?
-double MYMPI_Wtime()
+int  easy_mtr_create_3d(Clustbench_easy_matrix_3d *m, uint32_t x, uint32_t y, uint32_t z)
 {
-	struct timeval tv;
-	gettimeofday(&tv,NULL);
-	return (double)tv.tv_sec+(double)tv.tv_usec*0.000001;
+	m->sizex=x;
+	m->sizey=y;
+        m->sizez=z;
+	m->body=(double *)malloc(x*y*z*sizeof(double));
+	   if(m->body==NULL) return -1;
+	return 0;
 }
 

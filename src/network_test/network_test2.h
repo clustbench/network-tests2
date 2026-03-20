@@ -38,6 +38,9 @@
 #define BCAST_TEST_TYPE 7
 #define PUT_ONE_TO_ONE_TEST_TYPE 8
 #define GET_ONE_TO_ONE_TEST_TYPE 9
+#define ONE_TO_ONE_CUDA_TEST_TYPE 10
+#define ALL_TO_ALL_CUDA_TEST_TYPE 11
+
 
 #ifdef __cplusplus
 extern "C"
@@ -53,6 +56,8 @@ extern int test_noise(Test_time_result_type *times,int mes_length, int num_repea
 extern int test_noise_blocking(Test_time_result_type *times,int mes_length, int num_repeats, int num_noise_repeats, int noise_message_length, int num_noise_procs);
 extern int get_one_to_one(Test_time_result_type *times,int mes_length,int num_repeats);
 extern int put_one_to_one(Test_time_result_type *times,int mes_length,int num_repeats);
+extern int all_to_all_cuda(Test_time_result_type *times, int mes_length, int num_repeats);
+extern int one_to_one_cuda(Test_time_result_type *times, int mes_length, int num_repeats);
 
 
 #ifdef __cplusplus
