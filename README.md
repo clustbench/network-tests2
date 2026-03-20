@@ -16,7 +16,7 @@ This software has folowing dependencies to compile it:
 2. For benchmarking requires:
     1. MPI-2 standard implementation: OpenMPI, IntelMPI and so one
 3. For GUI requires:
-    1. Qt version 4.5 but not Qt5. It requires qmake-qt4 tool.
+    1. Qt version 4.5 but not Qt5. It requires qmake-qt4 tool. (In other repository branches there are presented qt5 in dependencies)
     2. Qwt5, libqwt5-qt4
     3. OpenGL
     4. Support OpenMP in compiler and optionally OpenCL
@@ -64,25 +64,40 @@ References on project
 
 Some information on principles of utilities organization can be 
 found at this list of articles:
-1. Gorelov A., Maysuradze A., Salnikov A. Delay structure mining in computing cluster //
+1. Volchaninov, A.P., Salnikov, A.N. Methods for Automatic Detection of the Sufficient Number of Iterations
+   for Delay Measurements in Computer Cluster Interconnections. In: Sokolinsky, L., Zymbler, M., Voevodin,
+   V., Dongarra, J. (eds) Parallel Computational Technologies. PCT 2024.
+   Communications in Computer and Information Science, vol 2241. Springer, 2024,
+   DOI:[10.1007/978-3-031-73372-7_1](https://doi.org/10.1007/978-3-031-73372-7_1)
+2. Software for component-by-component benchmarking of a computing cluster network
+   A.A. Begaev, A.N. Salnikov Lobachevskii Journal of Mathematics 44 (9), 3998-4008, 2023
+   DOI: [10.1134/S1995080223090056](https://doi.org/10.1134/S1995080223090056)
+3. Salnikov, A., Begaev, A., Maysuradze, A.
+   Similarity Mining of Message Passing Delays in Supercomputer Networks Based on Peak and Step Detection.
+   In: Voevodin, V., Sobolev, S. (eds) Supercomputing. RuSCDays 2020.
+   Communications in Computer and Information Science, vol 1331. Springer, Cham.
+   DOI:[10.1007/978-3-030-64616-5_42](https://doi.org/10.1007/978-3-030-64616-5_42)
+4. Begaev, A.A., Salnikov, A.N. Way of Measuring Data Transfer Delays among Graphics Processing Units at Different Nodes of a Computer Cluster.
+   MoscowUniv.Comput.Math.Cybern. 44, 1–10 (2020). DOI: [10.3103/S0278641920010021](https://doi.org/10.3103/S0278641920010021)   
+5. Gorelov A., Maysuradze A., Salnikov A. Delay structure mining in computing cluster //
    CEUR Workshop Proceedings. - Vol. 1482. - Aachen : M. Jeusfeld c/o Redaktion Sun SITE, 
    Informatik V, RWTH Aachen Germany Germany, 2015. -  P. 546-551.
-2. Bannikov P.S., Salnikov A.N.. Retrieving topology of interconnections 
+6. Bannikov P.S., Salnikov A.N.. Retrieving topology of interconnections 
    in computational cluster based on results of MPI benchmarks. Moscow University 
    Computational Mathematics and Cybernetics. vol. 38, n. 2, pp. 73-82, 2014. 
    DOI: [10.3103/S0278641914020022](http://dx.doi.org/10.3103/S0278641914020022)
-3. Salnikov A.N., Andreev D.Yu, Lebedev R.D.. Toolkit for analyzing the 
+7. Salnikov A.N., Andreev D.Yu, Lebedev R.D.. Toolkit for analyzing the 
    communication environment characteristics of a computational cluster 
    based on MPI standard functions. Moscow University Computational Mathematics 
    and Cybernetics. vol. 36, n. 1, pp. 41-49, 2012.
    DOI: [10.3103/S0278641912010074](http://dx.doi.org/10.3103/S0278641912010074)
-4. Alexey, S., Dmitry, A., and Roman, L. The analysis of cluster interconnect 
+8. Alexey, S., Dmitry, A., and Roman, L. The analysis of cluster interconnect 
    with the network_tests2 toolkit. In Recent Advances in the Message Passing 
    Interface - 18th European MPI Users' Group Meeting, EuroMPI 2011, Santorini,
    Greece, September 18-21, 2011. Proceedings (Heidelberg, Germany, 2011),
    vol. 6960 of Lecture Notes in Computer Science, Heidelberg, Germany, pp. 160-169.
    DOI: [10.1007/978-3-642-24449-0_19](http://dx.doi.org/10.1007/978-3-642-24449-0_19)
-5. Salnikov Alexey N., Andreev Dmitry Y.. An MPI-Based System for Testing
+9. Salnikov Alexey N., Andreev Dmitry Y.. An MPI-Based System for Testing
    Multiprocessor and Cluster Communications. Lecture Notes in Computer 
    Science. n. 5205, pp. 332-333, 2008.
    DOI: [10.1007/978-3-540-87475-1_48](http://dx.doi.org/10.1007/978-3-540-87475-1_48)
